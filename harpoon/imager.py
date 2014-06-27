@@ -255,7 +255,7 @@ class Image(object):
                 , volumes_from = volumes_from
                 )
 
-            if tty:
+            if not detach:
                 dockerpty.start(self.docker_context, container_id)
 
             inspection = None
