@@ -148,6 +148,12 @@ class CliParser(object):
             , action = "append"
             )
 
+        parser.add_argument("--port"
+            , help = "Specify a port to publish in the running container you make"
+            , dest = "ports"
+            , action = "append"
+            )
+
         return parser
 
 def docker_context():

@@ -35,7 +35,7 @@ class Harpoon(object):
         self.configuration_folder = os.path.dirname(os.path.abspath(configuration_file))
         self.imager = Imager(self.configuration, docker_context, interactive=self.interactive, silent_build=silent_build)
 
-    def start(self, task, extra=None, keep_replaced=False, no_intervention=False, env=None, **kwargs):
+    def start(self, task, extra=None, keep_replaced=False, no_intervention=False, env=None, ports=None, **kwargs):
         """Do the harpooning"""
         if not self.configuration.get("images"):
             raise BadConfiguration("Didn't find any images in the configuration")
@@ -48,6 +48,7 @@ class Harpoon(object):
         if "harpoon" not in self.configuration:
             self.configuration["harpoon"] = {}
         self.configuration["harpoon"]["env"] = env
+        self.configuration["harpoon"]["ports"] = ports
         self.configuration["harpoon"]["keep_replaced"] = keep_replaced
         self.configuration["harpoon"]["no_intervention"] = no_intervention
 

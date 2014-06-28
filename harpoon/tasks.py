@@ -62,13 +62,13 @@ def make(harpoon, image=None, **kwargs):
     print("Created image {0}".format(images[image].image_name))
 
 @a_task
-def run_task(harpoon, image=None, command=None, bash=None, env=None, volumes=None, **kwargs):
+def run_task(harpoon, image=None, command=None, bash=None, env=None, volumes=None, ports=None, **kwargs):
     """Run specified task in this image"""
     if bash:
         command = "/bin/bash -c '{0}'".format(bash)
     _, image = determine_image(harpoon, image)
     find_missing_env(env)
-    harpoon.imager.run(image, command=command, env=env, volumes=volumes)
+    harpoon.imager.run(image, command=command, env=env, volumes=volumes, ports=ports)
 
 @a_task
 def list_tasks(harpoon, **kwargs):

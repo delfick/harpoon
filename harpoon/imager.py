@@ -157,7 +157,30 @@ class Image(object):
                 result.append("{0}={1}".format(thing, os.environ[thing]))
         return result
 
-    def run_container(self, images, detach=False, command=None, started=None, extra_env=None, extra_volumes=None):
+    def figure_out_ports(self, extra_ports):
+        """Figure out the combination of ports, return as a dictionary"""
+        result = {}
+        harpoon_ports = self.heira_formatted("harpoon.ports", default=None)
+        formatted_ports = self.heira_formatted("ports", default=None)
+        for ports in (harpoon_ports, formatted_ports, extra_ports):
+            if ports:
+                if isinstance(ports, dict):
+                    result.update(ports)
+                    continue
+
+                if not isinstance(ports, list):
+                    ports = [ports]
+
+                if isinstance(ports, list):
+                    for port in ports:
+                        if isinstance(port, basestring) and ":" in port:
+                            key, val = port.split(":", 1)
+                            result[key] = val
+                        else:
+                            result[port] = port
+        return result
+
+    def run_container(self, images, detach=False, command=None, started=None, extra_env=None, extra_volumes=None, extra_ports=None):
         """Run this image and all dependency images"""
         if self.already_running:
             return
@@ -170,6 +193,8 @@ class Image(object):
                     raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency, error=error)
 
             env = self.figure_out_env(extra_env)
+            ports = self.figure_out_ports(extra_ports)
+
             tty = not detach and self.interactive
             links = [link.split(":") for link in self.link]
             volumes = self.volumes
@@ -179,7 +204,7 @@ class Image(object):
                 volumes.extend(extra_volumes)
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
-                , detach=detach, command=command, tty=tty, env=env
+                , detach=detach, command=command, tty=tty, env=env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links
                 )
 
@@ -192,7 +217,7 @@ class Image(object):
                         log.warning("Failed to stop dependency container\timage=%s\tdependency=%s\tcontainer_name=%s\terror=%s", self.name, dependency, images[dependency].container_name, error)
                 self.stop_container()
 
-    def _run_container(self, name, image_name, container_name, detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None):
+    def _run_container(self, name, image_name, container_name, detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None):
         """Run a single container"""
         log.info("Creating container from %s\timage=%s\tcontainer_name=%s\ttty=%s", image_name, name, container_name, tty)
 
@@ -223,6 +248,8 @@ class Image(object):
             log.info("\tUsing volumes\tvolumes=%s", volumes)
         if env:
             log.info("\tUsing environment\tenv=%s", env)
+        if ports:
+            log.info("\tUsing ports\tports=%s", ports.keys())
         container = self.docker_context.create_container(image_name
             , name=container_name
             , detach=detach
@@ -231,6 +258,7 @@ class Image(object):
             , environment=env
 
             , tty = tty
+            , ports = ports.keys()
             , stdin_open = tty
             )
 
@@ -248,11 +276,14 @@ class Image(object):
                 log.info("\tLinks: %s", links)
             if volumes_from:
                 log.info("\tVolumes from: %s", volumes_from)
+            if ports:
+                log.info("\tPort Bindings: %s", ports)
 
             self.docker_context.start(container_id
                 , links = links
                 , binds = binds
                 , volumes_from = volumes_from
+                , port_bindings = ports
                 )
 
             if not detach:
@@ -635,7 +666,7 @@ class Image(object):
             raise BadOption("Parent dir for image doesn't exist", parent_dir=self.parent_dir, image=self.name)
         self.parent_dir = os.path.abspath(self.parent_dir)
 
-        for listable in ("link", "volumes_from", "volumes"):
+        for listable in ("link", "volumes_from", "volumes", "ports"):
             setattr(self, listable, self.formatted_list(listable, default=[]))
         self.volumes = self.normalise_volumes(self.volumes)
         self.extra_context = []
@@ -740,11 +771,11 @@ class Imager(object):
             self._images = images
         return self._images
 
-    def run(self, image, command=None, env=None, volumes=None):
+    def run(self, image, command=None, env=None, volumes=None, ports=None):
         """Make this image and run it"""
         self.make_image(image)
         try:
-            self.images[image].run_container(self.images, command=command, extra_env=env, extra_volumes=volumes)
+            self.images[image].run_container(self.images, command=command, extra_env=env, extra_volumes=volumes, extra_ports=ports)
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
