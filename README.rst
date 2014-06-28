@@ -640,6 +640,31 @@ volumes
   Will mount the ``coverage`` directory from the host into /project/app/coverage
   on the image.
 
+Roadmap
+-------
+
+There are two immediate things on the roadmap:
+
+* Clean up imager.py
+* Write automated tests
+
+The second task is self describing.
+
+The first task is because imager.py handles too much. It does:
+
+* Configuration collection, interpretation and validation
+* Ordering of dependency containers
+* Knows how to use dockerpy
+* Knows how to interpret dockerpy output
+
+Additionally to that, the configuration has multiple sources (cli, task definiton,
+root of the config, image config) and it arbitrarily gets certain values from
+certain combinations of that.
+
+The next evolution of imager.py will split out these different concerns, as well
+as use `OptionMerge <https://github.com/delfick/option_merge>`_ a bit better
+so when I get options for the image, these different sources are already merged.
+
 Tests
 -----
 
