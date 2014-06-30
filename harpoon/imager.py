@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadImage, ProgrammerError, HarpoonError, FailedImage, BadResult
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
@@ -213,7 +215,9 @@ class Image(object):
             if not detach:
                 for dependency in self.dependency_images(images, ignore_parent=True):
                     try:
-                        images[dependency].stop_container()
+                        images[dependency].stop_container(fail_on_bad_exit=True, fail_reason="Failed to run dependency container")
+                    except BadImage:
+                        raise
                     except Exception as error:
                         log.warning("Failed to stop dependency container\timage=%s\tdependency=%s\tcontainer_name=%s\terror=%s", self.name, dependency, images[dependency].container_name, error)
                 self.stop_container()
@@ -307,22 +311,22 @@ class Image(object):
 
             if inspection:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                    raise BadImage("Failed to run container", container_id=container_id)
+                    raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
         finally:
             if delete_on_exit:
                 self._stop_container(container_id, container_name)
 
-    def stop_container(self):
+    def stop_container(self, fail_on_bad_exit=False, fail_reason=None):
         """Stop this container if it exists"""
         container_id = self.container_id
         if container_id is None:
             return
 
-        self._stop_container(container_id, self.container_name)
+        self._stop_container(container_id, self.container_name, fail_on_bad_exit=fail_on_bad_exit, fail_reason=fail_reason)
         self._container_id = None
         self.already_running = False
 
-    def _stop_container(self, container_id, container_name):
+    def _stop_container(self, container_id, container_name, fail_on_bad_exit=False, fail_reason=None):
         """Stop some container"""
         stopped = False
         for _ in until(timeout=10):
@@ -344,7 +348,26 @@ class Image(object):
                 else:
                     break
 
-        if not stopped:
+        if stopped:
+            exit_code = inspection["State"]["ExitCode"]
+            if exit_code != 0 and fail_on_bad_exit:
+                if not self.interactive:
+                    print_logs = True
+                else:
+                    print("!!!!")
+                    print("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}".format(container_name, container_id, exit_code))
+                    print("Do you want to see the logs from this container?")
+                    answer = raw_input("[y]: ")
+                    print_logs = not answer or answer.lower().startswith("y")
+
+                if print_logs:
+                    print("=================== Logs for failed container {0} ({1})".format(container_id, container_name))
+                    for line in self.docker_context.logs(container_id).split("\n"):
+                        print(line)
+                    print("------------------- End logs for failed container")
+                fail_reason = fail_reason or "Failed to run container"
+                raise BadImage(fail_reason, container_id=container_id, container_name=container_name)
+        else:
             try:
                 log.info("Killing container %s:%s", container_name, container_id)
                 self.docker_context.kill(container_id, 9)
