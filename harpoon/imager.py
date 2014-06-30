@@ -288,7 +288,10 @@ class Image(object):
                 )
 
             if not detach:
-                dockerpty.start(self.docker_context, container_id)
+                try:
+                    dockerpty.start(self.docker_context, container_id)
+                except KeyboardInterrupt:
+                    pass
 
             inspection = None
             if not detach:

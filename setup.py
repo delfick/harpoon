@@ -13,7 +13,7 @@ setup(
       , "docker-py==0.3.2"
       , "humanize"
       , "glob2"
-      , "dockerpty==0.1.1"
+      , "dockerpty==0.2.0"
       , "pyYaml==3.10"
       ]
 
