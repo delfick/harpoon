@@ -258,7 +258,7 @@ class Image(object):
             , environment=env
 
             , tty = tty
-            , ports = ports.keys()
+            , ports = (ports or {}).keys()
             , stdin_open = tty
             )
 
