@@ -12,6 +12,7 @@ setup(
       , "option_merge"
       , "docker-py==0.3.2"
       , "humanize"
+      , "glob2"
       , "dockerpty==0.1.1"
       , "pyYaml==3.10"
       ]

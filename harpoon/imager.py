@@ -12,6 +12,7 @@ import fnmatch
 import tarfile
 import logging
 import socket
+import glob2
 import json
 import uuid
 import sys
@@ -503,21 +504,25 @@ class Image(object):
                     raise HarpoonError("Told to respect gitignore, but git ls-files says no", directory=self.parent_dir, output=output, others=others)
 
                 combined = set(output + others)
-                if context_exclude:
-                    if not self.silent_build: log.info("Filtering %s items\texcluding=%s", len(combined), context_exclude)
-                    excluded = set()
-                    for filename in combined:
-                        for excluder in context_exclude:
-                            if fnmatch.fnmatch(filename, excluder):
-                                excluded.add(filename)
-                                break
-                    combined = combined - excluded
-                files = sorted(os.path.join(self.parent_dir, filename) for filename in combined)
-                if not self.silent_build: log.info("Adding %s things from %s to the context", len(files), self.parent_dir)
             else:
+                combined = set()
                 if context_exclude:
-                    raise NotImplementedError("Sorry, can't use context_exclude if we aren't using git ls-files (set respect_gitignore to True)")
-                files = [self.parent_dir]
+                    combined = set([os.path.relpath(location, self.parent_dir) for location in glob2.glob("{0}/**".format(self.parent_dir))])
+                else:
+                    combined = set([self.parent_dir])
+
+            if context_exclude:
+                if not self.silent_build: log.info("Filtering %s items\texcluding=%s", len(combined), context_exclude)
+                excluded = set()
+                for filename in combined:
+                    for excluder in context_exclude:
+                        if fnmatch.fnmatch(filename, excluder):
+                            excluded.add(filename)
+                            break
+                combined = combined - excluded
+
+            files = sorted(os.path.join(self.parent_dir, filename) for filename in combined)
+            if context_exclude and not self.silent_build: log.info("Adding %s things from %s to the context", len(files), self.parent_dir)
 
         mtime = self.mtime
         docker_lines = '\n'.join(self.commands)
