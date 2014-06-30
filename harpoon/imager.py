@@ -522,7 +522,7 @@ class Image(object):
         mtime = self.mtime
         docker_lines = '\n'.join(self.commands)
         with a_temp_file() as tmpfile:
-            t = tarfile.open(mode='w', fileobj=tmpfile)
+            t = tarfile.open(mode='w:gz', fileobj=tmpfile)
             for thing in files:
                 if os.path.exists(thing):
                     arcname = "./{0}".format(os.path.relpath(thing, self.parent_dir))
