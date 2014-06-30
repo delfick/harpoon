@@ -311,6 +311,14 @@ class Image(object):
 
             if inspection:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
+                    if self.interactive and not self.heira_formatted("harpoon.no_intervention", default=False):
+                        print("!!!!")
+                        print("Failed to run the container!")
+                        print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
+                        answer = raw_input("[y]: ")
+                        if not answer or answer.lower().startswith("y"):
+                            with self.commit_and_run(container_id, command="/bin/bash"):
+                                pass
                     raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
         finally:
             if delete_on_exit:
@@ -594,12 +602,18 @@ class Image(object):
             yield
             return
 
+        with self.commit_and_run(container_id, command="/bin/bash"):
+            yield
+
+    @contextmanager
+    def commit_and_run(self, container_id, command="/bin/bash"):
+        """Commit this container id and run the provided command in it and clean up afterwards"""
         try:
             image = self.docker_context.commit(container_id)
             image_hash = image["Id"]
 
-            name = "{0}-intervention".format(self.name)
-            self._run_container(name, image_hash, image_hash, detach=False, tty=True, command="/bin/bash", delete_on_exit=True)
+            name = "{0}-intervention-{1}".format(container_id, str(uuid.uuid1()))
+            self._run_container(name, image_hash, image_hash, detach=False, tty=True, command=command, delete_on_exit=True)
             yield
         except Exception as error:
             log.error("Something failed about creating the intervention image\terror=%s", error)
