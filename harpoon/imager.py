@@ -72,10 +72,13 @@ class Image(object):
 
         Taking into account parent image, and those in link and volumes_from options
         """
+        candidates = []
+        detach = dict((candidate, not options.get("attached", False)) for candidate, options in self.dependency_options.items())
+
         if not ignore_parent:
             for image, instance in images.items():
                 if self.parent_image == instance.image_name:
-                    yield image
+                    candidates.append(image)
                     break
 
         container_names = dict((instance.container_name, image) for image, instance in images.items())
@@ -85,12 +88,19 @@ class Image(object):
                 if ":" in image:
                     image = image.split(":", 1)[0]
                 if image in container_names:
-                    yield container_names[image]
+                    name = container_names[image]
+                    candidates.append(container_names[image])
 
         if self.volumes_from:
             for image in self.volumes_from:
                 if image in container_names:
-                    yield container_names[image]
+                    candidates.append(container_names[image])
+
+        done = set()
+        for candidate in candidates:
+            if candidate not in done:
+                done.add(candidate)
+                yield candidate, detach.get(candidate, True)
 
     @property
     def container_id(self):
@@ -183,17 +193,17 @@ class Image(object):
                             result[port] = port
         return result
 
-    def run_container(self, images, detach=False, command=None, started=None, extra_env=None, extra_volumes=None, extra_ports=None):
+    def run_container(self, images, detach=False, command=None, started=None, extra_env=None, extra_volumes=None, extra_ports=None, dependency=False):
         """Run this image and all dependency images"""
         if self.already_running:
             return
 
         try:
-            for dependency in self.dependency_images(images, ignore_parent=True):
+            for dependency_name, detached in self.dependency_images(images, ignore_parent=True):
                 try:
-                    images[dependency].run_container(images, detach=True)
+                    images[dependency_name].run_container(images, detach=detached, dependency=True)
                 except Exception as error:
-                    raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency, error=error)
+                    raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency_name, error=error)
 
             env = self.figure_out_env(extra_env)
             ports = self.figure_out_ports(extra_ports)
@@ -208,12 +218,12 @@ class Image(object):
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
-                , volumes=volumes, volumes_from=volumes_from, links=links
+                , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency
                 )
 
         finally:
-            if not detach:
-                for dependency in self.dependency_images(images, ignore_parent=True):
+            if not detach and not dependency:
+                for dependency, _ in self.dependency_images(images, ignore_parent=True):
                     try:
                         images[dependency].stop_container(fail_on_bad_exit=True, fail_reason="Failed to run dependency container")
                     except BadImage:
@@ -222,7 +232,7 @@ class Image(object):
                         log.warning("Failed to stop dependency container\timage=%s\tdependency=%s\tcontainer_name=%s\terror=%s", self.name, dependency, images[dependency].container_name, error)
                 self.stop_container()
 
-    def _run_container(self, name, image_name, container_name, detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None):
+    def _run_container(self, name, image_name, container_name, detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None, dependency=False):
         """Run a single container"""
         log.info("Creating container from %s\timage=%s\tcontainer_name=%s\ttty=%s", image_name, name, container_name, tty)
 
@@ -291,14 +301,14 @@ class Image(object):
                 , port_bindings = ports
                 )
 
-            if not detach:
+            if not detach and not dependency:
                 try:
                     dockerpty.start(self.docker_context, container_id)
                 except KeyboardInterrupt:
                     pass
 
             inspection = None
-            if not detach:
+            if not detach and not dependency:
                 for _ in until(timeout=0.5, step=0.1, silent=True):
                     try:
                         inspection = self.docker_context.inspect_container(container_id)
@@ -717,6 +727,10 @@ class Image(object):
         self.extra_context = []
         self.commands = self.interpret_commands(self.configuration["commands"])
 
+        self.dependency_options = self.heira_formatted("dependency_options", default={})
+        if not isinstance(self.dependency_options, dict) and not isinstance(self.dependency_options, MergedOptions):
+            raise BadOption("Dependency options must be a dictionary", got=self.dependency_options)
+
     def normalise_volumes(self, volumes):
         """Return normalised version of these volumes"""
         result = []
@@ -842,7 +856,7 @@ class Imager(object):
         if image not in images:
             raise NoSuchImage(looking_for=image, available=images.keys())
 
-        for dependency in images[image].dependency_images(images):
+        for dependency, _ in images[image].dependency_images(images):
             self.make_image(dependency, chain=chain + [image], made=made)
 
         # Should have all our dependencies now

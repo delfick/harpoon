@@ -640,6 +640,31 @@ volumes
   Will mount the ``coverage`` directory from the host into /project/app/coverage
   on the image.
 
+Sometimes you need your dependency container to not be running in a detached
+container. To make it so a dependency is running in an attached container, you
+may specify ``dependency_options``::
+
+  ---
+
+  images:
+    runner:
+      commands:
+        ...
+        - CMD activator run
+
+    uitest:
+      link:
+        - "{images.runner.container_name}:running"
+
+      dependency_options:
+        runner:
+          # Typesafe activator run stops in a detached container
+          detach: False
+
+      commands:
+        ...
+        - CMD ./do_a_uitest.sh running:9000
+
 Roadmap
 -------
 
