@@ -214,7 +214,8 @@ class Image(object):
             if extra_volumes:
                 if volumes is None:
                     volumes = []
-                volumes.extend(extra_volumes)
+                for volume in extra_volumes:
+                    volumes.append(self.formatted("__specified__.volumes", value=volume))
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
