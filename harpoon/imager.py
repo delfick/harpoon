@@ -619,6 +619,7 @@ class Image(object):
     @contextmanager
     def commit_and_run(self, container_id, command="/bin/bash"):
         """Commit this container id and run the provided command in it and clean up afterwards"""
+        image_hash = None
         try:
             image = self.docker_context.commit(container_id)
             image_hash = image["Id"]
@@ -631,7 +632,8 @@ class Image(object):
             raise
         finally:
             try:
-                self.docker_context.remove_image(image_hash)
+                if image_hash:
+                    self.docker_context.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
 
