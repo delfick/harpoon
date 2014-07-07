@@ -490,7 +490,7 @@ class Image(object):
                                 sys.stdout.flush()
                             buf = []
 
-                        sys.stdout.write(line)
+                        sys.stdout.write(line.encode('utf-8', 'replace'))
                         sys.stdout.flush()
 
                 if current_ids:
