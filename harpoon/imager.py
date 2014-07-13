@@ -11,6 +11,7 @@ from contextlib import contextmanager
 import dockerpty
 import humanize
 import fnmatch
+import hashlib
 import tarfile
 import logging
 import socket
@@ -793,7 +794,7 @@ class Image(object):
                 if "dest" not in value:
                     raise BadOption("When doing an ADD with content, must specify dest", image=self.name, command=[name, value])
                 dest = value.get("dest")
-                context_name = str(uuid.uuid1())
+                context_name = "{0}-{1}".format(hashlib.md5(value.get('content')).hexdigest(), dest.replace("/", "-").replace(" ", "--"))
                 self.extra_context.append((value.get("content"), context_name))
                 yield "ADD {0} {1}".format(context_name, dest)
             else:
