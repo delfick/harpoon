@@ -82,3 +82,6 @@ class BadYaml(HarpoonError):
 class BadResult(HarpoonError):
     desc = "A bad result"
 
+class UserQuit(HarpoonError):
+    desc = "User quit the program"
+

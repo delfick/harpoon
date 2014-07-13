@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadImage, ProgrammerError, HarpoonError, FailedImage, BadResult
+from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadImage, ProgrammerError, HarpoonError, FailedImage, BadResult, UserQuit
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
 from harpoon.processes import command_output
@@ -503,7 +503,7 @@ class Image(object):
                                 self.docker_context.remove_image(image)
                             except Exception as error:
                                 log.error("Failed to remove replaced image\thash=%s\terror=%s", image, error)
-            except:
+            except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if current_hash:
                     with self.intervention(current_hash):
@@ -518,7 +518,10 @@ class Image(object):
                         except Exception as error:
                             log.error("Failed to remove dead container\thash=%s\terror=%s", current_hash, error)
 
-                raise exc_info[1], None, exc_info[2]
+                if isinstance(error, KeyboardInterrupt):
+                    raise UserQuit()
+                else:
+                    raise exc_info[1], None, exc_info[2]
 
     @contextmanager
     def make_context(self):
