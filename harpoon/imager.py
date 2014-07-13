@@ -233,7 +233,9 @@ class Image(object):
                         log.warning("Failed to stop dependency container\timage=%s\tdependency=%s\tcontainer_name=%s\terror=%s", self.name, dependency, images[dependency].container_name, error)
                 self.stop_container()
 
-    def _run_container(self, name, image_name, container_name, detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None, dependency=False):
+    def _run_container(self, name, image_name, container_name
+            , detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None, dependency=False, no_intervention=False
+            ):
         """Run a single container"""
         log.info("Creating container from %s\timage=%s\tcontainer_name=%s\ttty=%s", image_name, name, container_name, tty)
 
@@ -320,7 +322,7 @@ class Image(object):
                     except Exception as error:
                         log.error("Failed to see if container exited normally or not\thash=%s\terror=%s", container_id, error)
 
-            if inspection:
+            if inspection and not no_intervention:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
                     if self.interactive and not self.heira_formatted("harpoon.no_intervention", default=False):
                         print("!!!!")
@@ -628,7 +630,7 @@ class Image(object):
             image_hash = image["Id"]
 
             name = "{0}-intervention-{1}".format(container_id, str(uuid.uuid1()))
-            self._run_container(name, image_hash, image_hash, detach=False, tty=True, command=command, delete_on_exit=True)
+            self._run_container(name, image_hash, image_hash, detach=False, tty=True, command=command, delete_on_exit=True, no_intervention=True)
             yield
         except Exception as error:
             log.error("Something failed about creating the intervention image\terror=%s", error)
