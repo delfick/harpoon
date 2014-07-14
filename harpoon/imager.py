@@ -532,10 +532,20 @@ class Image(object):
         host_context = not self.heira_formatted("no_host_context", default=False)
         context_exclude = self.heira_formatted("context_exclude", default=None)
         respect_gitignore = self.heira_formatted("respect_gitignore", default=False)
+        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=False)
+
+        use_git = respect_gitignore or use_git_timestamps
+        git_files = set()
+        changed_files = set()
 
         files = []
         if host_context:
-            if respect_gitignore:
+            if use_git:
+                output, status = command_output("git diff --name-only", cwd=self.parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to determine what files have changed", directory=self.parent_dir, output=output)
+                changed_files = set(output)
+
                 if not self.silent_build: log.info("Determining context from git ls-files")
                 options = ""
                 if context_exclude:
@@ -552,9 +562,10 @@ class Image(object):
                     raise HarpoonError("Failed to do a git ls-files to get untracked files", directory=self.parent_dir, output=others)
 
                 if not (output or others) or any(out and out[0].startswith("fatal: Not a git repository") for out in (output, others)):
-                    raise HarpoonError("Told to respect gitignore, but git ls-files says no", directory=self.parent_dir, output=output, others=others)
+                    raise HarpoonError("Told to use git features, but git ls-files says no", directory=self.parent_dir, output=output, others=others)
 
                 combined = set(output + others)
+                git_files = set(output)
             else:
                 combined = set()
                 if context_exclude:
@@ -581,7 +592,15 @@ class Image(object):
             t = tarfile.open(mode='w:gz', fileobj=tmpfile)
             for thing in files:
                 if os.path.exists(thing):
-                    arcname = "./{0}".format(os.path.relpath(thing, self.parent_dir))
+                    relname = os.path.relpath(thing, self.parent_dir)
+                    arcname = "./{0}".format(relname)
+                    if relname in git_files and relname not in changed_files:
+                        # Set the modified date from git
+                        date, status = command_output("git show -s --format=%at -n1 -- {0}".format(relname), cwd=self.parent_dir)
+                        if status != 0 or not date or not date[0].isdigit():
+                            log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", self.parent_dir, relname)
+                        date = int(date[0])
+                        os.utime(thing, (date, date))
                     t.add(thing, arcname=arcname)
 
             for content, arcname in self.extra_context:
