@@ -138,6 +138,33 @@ If you supply a string, that string will be placed as is in the Dockerfile that
 we end up creating the image from. See https://docs.docker.com/reference/builder/
 for what commands are available in docker files.
 
+Modified file times
+-------------------
+
+We noticed that if you git clone a repository then git will set the modified
+times of all the files to the time at which you do the git clone.
+
+This means that even though the file contents are the same, docker will invalidate
+the cache when it adds these files.
+
+Harpoon provides an option ``use_git_timestamps`` which when set true will use
+git to determine the commit date for each file and when it creates the context to
+send to docker it will use the git date.
+
+for example::
+
+  ---
+
+  use_git_timestamps: true
+
+  images:
+    blah:
+      commands:
+        [...]
+
+It will make sure to only do this to files that are controlled by git and which
+don't have any local modifications
+
 Controlling the context
 -----------------------
 
