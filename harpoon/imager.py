@@ -532,7 +532,7 @@ class Image(object):
         host_context = not self.heira_formatted("no_host_context", default=False)
         context_exclude = self.heira_formatted("context_exclude", default=None)
         respect_gitignore = self.heira_formatted("respect_gitignore", default=False)
-        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=False)
+        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=True)
 
         use_git = respect_gitignore or use_git_timestamps
         git_files = set()
@@ -594,7 +594,7 @@ class Image(object):
                 if os.path.exists(thing):
                     relname = os.path.relpath(thing, self.parent_dir)
                     arcname = "./{0}".format(relname)
-                    if relname in git_files and relname not in changed_files:
+                    if use_git_timestamps and (relname in git_files and relname not in changed_files):
                         # Set the modified date from git
                         date, status = command_output("git show -s --format=%at -n1 -- {0}".format(relname), cwd=self.parent_dir)
                         if status != 0 or not date or not date[0].isdigit():
