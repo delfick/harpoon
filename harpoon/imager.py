@@ -529,12 +529,21 @@ class Image(object):
     @contextmanager
     def make_context(self):
         """Context manager for creating the context of the image"""
+        class Nope(object): pass
         host_context = not self.heira_formatted("no_host_context", default=False)
         context_exclude = self.heira_formatted("context_exclude", default=None)
-        respect_gitignore = self.heira_formatted("respect_gitignore", default=False)
-        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=True)
+        respect_gitignore = self.heira_formatted("respect_gitignore", default=Nope)
+        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=Nope)
 
-        use_git = respect_gitignore or use_git_timestamps
+        use_git = False
+        if respect_gitignore is not Nope and respect_gitignore:
+            use_git = True
+        if use_git_timestamps is not Nope and use_git_timestamps:
+            use_git = True
+
+        respect_gitignore = use_git if respect_gitignore is Nope else False
+        use_git_timestamps = use_git if use_git_timestamps is Nope else False
+
         git_files = set()
         changed_files = set()
 
