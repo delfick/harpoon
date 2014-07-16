@@ -686,7 +686,7 @@ may specify ``dependency_options``::
       dependency_options:
         runner:
           # Typesafe activator run stops in a detached container
-          detach: False
+          attached: True
 
       commands:
         ...
