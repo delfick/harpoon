@@ -210,7 +210,7 @@ class Image(object):
             ports = self.figure_out_ports(extra_ports)
 
             tty = not detach and self.interactive
-            links = [link.split(":") for link in self.link]
+            links = [(link.split(":") if ":" in link else (link, link)) for link in self.link]
             volumes = self.volumes
             if extra_volumes:
                 if volumes is None:
