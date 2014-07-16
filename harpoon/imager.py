@@ -89,7 +89,6 @@ class Image(object):
                 if ":" in image:
                     image = image.split(":", 1)[0]
                 if image in container_names:
-                    name = container_names[image]
                     candidates.append(container_names[image])
 
         if self.volumes_from:
@@ -238,6 +237,8 @@ class Image(object):
             , detach=False, command=None, tty=True, volumes=None, volumes_from=None, links=None, delete_on_exit=False, env=None, ports=None, dependency=False, no_intervention=False
             ):
         """Run a single container"""
+        if not detach and dependency:
+            tty = True
         log.info("Creating container from %s\timage=%s\tcontainer_name=%s\ttty=%s", image_name, name, container_name, tty)
 
         binds = {}
