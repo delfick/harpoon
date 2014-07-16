@@ -542,8 +542,8 @@ class Image(object):
         if use_git_timestamps is not Nope and use_git_timestamps:
             use_git = True
 
-        respect_gitignore = use_git if respect_gitignore is Nope else False
-        use_git_timestamps = use_git if use_git_timestamps is Nope else False
+        respect_gitignore = use_git if respect_gitignore is Nope else respect_gitignore
+        use_git_timestamps = use_git if use_git_timestamps is Nope else use_git_timestamps
 
         git_files = set()
         changed_files = set()
@@ -598,13 +598,19 @@ class Image(object):
 
         mtime = self.mtime
         docker_lines = '\n'.join(self.commands)
+        def matches_glob(string, globs):
+            """Returns whether this string matches any of the globs"""
+            if isinstance(globs, bool):
+                return globs
+            return any(fnmatch.fnmatch(string, glob) for glob in globs)
+
         with a_temp_file() as tmpfile:
             t = tarfile.open(mode='w:gz', fileobj=tmpfile)
             for thing in files:
                 if os.path.exists(thing):
                     relname = os.path.relpath(thing, self.parent_dir)
                     arcname = "./{0}".format(relname)
-                    if use_git_timestamps and (relname in git_files and relname not in changed_files):
+                    if use_git_timestamps and (relname in git_files and relname not in changed_files and matches_glob(relname, use_git_timestamps)):
                         # Set the modified date from git
                         date, status = command_output("git show -s --format=%at -n1 -- {0}".format(relname), cwd=self.parent_dir)
                         if status != 0 or not date or not date[0].isdigit():

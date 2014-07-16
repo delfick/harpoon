@@ -165,6 +165,28 @@ for example::
 It will make sure to only do this to files that are controlled by git and which
 don't have any local modifications
 
+Note that if you have many files, you might decide that getting the commit date
+for all of them takes an unacceptably long time and that you only care about a
+certain subset of files.
+
+In this case, you may specify a list of globs that will be used to identify which
+files we set the modified times for (assuming they are also owned by git and don't
+have any local modifications.
+
+For example::
+
+  ---
+
+  use_git_timestamps:
+    - gradle*
+    - settings.gradle
+    - buildSrc/**
+
+  images:
+    blah:
+      commands:
+        [...]
+
 Controlling the context
 -----------------------
 
