@@ -469,17 +469,13 @@ class Image(object):
                         elif line.strip().startswith("---> Running in"):
                             current_hash = line[len("---> Running in "):].strip()
 
-                        last_line = line_detail
-                    else:
-                        line = line
-                    last_line = line
-
                     if line.strip().startswith("---> Running in"):
                         cached = False
                         buf.append(line)
                     elif line.strip().startswith("---> Using cache"):
                         cached = True
 
+                    last_line = line
                     if cached is None:
                         if "already being pulled by another client" in line or "Pulling repository" in line:
                             cached = False
@@ -490,7 +486,7 @@ class Image(object):
                     if not self.silent_build or not cached:
                         if buf:
                             for thing in buf:
-                                sys.stdout.write(thing)
+                                sys.stdout.write(thing.encode('utf-8', 'replace'))
                                 sys.stdout.flush()
                             buf = []
 
