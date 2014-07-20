@@ -85,3 +85,6 @@ class BadResult(HarpoonError):
 class UserQuit(HarpoonError):
     desc = "User quit the program"
 
+class BadDockerConnection(HarpoonError):
+    desc = "Failed to connect to docker"
+

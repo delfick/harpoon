@@ -1,8 +1,9 @@
-from harpoon.errors import HarpoonError, BadOption
+from harpoon.errors import HarpoonError, BadOption, BadDockerConnection
 from harpoon.overview import Harpoon
 
 from rainbow_logging_handler import RainbowLoggingHandler
 from docker.client import Client as DockerClient
+import requests
 import argparse
 import logging
 import sys
@@ -161,7 +162,13 @@ def docker_context():
     base_url = None
     if "DOCKER_HOST" in os.environ:
         base_url = os.environ["DOCKER_HOST"]
-    return DockerClient(base_url=base_url, timeout=5)
+    client = DockerClient(base_url=base_url, timeout=5)
+    try:
+        info = client.info()
+        log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
+    except requests.exceptions.ConnectionError as error:
+        raise BadDockerConnection(base_url=base_url, error=error)
+    return client
 
 def main(argv=None):
     try:
