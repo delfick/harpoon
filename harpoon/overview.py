@@ -1,5 +1,6 @@
 from harpoon.errors import BadConfiguration, BadTask, NoSuchTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
 from harpoon.imager import Imager
 
@@ -58,12 +59,20 @@ class Harpoon(object):
 
         tasks[task].run(self, kwargs)
 
+    def get_committime_or_mtime(self, location):
+        """Get the commit time of some file or the modified time of of it if can't get from git"""
+        date, status = command_output("git show -s --format=%at -n1 -- {0}".format(os.path.basename(location)), cwd=os.path.dirname(location))
+        if status == 0 and date:
+            return int(date[0])
+        else:
+            return os.path.getmtime(location)
+
     def collect_configuration(self, configuration_file):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
         collected = []
         result = self.read_yaml(configuration_file)
-        result["__mtime__"] = os.path.getmtime(configuration_file)
+        result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
         configuration = MergedOptions.using(result)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
@@ -84,7 +93,7 @@ class Harpoon(object):
                         try:
                             name = os.path.splitext(fle)[0]
                             result = self.read_yaml(location)
-                            result["__mtime__"] = os.path.getmtime(location)
+                            result["__mtime__"] = self.get_committime_or_mtime(location)
                             collected.append({"images": {name: result}})
                         except BadYaml as error:
                             errors.append(error)
