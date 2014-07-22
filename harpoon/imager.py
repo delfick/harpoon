@@ -611,8 +611,10 @@ class Image(object):
                         date, status = command_output("git show -s --format=%at -n1 -- {0}".format(relname), cwd=self.parent_dir)
                         if status != 0 or not date or not date[0].isdigit():
                             log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", self.parent_dir, relname)
-                        date = int(date[0])
-                        os.utime(thing, (date, date))
+
+                        if date:
+                            date = int(date[0])
+                            os.utime(thing, (date, date))
                     t.add(thing, arcname=arcname)
 
             for content, arcname in self.extra_context:
