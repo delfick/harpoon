@@ -40,8 +40,17 @@ run
 make
   Takes in an --image option and will make that image
 
+make_all
+  Makes all the images in layered order
+
+make_pushable
+  Makes all the pushable images and their dependencies
+
 push
   Takes in an --image option, creates your specified image and pushes it
+
+push_all
+  Pushes all the images in layered order
 
 list_tasks
   This is the default task, it will print out what tasks are available.
@@ -50,6 +59,9 @@ list_tasks
 
 show
   Prints out the known images in layered order
+
+show_pushable
+  Prints out the pushable images and their dependencies in layered order
 
 delete_untagged
   This will find the untagged images and delete them.

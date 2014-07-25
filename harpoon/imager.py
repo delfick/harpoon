@@ -892,7 +892,7 @@ class Imager(object):
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
-    def make_image(self, image, chain=None, made=None):
+    def make_image(self, image, chain=None, made=None, ignore_deps=False):
         """Make us an image"""
         if chain is None:
             chain = []
@@ -910,8 +910,9 @@ class Imager(object):
         if image not in images:
             raise NoSuchImage(looking_for=image, available=images.keys())
 
-        for dependency, _ in images[image].dependency_images(images):
-            self.make_image(dependency, chain=chain + [image], made=made)
+        if not ignore_deps:
+            for dependency, _ in images[image].dependency_images(images):
+                self.make_image(dependency, chain=chain + [image], made=made)
 
         # Should have all our dependencies now
         instance = images[image]
@@ -919,11 +920,15 @@ class Imager(object):
         instance.build_image()
         made[image] = True
 
-    @property
-    def layered(self):
+    def layered(self, only_pushable=False):
         """Yield layers of images"""
         images = self.images
-        layers = Layers(images)
+        if only_pushable:
+            operate_on = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
+        else:
+            operate_on = images
+
+        layers = Layers(operate_on, all_images=images)
         layers.add_all_to_layers()
         return layers.layered
 

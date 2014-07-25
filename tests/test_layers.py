@@ -29,10 +29,22 @@ describe HarpoonCase, "ImageLayer":
         self.assertEqual(len(call_list), len(expected))
         mock.assert_has_calls(expected)
 
-    it "takes a dictionary of images":
+    it "takes a list of images":
         images = mock.Mock(name="images")
         layers = Layers(images)
         self.assertIs(layers.images, images)
+
+    it "sets all images to the images it received if not given one otherwise":
+        images = mock.Mock(name="images")
+        layers = Layers(images)
+        self.assertIs(layers.all_images, images)
+
+    it "takes a dictionary for all the images":
+        images = mock.Mock(name="images")
+        all_images = mock.Mock(name="all_images")
+        layers = Layers(images, all_images=all_images)
+        self.assertIs(layers.images, images)
+        self.assertIs(layers.all_images, all_images)
 
     describe "Resetting the instance":
         it "resets layered to an empty list":
@@ -48,19 +60,21 @@ describe HarpoonCase, "ImageLayer":
     describe "Getting layered":
         it "has a property for converting _layered into a list of list of tuples":
             self.instance._layered = [["one"], ["two", "three"], ["four"]]
-            self.instance.images = {"one": 1, "two": 2, "three": 3, "four": 4}
+            self.instance.images = ["one", "two", "three", "four"]
+            self.instance.all_images = {"one": 1, "two": 2, "three": 3, "four": 4}
             self.assertEqual(self.instance.layered, [[("one", 1)], [("two", 2), ("three", 3)], [("four", 4)]])
 
     describe "Adding layers":
         before_each:
-            self.images = {}
+            self.all_images = {}
             for i in range(1, 10):
                 name = "image{0}".format(i)
                 obj = mock.Mock(name=name)
-                obj.dependencies = []
+                obj.dependencies = lambda a: []
                 setattr(self, name, obj)
-                self.images[name] = obj
-            self.instance = Layers(self.images)
+                self.all_images[name] = obj
+            self.images = self.all_images.keys()
+            self.instance = Layers(self.images, self.all_images)
 
         def assertLayeredSame(self, layers, expected):
             if not layers.layered:
@@ -103,14 +117,14 @@ describe HarpoonCase, "ImageLayer":
             self.assertEqual(self.instance._layered, [])
             self.assertEqual(self.instance.accounted, {})
 
-            self.image1.dependencies = []
+            self.image1.dependencies = lambda a: []
             self.instance.add_to_layers("image1")
             self.assertEqual(self.instance._layered, [["image1"]])
             self.assertEqual(self.instance.accounted, {'image1': True})
 
         it "complains about cyclic dependencies":
-            self.image1.dependencies = ['image2']
-            self.image2.dependencies = ['image1']
+            self.image1.dependencies = lambda a: ['image2']
+            self.image2.dependencies = lambda a: ['image1']
 
             with self.fuzzyAssertRaisesError(ImageDepCycle, "image dependency cycle", chain=['image1', 'image2', 'image1']):
                 self.instance.add_to_layers("image1")
@@ -132,21 +146,21 @@ describe HarpoonCase, "ImageLayer":
 
             describe "Simple dependencies":
                 it "adds all images to the first layer if they don't have dependencies":
-                    self.assertLayeredSame(self.instance, [self.images.items()])
+                    self.assertLayeredSame(self.instance, [self.all_images.items()])
 
                 it "adds image after it's dependency if one is specified":
-                    self.image3.dependencies = ["image1"]
-                    cpy = dict(self.images.items())
+                    self.image3.dependencies = lambda a: ["image1"]
+                    cpy = dict(self.all_images.items())
                     del cpy["image3"]
                     expected = [cpy.items(), [("image3", self.image3)]]
                     self.assertLayeredSame(self.instance, expected)
 
                 it "works with images sharing the same dependency":
-                    self.image3.dependencies = ["image1"]
-                    self.image4.dependencies = ["image1"]
-                    self.image5.dependencies = ["image1"]
+                    self.image3.dependencies = lambda a: ["image1"]
+                    self.image4.dependencies = lambda a: ["image1"]
+                    self.image5.dependencies = lambda a: ["image1"]
 
-                    cpy = dict(self.images.items())
+                    cpy = dict(self.all_images.items())
                     del cpy["image3"]
                     del cpy["image4"]
                     del cpy["image5"]
@@ -154,11 +168,12 @@ describe HarpoonCase, "ImageLayer":
                     self.assertLayeredSame(self.instance, expected)
 
             describe "Complex dependencies":
+
                 it "works with more than one level of dependency":
-                    self.image3.dependencies = ["image1"]
-                    self.image4.dependencies = ["image1"]
-                    self.image5.dependencies = ["image1"]
-                    self.image9.dependencies = ["image4"]
+                    self.image3.dependencies = lambda a: ["image1"]
+                    self.image4.dependencies = lambda a: ["image1"]
+                    self.image5.dependencies = lambda a: ["image1"]
+                    self.image9.dependencies = lambda a: ["image4"]
 
                     #      9
                     #      |
@@ -195,12 +210,12 @@ describe HarpoonCase, "ImageLayer":
                     self.assertLayeredSame(self.instance, expected)
 
                 it "handles more complex dependencies":
-                    self.image1.dependencies = ['image2']
-                    self.image2.dependencies = ['image3', 'image4']
-                    self.image4.dependencies = ['image5']
-                    self.image6.dependencies = ['image9']
-                    self.image7.dependencies = ['image6']
-                    self.image9.dependencies = ['image4', 'image8']
+                    self.image1.dependencies = lambda a: ['image2']
+                    self.image2.dependencies = lambda a: ['image3', 'image4']
+                    self.image4.dependencies = lambda a: ['image5']
+                    self.image6.dependencies = lambda a: ['image9']
+                    self.image7.dependencies = lambda a: ['image6']
+                    self.image9.dependencies = lambda a: ['image4', 'image8']
 
                     #                     7
                     #                     |
@@ -240,6 +255,57 @@ describe HarpoonCase, "ImageLayer":
                         , [("image7", self.image7)]
                         ]
 
+                    self.instance.add_all_to_layers()
+                    self.assertCallsSame(self.fake_add_to_layers, expected_calls)
+                    self.assertLayeredSame(self.instance, expected)
+
+                it "only gets layers for the images specified":
+                    self.image1.dependencies = lambda a: ['image2']
+                    self.image2.dependencies = lambda a: ['image3', 'image4']
+                    self.image4.dependencies = lambda a: ['image5']
+                    self.image6.dependencies = lambda a: ['image9']
+                    self.image7.dependencies = lambda a: ['image6']
+                    self.image9.dependencies = lambda a: ['image4', 'image8']
+
+                    #                     7
+                    #                     |
+                    #     1               6
+                    #     |               |
+                    #     2               9
+                    #   /   \          /     \
+                    # /       4   ----        |
+                    # |       |               |
+                    # 3       5               8
+
+                    # Only care about 3, 4 and 6
+                    # So should only get layers for
+                    #
+                    #                     6
+                    #                     |
+                    #                     9
+                    #                  /     \
+                    #         4   ----        |
+                    #         |               |
+                    # 3       5               8
+
+                    expected_calls = [
+                          mock.call("image3")
+                        , mock.call("image4")
+                        , mock.call("image5", ["image4"])
+                        , mock.call("image6")
+                        , mock.call("image9", ["image6"])
+                        , mock.call("image4", ["image6", "image9"])
+                        , mock.call("image8", ["image6", "image9"])
+                        ]
+
+                    expected = [
+                          [("image3", self.image3), ("image5", self.image5), ("image8", self.image8)]
+                        , [("image4", self.image4)]
+                        , [("image9", self.image9)]
+                        , [("image6", self.image6)]
+                        ]
+
+                    self.instance.images = ["image3", "image4", "image6"]
                     self.instance.add_all_to_layers()
                     self.assertCallsSame(self.fake_add_to_layers, expected_calls)
                     self.assertLayeredSame(self.instance, expected)

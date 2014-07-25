@@ -18,8 +18,12 @@ class Layers(object):
 
     Cyclic dependencies will be complained about.
     """
-    def __init__(self, images):
+    def __init__(self, images, all_images=None):
         self.images = images
+        self.all_images = all_images
+        if self.all_images is None:
+            self.all_images = images
+
         self.accounted = {}
         self._layered = []
 
@@ -35,7 +39,7 @@ class Layers(object):
         for layer in self._layered:
             nxt = []
             for name in layer:
-                nxt.append((name, self.images[name]))
+                nxt.append((name, self.all_images[name]))
             result.append(nxt)
         return result
 
@@ -56,7 +60,7 @@ class Layers(object):
             chain = []
         chain = chain + [name]
 
-        for dependency in sorted(self.images[name].dependencies(self.images)):
+        for dependency in sorted(self.all_images[name].dependencies(self.all_images)):
             dep_chain = list(chain)
             if dependency in chain:
                 dep_chain.append(dependency)
@@ -64,7 +68,7 @@ class Layers(object):
             self.add_to_layers(dependency, dep_chain)
 
         layer = 0
-        for dependency in self.images[name].dependencies(self.images):
+        for dependency in self.all_images[name].dependencies(self.all_images):
             for index, deps in enumerate(layered):
                 if dependency in deps:
                     if layer <= index:

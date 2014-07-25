@@ -54,11 +54,34 @@ def push(harpoon, image=None, **kwargs):
     pushable[image].push()
 
 @a_task
+def push_all(harpoon, **kwargs):
+    """Push all the images"""
+    make_all(harpoon, push=True)
+
+@a_task
 def make(harpoon, image=None, **kwargs):
     """Just create an image"""
     images, image = determine_image(harpoon, image)
     harpoon.imager.make_image(image)
     print("Created image {0}".format(images[image].image_name))
+
+@a_task
+def make_all(harpoon, push=False, only_pushable=False, **kwargs):
+    """Creates all the images in layered order"""
+    if push:
+        only_pushable = True
+
+    for layer in harpoon.imager.layered(only_pushable=only_pushable):
+        for image_name, image in layer:
+            harpoon.imager.make_image(image_name, ignore_deps=True)
+            print("Created image {0}".format(image.image_name))
+            if push and image.heira_formatted("image_index", default=None):
+                image.push()
+
+@a_task
+def make_pushable(harpoon, **kwargs):
+    """Make only the pushable images and their dependencies"""
+    make_all(harpoon, push=False, only_pushable=True)
 
 @a_task
 def run_task(harpoon, image=None, command=None, bash=None, env=None, volumes=None, ports=None, **kwargs):
@@ -98,11 +121,16 @@ def delete_untagged(harpoon, **kwargs):
         log.info("Didn't find any untagged images to delete!")
 
 @a_task
-def show(harpoon, **kwargs):
+def show(harpoon, only_pushable=False, **kwargs):
     """Show what images we have"""
-    for index, layer in enumerate(harpoon.imager.layered):
+    for index, layer in enumerate(harpoon.imager.layered(only_pushable=only_pushable)):
         print("Layer {0}".format(index))
         for _, image in layer:
             print("    {0}".format(image.display_line()))
         print("")
+
+@a_task
+def show_pushable(harpoon, **kwargs):
+    """Show what images we have"""
+    show(harpoon, only_pushable=True)
 
