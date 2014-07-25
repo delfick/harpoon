@@ -48,6 +48,9 @@ list_tasks
 
   Including these default tasks and any custom tasks you have defined.
 
+show
+  Prints out the known images in layered order
+
 delete_untagged
   This will find the untagged images and delete them.
 

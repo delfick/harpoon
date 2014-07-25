@@ -4,6 +4,7 @@ from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadIma
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
 from harpoon.processes import command_output
+from harpoon.layers import Layers
 
 from docker.errors import APIError as DockerAPIError
 from option_merge import MergedOptions
@@ -66,6 +67,11 @@ class Image(object):
             raise BadImage("The first command isn't a FROM statement!", found=first_command, image=self.name)
 
         return first_command.split(" ", 1)[1]
+
+    def dependencies(self, images):
+        """Yield just the dependency images"""
+        for image, _ in self.dependency_images(images):
+            yield image
 
     def dependency_images(self, images, ignore_parent=False):
         """
@@ -445,8 +451,7 @@ class Image(object):
             try:
                 for line in self.docker_context.build(fileobj=context, custom_context=True, tag=self.image_name, stream=True, rm=True):
                     line_detail = None
-                    try:
-                        line_detail = json.loads(line)
+                    try: line_detail = json.loads(line)
                     except (ValueError, TypeError) as error:
                         log.warning("line from docker wasn't json", got=line, error=error)
 
@@ -846,6 +851,13 @@ class Image(object):
         else:
             raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
+    def display_line(self):
+        """A single line describing this image"""
+        msg = ["Image {0}".format(self.name)]
+        if self.heira_formatted("image_index", default=None):
+            msg.append("Pushes to {0}".format(self.image_name))
+        return ' : '.join(msg)
+
 class Imager(object):
     """Knows how to build and run docker images"""
     def __init__(self, configuration, docker_context, interactive=True, silent_build=False):
@@ -906,4 +918,12 @@ class Imager(object):
         log.info("Making image for '%s' (%s) - FROM %s", instance.name, instance.image_name, instance.parent_image)
         instance.build_image()
         made[image] = True
+
+    @property
+    def layered(self):
+        """Yield layers of images"""
+        images = self.images
+        layers = Layers(images)
+        layers.add_all_to_layers()
+        return layers.layered
 

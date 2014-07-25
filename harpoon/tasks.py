@@ -1,4 +1,3 @@
-from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
@@ -97,4 +96,13 @@ def delete_untagged(harpoon, **kwargs):
 
     if not found:
         log.info("Didn't find any untagged images to delete!")
+
+@a_task
+def show(harpoon, **kwargs):
+    """Show what images we have"""
+    for index, layer in enumerate(harpoon.imager.layered):
+        print("Layer {0}".format(index))
+        for _, image in layer:
+            print("    {0}".format(image.display_line()))
+        print("")
 

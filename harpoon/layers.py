@@ -56,7 +56,7 @@ class Layers(object):
             chain = []
         chain = chain + [name]
 
-        for dependency in sorted(self.images[name].dependencies):
+        for dependency in sorted(self.images[name].dependencies(self.images)):
             dep_chain = list(chain)
             if dependency in chain:
                 dep_chain.append(dependency)
@@ -64,7 +64,7 @@ class Layers(object):
             self.add_to_layers(dependency, dep_chain)
 
         layer = 0
-        for dependency in self.images[name].dependencies:
+        for dependency in self.images[name].dependencies(self.images):
             for index, deps in enumerate(layered):
                 if dependency in deps:
                     if layer <= index:

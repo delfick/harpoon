@@ -116,6 +116,7 @@ class Harpoon(object):
             , "run": Task(available_tasks["run_task"], description="Run a command in one of the containers")
             , "make": Task(available_tasks["make"], description="Make one of the images")
             , "push": Task(available_tasks["push"], description="Push an image")
+            , "show": Task(available_tasks["show"], description="Show the available images")
             , "list_tasks": Task(available_tasks["list_tasks"], description="List the available tasks")
             , "delete_untagged": Task(available_tasks["delete_untagged"], description="Delete untagged images")
             }
