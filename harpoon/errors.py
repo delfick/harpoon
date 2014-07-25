@@ -88,3 +88,6 @@ class UserQuit(HarpoonError):
 class BadDockerConnection(HarpoonError):
     desc = "Failed to connect to docker"
 
+class ImageDepCycle(HarpoonError):
+    desc = "Image dependency cycle"
+
