@@ -119,6 +119,9 @@ class Harpoon(object):
             , "make_all": Task(available_tasks["make_all"], description="Make all of the images")
             , "make_pushable": Task(available_tasks["make_pushable"], description="Make only the pushable images and their dependencies")
 
+            , "pull": Task(available_tasks["pull"], description="Pull one of the images")
+            , "pull_all": Task(available_tasks["pull_all"], description="Pull all of the images")
+
             , "push": Task(available_tasks["push"], description="Push one of the images")
             , "push_all": Task(available_tasks["push_all"], description="Push all of the images")
 

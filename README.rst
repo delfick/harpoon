@@ -46,6 +46,13 @@ make_all
 make_pushable
   Makes all the pushable images and their dependencies
 
+pull
+  Takes in an --image option, and pulls in the corresponding image.
+  (Only if it has a image_index option)
+
+pull_all
+  Pulls in all the images in layered order
+
 push
   Takes in an --image option, creates your specified image and pushes it
 

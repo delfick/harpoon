@@ -130,9 +130,20 @@ class Image(object):
 
     def push(self):
         """Push this image"""
+        self.push_or_pull("push")
+
+    def pull(self):
+        """Push this image"""
+        self.push_or_pull("pull")
+
+    def push_or_pull(self, action=None):
+        """Push or pull this image"""
+        if action not in ("push", "pull"):
+            raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
+
         if not self.heira_formatted("image_index", default=None):
             raise BadImage("Can't push without an image_index configuration", image=self.name)
-        for line in self.docker_context.push(self.image_name, stream=True):
+        for line in getattr(self.docker_context, action)(self.image_name, stream=True):
             line_detail = None
             try:
                 line_detail = json.loads(line)
@@ -141,7 +152,7 @@ class Image(object):
 
             if line_detail:
                 if "errorDetail" in line_detail:
-                    raise FailedImage("Failed to push an image", image=self.name, image_name=self.image_name, msg=line_detail["errorDetail"].get("message", line_detail["errorDetail"]))
+                    raise FailedImage("Failed to {0} an image".format(action), image=self.name, image_name=self.image_name, msg=line_detail["errorDetail"].get("message", line_detail["errorDetail"]))
                 if "status" in line_detail:
                     line = line_detail["status"].strip()
 
