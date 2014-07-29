@@ -162,7 +162,7 @@ def docker_context():
     base_url = None
     if "DOCKER_HOST" in os.environ:
         base_url = os.environ["DOCKER_HOST"]
-    client = DockerClient(base_url=base_url, timeout=5)
+    client = DockerClient(base_url=base_url, timeout=10)
     try:
         info = client.info()
         log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
