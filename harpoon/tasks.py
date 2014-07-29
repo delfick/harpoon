@@ -64,8 +64,8 @@ def pull(harpoon, image=None, **kwargs):
     images, image = determine_image(harpoon, image)
     pullable = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
     if image not in pullable:
-        raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pushable.keys())
-    pushable[image].pull()
+        raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pullable.keys())
+    pullable[image].pull()
 
 @a_task
 def pull_all(harpoon, **kwargs):
