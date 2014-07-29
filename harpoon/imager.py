@@ -287,7 +287,7 @@ class Image(object):
         if volumes:
             log.info("\tUsing volumes\tvolumes=%s", volumes)
         if env:
-            log.info("\tUsing environment\tenv=%s", env)
+            log.info("\tUsing environment\tenv=%s", [thing.split('=', 1)[0] for thing in env])
         if ports:
             log.info("\tUsing ports\tports=%s", ports.keys())
         container = self.docker_context.create_container(image_name
