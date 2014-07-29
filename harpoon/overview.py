@@ -48,10 +48,11 @@ class Harpoon(object):
 
         if "harpoon" not in self.configuration:
             self.configuration["harpoon"] = {}
-        self.configuration["harpoon"]["env"] = env
-        self.configuration["harpoon"]["ports"] = ports
-        self.configuration["harpoon"]["keep_replaced"] = keep_replaced
-        self.configuration["harpoon"]["no_intervention"] = no_intervention
+
+        for (name, val) in [
+            ("env", env), ("ports", ports), ("keep_replaced", keep_replaced), ("no_intervention", no_intervention)
+        ]:
+            self.configuration["harpoon"][name] = val or self.configuration["harpoon"].get(name)
 
         tasks = self.find_tasks()
         if task not in tasks:

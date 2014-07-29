@@ -36,7 +36,7 @@ def find_missing_env(env):
     missing = []
     if isinstance(env, list):
         for thing in env:
-            if '=' not in thing:
+            if '=' not in thing and ":" not in thing:
                 if thing not in os.environ:
                     missing.append(thing)
 

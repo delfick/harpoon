@@ -181,8 +181,11 @@ class Image(object):
 
         result = []
         for thing in env:
-            if '=' in env:
+            if '=' in thing:
                 result.append(thing)
+            elif ":" in thing:
+                name, dflt = thing.split(":", 1)
+                result.append("{0}={1}".format(name, os.environ.get(name, dflt)))
             else:
                 result.append("{0}={1}".format(thing, os.environ[thing]))
         return result

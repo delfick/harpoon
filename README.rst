@@ -360,8 +360,23 @@ escaped brackets.
 
 You can also specify environment variables via the --env switch.
 
-Also, you can specify "harpoon.env" as a list at the root of the configuration
-or in the configuration for each image.
+Also, you can specify "harpoon.env", "images.<image>.harpoon.env" or
+"images.<image>.tasks.<task>.env" as a list of environment variables you want
+in your image.
+
+The syntax for the variables are:
+
+  VARIABLE
+    Will complain if this variable isn't in your current environment and will
+    expose this environment variable to the container
+
+  VARIABLE=VALUE
+    Will set this variable to VALUE regardless of whether it's in your environment
+    or not
+
+  VARIABLE:DEFAULT
+    Will set this variable to DEFAULT if it's not in your current environment,
+    otherwise it will use the value in your environment
 
 Dockerfile commands
 -------------------
