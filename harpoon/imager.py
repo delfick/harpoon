@@ -272,7 +272,7 @@ class Image(object):
                 name, bound = volume.split(":", 1)
                 permissions = "rw"
                 if ":" in bound:
-                    bound, permissions = volume.split(":", 1)
+                    bound, permissions = bound.split(":", 1)
                 binds[name] = {"bind": bound, permissions: True}
                 volume_names.append(bound)
                 if not os.path.exists(name):
