@@ -8,7 +8,7 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "rainbow_logging_handler"
+      [ "rainbow_logging_handler==2.2.0"
       , "option_merge"
       , "docker-py==0.3.2"
       , "humanize"
