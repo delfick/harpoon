@@ -8,12 +8,12 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "rainbow_logging_handler==2.2.0"
+      [ "rainbow_logging_handler==2.2.2"
       , "option_merge"
-      , "docker-py==0.3.2"
+      , "docker-py==0.4.0"
       , "humanize"
       , "glob2"
-      , "dockerpty==0.2.0"
+      , "dockerpty==0.2.3"
       , "pyYaml==3.10"
       ]
 
