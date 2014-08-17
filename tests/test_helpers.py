@@ -132,3 +132,130 @@ describe HarpoonCase, "until":
         self.assertEqual(done, [1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", "break"])
         self.assertEqual(fake_time.sleep.mock_calls, [mock.call(step), mock.call(step), mock.call(step), mock.call(step), mock.call(step)])
 
+describe HarpoonCase, "Memoized_property":
+    it "takes in a function and sets name and cache_name":
+        def a_func_blah(): pass
+        prop = memoized_property(a_func_blah)
+        self.assertIs(prop.func, a_func_blah)
+        self.assertEqual(prop.name, "a_func_blah")
+        self.assertEqual(prop.cache_name, "_a_func_blah")
+
+    it "returns the memoized_property if accessed from the owner":
+        owner = type("owner", (object, ), {})
+        def a_func_blah(): pass
+        prop = memoized_property(a_func_blah)
+        self.assertIs(prop.__get__(None, owner), prop)
+
+        class Things(object):
+            @memoized_property
+            def blah(self): pass
+        self.assertEqual(Things.blah.name, "blah")
+
+    it "caches the value on the instance":
+        processed = []
+        value = mock.Mock(name="value")
+        class Things(object):
+            @memoized_property
+            def yeap(self):
+                processed.append(1)
+                return value
+        instance = Things()
+
+        self.assertEqual(processed, [])
+        assert not hasattr(instance, "_yeap")
+
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        # For proof it's not calling yeap again
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        # And proof it's using the _yeap value
+        value2 = mock.Mock(name="value2")
+        instance._yeap = value2
+        self.assertIs(instance.yeap, value2)
+        self.assertEqual(processed, [1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value2)
+
+    it "recomputes the value if the cache isn't there anymore":
+        processed = []
+        value = mock.Mock(name="value")
+        class Things(object):
+            @memoized_property
+            def yeap(self):
+                processed.append(1)
+                return value
+        instance = Things()
+
+        self.assertEqual(processed, [])
+        assert not hasattr(instance, "_yeap")
+
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        # For proof it's not calling yeap again
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        # Unless the value isn't there anymore
+        del instance._yeap
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [1, 1])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+    it "sets the cache value using setattr syntax":
+        processed = []
+        value = mock.Mock(name="value")
+        class Things(object):
+            @memoized_property
+            def yeap(self):
+                processed.append(1)
+                return value
+        instance = Things()
+
+        self.assertEqual(processed, [])
+        assert not hasattr(instance, "_yeap")
+
+        instance.yeap = value
+        self.assertIs(instance.yeap, value)
+        self.assertEqual(processed, [])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        value2 = mock.Mock(name="value2")
+        instance.yeap = value2
+        self.assertIs(instance.yeap, value2)
+        self.assertEqual(processed, [])
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value2)
+
+    it "deletes the cache with del syntax":
+        value = mock.Mock(name="value")
+        class Things(object):
+            @memoized_property
+            def yeap(self):
+                processed.append(1)
+                return value
+        instance = Things()
+
+        assert not hasattr(instance, "_yeap")
+
+        instance.yeap = value
+        self.assertIs(instance.yeap, value)
+        assert hasattr(instance, '_yeap')
+        self.assertEqual(instance._yeap, value)
+
+        del instance.yeap
+        assert not hasattr(instance, "_yeap")
+
