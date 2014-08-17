@@ -1,8 +1,6 @@
-from docker.errors import APIError as DockerAPIError
 from contextlib import contextmanager
 import tempfile
 import logging
-import socket
 import time
 import os
 
@@ -33,6 +31,6 @@ def until(timeout=10, step=0.5, action=None, silent=False):
                 log.error("Timedout %s", action)
             return
         else:
-            time.sleep(0.5)
+            time.sleep(step)
             yield
 
