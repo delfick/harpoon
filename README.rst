@@ -121,6 +121,9 @@ Harpoon reads everything from a yaml configuration. By default this is a
 ``harpoon.yml`` file in the current directory, but may be changed with the
 --harpoon-config option.
 
+It will also read from ~/.harpoon.yml and will be overridden by anything in the
+configuration file you've specified.
+
 This yaml file looks like the following::
 
   ---

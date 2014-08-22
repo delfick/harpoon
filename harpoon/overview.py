@@ -100,7 +100,22 @@ class Harpoon(object):
                         except BadYaml as error:
                             errors.append(error)
 
-        return MergedOptions.using(configuration, *collected)
+        return MergedOptions.using(self.home_dir_configuration(), configuration, *collected)
+
+    def home_dir_configuration(self):
+        """Return a dictionary from ~/.harpoon.yml"""
+        location = os.path.expanduser("~/.harpoon.yml")
+        if not os.path.exists(location):
+            return {}
+
+        result = self.read_yaml(location)
+        if not result:
+            result = {}
+        if not isinstance(result, dict):
+            raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
+
+        result["__mtime__"] = self.get_committime_or_mtime(location)
+        return result
 
     def read_yaml(self, filepath):
         """Read in a yaml file"""
