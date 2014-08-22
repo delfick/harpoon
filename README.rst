@@ -346,9 +346,8 @@ For example::
 
       tasks:
         something:
-          - run_task
-          - []
-          - bash: "echo {THINGS:env} > /tmp"
+          options:
+            bash: "echo {THINGS:env} > /tmp"
             env:
               - THINGS
 
@@ -607,25 +606,29 @@ For example::
         ...
         - CMD startup_app
 
-      tasks:
+       tasks:
         run_app:
-          spec: run_task
           description: "Startup the app"
 
         run_tests:
-          spec:
-            - run_task
-            - []
-            - bash: cd /app && rake tests
           description: Run the unit tests
+          options:
+            bash: cd /app && rake tests
 
-Each task needs a ``spec`` and can be given an optional ``description``.
+Each task has no required options but can be configured with ``spec``, ``options``
+, ``description`` and ``label``.
 
-If the spec is just a string, then it will call that task and give the ``image``
-option as the name of this image.
+If ``spec`` or ``options`` are not specified then the task will just create the
+image it's defined under and run the default command.
+
+If the ``spec`` is specified and is just a string, then it will call that task
+and give the ``image`` option as the name of this image.
 
 If the spec is a list, then it is (task_name, args, kwargs) and the python code
 will just do a ``task_name(*args, **kwargs)``.
+
+If ``options`` is specified, then it's the equivalent of saying to call
+``run_task`` against that image with ``options`` as the kwargs.
 
 The available tasks are defined in ``harpoon.tasks`` and are push, make, run_task
 and list_tasks.
@@ -643,10 +646,8 @@ You may also specify extra options for your tasks::
         ...
       tasks:
         something:
-          spec:
-            - run_task
-            - []
-            - bash: cd /app && ./some_script.sh {$@}
+          options:
+            bash: cd /app && ./some_script.sh {$@}
 
 Then say you run harpoon like::
 

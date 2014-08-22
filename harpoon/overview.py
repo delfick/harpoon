@@ -154,9 +154,14 @@ class Harpoon(object):
             if isinstance(val, dict) or isinstance(val, MergedOptions):
                 label = val.get("label", label)
                 description = val.get("description", "")
-                if "spec" not in val:
-                    raise BadTask("Dictionary task needs to specify spec", found=val.keys())
-                val = val.get("spec")
+
+                if "options" in val and "spec" in val:
+                    raise BadTask("Dictionary task must specify spec or options, not both", found=val.keys())
+
+                if "options" in val:
+                    val = ["run_task", [], val["options"]]
+                else:
+                    val = val.get("spec", "run_task")
 
             if isinstance(val, basestring):
                 task_name = val
