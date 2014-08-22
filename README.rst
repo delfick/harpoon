@@ -96,6 +96,14 @@ Is equivalent to::
 
     $ harpoon run my_amazing_image
 
+Logging colors
+--------------
+
+If you find the logging output doesn't look great on your terminal, you can
+try setting the ``term_colors`` option in ``harpoon.yml`` to either ``light`` or
+``dark``. Note that not much effort has been put into this and the only difference
+is the color of the ``INFO`` level logging messages.
+
 Failed build intervention
 -------------------------
 

@@ -5,8 +5,11 @@ from harpoon.tasks import available_tasks
 from harpoon.imager import Imager
 
 from option_merge import MergedOptions
+import logging
 import yaml
 import os
+
+log = logging.getLogger("harpoon.executor")
 
 class Task(object):
     def __init__(self, func, args=None, kwargs=None, description=None, label="Harpoon"):
@@ -29,13 +32,15 @@ class Task(object):
         return self.func(harpoon, *args, **opts)
 
 class Harpoon(object):
-    def __init__(self, configuration_file, docker_context, silent_build=False, interactive=True):
+    def __init__(self, configuration_file, docker_context, silent_build=False, interactive=True, logging_handler=None):
         self.interactive = interactive
         self.docker_context = docker_context
+        self.logging_handler = logging_handler
 
         self.configuration = self.collect_configuration(configuration_file)
         self.configuration_folder = os.path.dirname(os.path.abspath(configuration_file))
         self.imager = Imager(self.configuration, docker_context, interactive=self.interactive, silent_build=silent_build)
+        self.setup_logging_theme()
 
     def start(self, task, extra=None, keep_replaced=False, no_intervention=False, env=None, ports=None, **kwargs):
         """Do the harpooning"""
@@ -101,6 +106,29 @@ class Harpoon(object):
                             errors.append(error)
 
         return MergedOptions.using(self.home_dir_configuration(), configuration, *collected)
+
+    def setup_logging_theme(self):
+        """Setup a logging theme"""
+        if "term_colors" not in self.configuration:
+            return
+
+        if not getattr(self, "logging_handler", None):
+            log.warning("Told to set term_colors but don't have a logging_handler to change")
+            return
+
+        colors = self.configuration.get("term_colors")
+        if not colors:
+            return
+
+        if colors not in ("light", "dark"):
+            log.warning("Told to set colors to a theme we don't have\tgot=%s\thave=[light, dark]", colors)
+            return
+
+        # Haven't put much effort into actually working out more than just the message colour
+        if colors == "light":
+            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('cyan', None, False)
+        else:
+            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('blue', None, False)
 
     def home_dir_configuration(self):
         """Return a dictionary from ~/.harpoon.yml"""

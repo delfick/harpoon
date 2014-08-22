@@ -27,6 +27,7 @@ def setup_logging(verbose=False, silent=False):
         log.setLevel(logging.ERROR)
 
     logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose])
+    return handler
 
 class CliParser(object):
     """Knows what argv looks like"""
@@ -173,11 +174,11 @@ def docker_context():
 def main(argv=None):
     try:
         args, extra = CliParser().parse_args(argv)
-        setup_logging(verbose=args.verbose, silent=args.silent)
+        handler = setup_logging(verbose=args.verbose, silent=args.silent)
 
         kwargs = vars(args)
         kwargs["extra"] = extra
-        Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), interactive=args.interactive, silent_build=args.silent_build).start(**kwargs)
+        Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), interactive=args.interactive, silent_build=args.silent_build, logging_handler=handler).start(**kwargs)
     except HarpoonError as error:
         print ""
         print "!" * 80
