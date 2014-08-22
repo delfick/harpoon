@@ -9,9 +9,10 @@ import yaml
 import os
 
 class Task(object):
-    def __init__(self, func, args=None, kwargs=None, description=None):
+    def __init__(self, func, args=None, kwargs=None, description=None, label="Harpoon"):
         self.func = func
         self.args = args
+        self.label = label
         self.kwargs = kwargs
         self.description = description
 
@@ -146,10 +147,12 @@ class Harpoon(object):
 
         for key, val in found.items():
             args = None
+            label = "Project"
             kwargs = None
             task_path = "{0}.{1}".format(path, key)
             description = ""
             if isinstance(val, dict) or isinstance(val, MergedOptions):
+                label = val.get("label", label)
                 description = val.get("description", "")
                 if "spec" not in val:
                     raise BadTask("Dictionary task needs to specify spec", found=val.keys())
@@ -180,7 +183,7 @@ class Harpoon(object):
 
                 if image not in kwargs and image is not None:
                     kwargs['image'] = image
-                tasks[key] = Task(available_tasks[task_name], args, kwargs, description=description)
+                tasks[key] = Task(available_tasks[task_name], args, kwargs, description=description, label=label)
 
         if errors:
             raise BadTask(path=path, _errors=errors)
