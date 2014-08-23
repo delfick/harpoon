@@ -1,6 +1,7 @@
 """
     Create a base class that includes all the mixins in the mixins folder
 """
+from delfick_error import DelfickErrorTestMixin
 import pkg_resources
 import unittest
 import os
@@ -9,7 +10,7 @@ this_dir = os.path.dirname(__file__)
 mixin_dir = os.path.join(this_dir, 'mixins')
 harpoon_dir = os.path.abspath(pkg_resources.resource_filename("harpoon", ""))
 
-bases = [unittest.TestCase]
+bases = [unittest.TestCase, DelfickErrorTestMixin]
 for name in os.listdir(mixin_dir):
     if not name or name.startswith("_") or not name.endswith('.py'):
         continue
@@ -17,7 +18,7 @@ for name in os.listdir(mixin_dir):
     # Name convention is <Name>AssertionsMixin
     name = name[:-3]
     mixin = "%sAssertionsMixin" % name.capitalize()
-    imported = __import__("mixins.{0}".format(name), globals(), locals(), [mixin], -1)
+    imported = __import__("mixins.{0}".format(name), globals(), locals(), [mixin], 1)
     bases.append(getattr(imported, mixin))
 
 def harpoon_case_teardown(self):

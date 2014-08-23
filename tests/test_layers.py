@@ -6,6 +6,13 @@ from harpoon.layers import Layers
 from noseOfYeti.tokeniser.support import noy_sup_setUp, noy_sup_tearDown
 from tests.helpers import HarpoonCase
 import mock
+import six
+
+if six.PY3:
+    from itertools import zip_longest
+else:
+    def zip_longest(lst1, lst2):
+        return map(None, lst1, lst2)
 
 import nose
 
@@ -18,13 +25,13 @@ describe HarpoonCase, "ImageLayer":
         self.instance = Layers(self.images)
 
     def assertCallsSame(self, mock, expected):
-        print "Printing calls as <done> || <expected>"
-        print "----"
+        print("Printing calls as <done> || <expected>")
+        print("----")
 
         call_list = mock.call_args_list
-        for did, wanted in map(None, call_list, expected):
-            print "     {0} || {1}".format(did, wanted)
-            print "--"
+        for did, wanted in zip_longest(call_list, expected):
+            print("     {0} || {1}".format(did, wanted))
+            print("--")
 
         self.assertEqual(len(call_list), len(expected))
         mock.assert_has_calls(expected)
@@ -81,15 +88,15 @@ describe HarpoonCase, "ImageLayer":
                 layers.add_all_to_layers()
             created = layers.layered
 
-            print "Printing expected and created as each layer on a new line."
-            print "    the line starting with || is the expected"
-            print "    the line starting with >> is the created"
-            print "----"
+            print("Printing expected and created as each layer on a new line.")
+            print("    the line starting with || is the expected")
+            print("    the line starting with >> is the created")
+            print("----")
 
-            for expcted, crted in map(None, expected, created):
-                print "    || {0}".format(sorted(expcted) if expcted else None)
-                print "    >> {0}".format(sorted(crted) if crted else None)
-                print "--"
+            for expcted, crted in zip_longest(expected, created):
+                print("    || {0}".format(sorted(expcted) if expcted else None))
+                print("    >> {0}".format(sorted(crted) if crted else None))
+                print("--")
 
             error_msg = "Expected created layered to have {0} layers. Only has {1}".format(len(expected), len(created))
             self.assertEqual(len(created), len(expected), error_msg)
@@ -126,11 +133,11 @@ describe HarpoonCase, "ImageLayer":
             self.image1.dependencies = lambda a: ['image2']
             self.image2.dependencies = lambda a: ['image1']
 
-            with self.fuzzyAssertRaisesError(ImageDepCycle, "image dependency cycle", chain=['image1', 'image2', 'image1']):
+            with self.fuzzyAssertRaisesError(ImageDepCycle, chain=['image1', 'image2', 'image1']):
                 self.instance.add_to_layers("image1")
 
             self.instance.reset()
-            with self.fuzzyAssertRaisesError(ImageDepCycle, "image dependency cycle", chain=['image2', 'image1', 'image2']):
+            with self.fuzzyAssertRaisesError(ImageDepCycle, chain=['image2', 'image1', 'image2']):
                 self.instance.add_to_layers("image2")
 
         describe "Dependencies":

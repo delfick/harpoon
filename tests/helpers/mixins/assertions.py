@@ -48,8 +48,8 @@ class AssertionsAssertionsMixin:
                 if errors:
                     self.assertEqual(sorted(error.errors), sorted(errors))
             except AssertionError:
-                print "Got error: {0}".format(error)
-                print "Expected: {0}: {1}: {2}".format(expected_kls, expected_msg_regex, values)
+                print("Got error: {0}".format(error))
+                print("Expected: {0}: {1}: {2}".format(expected_kls, expected_msg_regex, values))
                 raise
         else:
             assert False, "Expected an exception to be raised\n\texpected_kls: {0}\n\texpected_msg_regex: {1}\n\thave_atleast: {2}".format(

@@ -1,0 +1,15 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.4"
+cache:
+  directories:
+    - $HOME/.pip-cache/
+install:
+  - pip install -e . --use-mirrors --download-cache $HOME/.pip-cache/
+  - pip install -e '.[tests]' --use-mirrors --download-cache $HOME/.pip-cache/
+
+script:
+  - ./test.sh
+
