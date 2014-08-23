@@ -1,8 +1,9 @@
-from harpoon.errors import HarpoonError, BadOption, BadDockerConnection
+from harpoon.errors import BadOption, BadDockerConnection
 from harpoon.overview import Harpoon
 
 from rainbow_logging_handler import RainbowLoggingHandler
 from docker.client import Client as DockerClient
+from delfick_error import DelfickError
 import requests
 import argparse
 import logging
@@ -179,7 +180,7 @@ def main(argv=None):
         kwargs = vars(args)
         kwargs["extra"] = extra
         Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), interactive=args.interactive, silent_build=args.silent_build, logging_handler=handler).start(**kwargs)
-    except HarpoonError as error:
+    except DelfickError as error:
         print ""
         print "!" * 80
         print "Something went wrong! -- {0}".format(error.__class__.__name__)
