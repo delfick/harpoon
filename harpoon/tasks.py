@@ -2,7 +2,6 @@ from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
 import itertools
-import operator
 import logging
 import os
 
