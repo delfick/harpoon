@@ -626,28 +626,22 @@ For example::
           options:
             bash: cd /app && rake tests
 
-Each task has no required options but can be configured with ``spec``, ``options``
+Each task has no required options but can be configured with ``action``, ``options``
 , ``description`` and ``label``.
 
-If ``spec`` or ``options`` are not specified then the task will just create the
+If ``action`` or ``options`` are not specified then the task will just create the
 image it's defined under and run the default command.
 
-If the ``spec`` is specified and is just a string, then it will call that task
-and give the ``image`` option as the name of this image.
-
-If the spec is a list, then it is (task_name, args, kwargs) and the python code
-will just do a ``task_name(*args, **kwargs)``.
-
-If ``options`` is specified, then it's the equivalent of saying to call
-``run_task`` against that image with ``options`` as the kwargs.
-
-The available tasks are defined in ``harpoon.tasks`` and are push, make, run_task
-and list_tasks.
+If the ``action`` is specified and is just a string, then it will call that action
+and give the ``image`` option as the name of this image. The available tasks are
+those in https://github.com/realestate-com-au/harpoon/blob/master/harpoon/tasks.py
+with a ``a_task`` decorator. For most cases, you just need the ``run`` task which
+is the default value for ``action``.
 
 The tasks defined in these definitions will be shown when you do
 "harpoon --task list_tasks".
 
-You may also specify extra options for your tasks::
+You may also use extra arbitrary cli options for your tasks with ``{$@}``::
 
   ---
 
