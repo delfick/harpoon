@@ -174,7 +174,7 @@ class Harpoon(object):
             , t("delete_untagged", "Delete untagged images")
             ])
 
-    def interpret_tasks(self, configuration, image, path):
+    def interpret_tasks(self, configuration, path):
         """Find the tasks in the specified key"""
         if path not in configuration:
             return {}
@@ -187,8 +187,12 @@ class Harpoon(object):
             configuration = self.configuration
 
         tasks = self.default_tasks()
-        tasks.update(self.interpret_tasks(configuration, None, "tasks"))
+        tasks.update(self.interpret_tasks(configuration, "tasks"))
         for image in configuration["images"]:
-            tasks.update(self.interpret_tasks(configuration, image, "images.{0}.tasks".format(image)))
+            nxt = self.interpret_tasks(configuration, "images.{0}.tasks".format(image))
+            for task in nxt.values():
+                task.add_option_defaults(image=image)
+            tasks.update(nxt)
+
         return tasks
 
