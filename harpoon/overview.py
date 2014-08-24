@@ -1,35 +1,18 @@
-from harpoon.errors import BadConfiguration, BadTask, NoSuchTask, BadYaml
+from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
+from harpoon.option_spec.objs import Task
 from harpoon.imager import Imager
 
 from option_merge import MergedOptions
+from input_algorithms.meta import Meta
 import logging
 import yaml
 import os
 
 log = logging.getLogger("harpoon.executor")
-
-class Task(object):
-    def __init__(self, func, args=None, kwargs=None, description=None, label="Harpoon"):
-        self.func = func
-        self.args = args
-        self.label = label
-        self.kwargs = kwargs
-        self.description = description
-
-    def run(self, harpoon, other_args):
-        """Run this task"""
-        args = self.args
-        kwargs = self.kwargs
-        if args is None:
-            args = ()
-        if kwargs is None:
-            kwargs = {}
-        opts = other_args
-        opts.update(kwargs)
-        return self.func(harpoon, *args, **opts)
 
 class Harpoon(object):
     def __init__(self, configuration_file, docker_context, silent_build=False, interactive=True, logging_handler=None):
@@ -65,6 +48,61 @@ class Harpoon(object):
             raise BadTask("Unknown task", task=task, available=tasks.keys())
 
         tasks[task].run(self, kwargs)
+
+    ########################
+    ###   THEME
+    ########################
+
+    def setup_logging_theme(self):
+        """Setup a logging theme"""
+        if "term_colors" not in self.configuration:
+            return
+
+        if not getattr(self, "logging_handler", None):
+            log.warning("Told to set term_colors but don't have a logging_handler to change")
+            return
+
+        colors = self.configuration.get("term_colors")
+        if not colors:
+            return
+
+        if colors not in ("light", "dark"):
+            log.warning("Told to set colors to a theme we don't have\tgot=%s\thave=[light, dark]", colors)
+            return
+
+        # Haven't put much effort into actually working out more than just the message colour
+        if colors == "light":
+            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('cyan', None, False)
+        else:
+            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('blue', None, False)
+
+    ########################
+    ###   CONFIG
+    ########################
+
+    def home_dir_configuration(self):
+        """Return a dictionary from ~/.harpoon.yml"""
+        location = os.path.expanduser("~/.harpoon.yml")
+        if not os.path.exists(location):
+            return {}
+
+        result = self.read_yaml(location)
+        if not result:
+            result = {}
+        if not isinstance(result, dict):
+            raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
+
+        result["__mtime__"] = self.get_committime_or_mtime(location)
+        return result
+
+    def read_yaml(self, filepath):
+        """Read in a yaml file"""
+        try:
+            if os.stat(filepath).st_size == 0:
+                return {}
+            return yaml.load(open(filepath))
+        except yaml.parser.ParserError as error:
+            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error=error.problem)
 
     def get_committime_or_mtime(self, location):
         """Get the commit time of some file or the modified time of of it if can't get from git"""
@@ -107,136 +145,41 @@ class Harpoon(object):
 
         return MergedOptions.using(self.home_dir_configuration(), configuration, *collected)
 
-    def setup_logging_theme(self):
-        """Setup a logging theme"""
-        if "term_colors" not in self.configuration:
-            return
-
-        if not getattr(self, "logging_handler", None):
-            log.warning("Told to set term_colors but don't have a logging_handler to change")
-            return
-
-        colors = self.configuration.get("term_colors")
-        if not colors:
-            return
-
-        if colors not in ("light", "dark"):
-            log.warning("Told to set colors to a theme we don't have\tgot=%s\thave=[light, dark]", colors)
-            return
-
-        # Haven't put much effort into actually working out more than just the message colour
-        if colors == "light":
-            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('cyan', None, False)
-        else:
-            self.logging_handler._column_color['%(message)s'][logging.INFO] = ('blue', None, False)
-
-    def home_dir_configuration(self):
-        """Return a dictionary from ~/.harpoon.yml"""
-        location = os.path.expanduser("~/.harpoon.yml")
-        if not os.path.exists(location):
-            return {}
-
-        result = self.read_yaml(location)
-        if not result:
-            result = {}
-        if not isinstance(result, dict):
-            raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
-
-        result["__mtime__"] = self.get_committime_or_mtime(location)
-        return result
-
-    def read_yaml(self, filepath):
-        """Read in a yaml file"""
-        try:
-            if os.stat(filepath).st_size == 0:
-                return {}
-            return yaml.load(open(filepath))
-        except yaml.parser.ParserError as error:
-            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error=error.problem)
+    ########################
+    ###   TASKS
+    ########################
 
     def default_tasks(self):
         """Return default tasks"""
-        return {
-              "ssh": Task(available_tasks["run_task"], kwargs={"command":"/bin/bash"}, description="Run bash in one of the containers")
-            , "run": Task(available_tasks["run_task"], description="Run a command in one of the containers")
+        def t(action, description, **options):
+            return (action, Task(action, description=description, options=options, label="Harpoon"))
+        return dict([
+              t("ssh", "Run bash in one of the containers", command="/bin/bash")
+            , t("run", "Run a command in one of the containers")
 
-            , "make": Task(available_tasks["make"], description="Make one of the images")
-            , "make_all": Task(available_tasks["make_all"], description="Make all of the images")
-            , "make_pushable": Task(available_tasks["make_pushable"], description="Make only the pushable images and their dependencies")
+            , t("make", "Make one of the images")
+            , t("make_all", "Make all of the images")
+            , t("make_pushable", "Make only the pushable images and their dependencies")
 
-            , "pull": Task(available_tasks["pull"], description="Pull one of the images")
-            , "pull_all": Task(available_tasks["pull_all"], description="Pull all of the images")
+            , t("pull", "Pull one of the images")
+            , t("pull_all", "Pull all of the images")
 
-            , "push": Task(available_tasks["push"], description="Push one of the images")
-            , "push_all": Task(available_tasks["push_all"], description="Push all of the images")
+            , t("push", "Push one of the images")
+            , t("push_all", "Push all of the images")
 
-            , "show": Task(available_tasks["show"], description="Show the available images")
-            , "show_pushable": Task(available_tasks["show_pushable"], description="Show the layers for only the pushable images")
+            , t("show", "Show the available images")
+            , t("show_pushable", "Show the layers for only the pushable images")
 
-            , "list_tasks": Task(available_tasks["list_tasks"], description="List the available tasks")
-            , "delete_untagged": Task(available_tasks["delete_untagged"], description="Delete untagged images")
-            }
+            , t("list_tasks", "List the available tasks")
+            , t("delete_untagged", "Delete untagged images")
+            ])
 
     def interpret_tasks(self, configuration, image, path):
         """Find the tasks in the specified key"""
-        errors = []
         if path not in configuration:
             return {}
-
-        tasks = {}
         found = configuration.get(path)
-        if not isinstance(found, dict) and not isinstance(found, MergedOptions):
-            raise BadTask("Tasks are not a dictionary", path=path, found=type(found))
-
-        for key, val in found.items():
-            args = None
-            label = "Project"
-            kwargs = None
-            task_path = "{0}.{1}".format(path, key)
-            description = ""
-            if isinstance(val, dict) or isinstance(val, MergedOptions):
-                label = val.get("label", label)
-                description = val.get("description", "")
-
-                if "options" in val and "spec" in val:
-                    raise BadTask("Dictionary task must specify spec or options, not both", found=val.keys())
-
-                if "options" in val:
-                    val = ["run_task", [], val["options"]]
-                else:
-                    val = val.get("spec", "run_task")
-
-            if isinstance(val, basestring):
-                task_name = val
-            elif isinstance(val, list):
-                if len(val) == 1:
-                    task_name = val
-                elif len(val) == 2:
-                    task_name, args = val
-                elif len(val) == 3:
-                    task_name, args, kwargs = val
-
-            if task_name not in available_tasks:
-                errors.append(NoSuchTask(task=val, path=task_path, available=available_tasks.keys()))
-            else:
-                if args is None:
-                    args = ()
-                if kwargs is None:
-                    kwargs = {}
-
-                task_path = "{0}.{1}".format(path, key)
-                formatter = lambda s: MergedOptionStringFormatter(self.configuration, task_path, value=s).format()
-                args = [formatter(arg) for arg in args]
-                kwargs = dict((key, formatter(val)) for key, val in kwargs.items())
-
-                if image not in kwargs and image is not None:
-                    kwargs['image'] = image
-                tasks[key] = Task(available_tasks[task_name], args, kwargs, description=description, label=label)
-
-        if errors:
-            raise BadTask(path=path, _errors=errors)
-
-        return tasks
+        return HarpoonSpec().tasks_spec(available_tasks).normalise(Meta(configuration, path), found)
 
     def find_tasks(self, configuration=None):
         """Find some tasks"""

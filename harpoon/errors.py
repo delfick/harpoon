@@ -1,8 +1,11 @@
+from input_algorithms.errors import BadSpec, BadSpecValue
 from delfick_error import DelfickError, ProgrammerError
 
 class HarpoonError(DelfickError): pass
 
-# Explicitly make Programmererror part of this file
+# Explicitly make these errors in this context
+BadSpec = BadSpec
+BadSpecValue = BadSpecValue
 ProgrammerError = ProgrammerError
 
 class BadConfiguration(HarpoonError):
@@ -13,9 +16,6 @@ class BadOptionFormat(HarpoonError):
 
 class BadTask(HarpoonError):
     desc = "Bad task"
-
-class NoSuchTask(HarpoonError):
-    desc = "This task doesn't exist"
 
 class BadOption(HarpoonError):
     desc = "Bad Option"
@@ -52,4 +52,10 @@ class BadDockerConnection(HarpoonError):
 
 class ImageDepCycle(HarpoonError):
     desc = "Image dependency cycle"
+
+class BadDirectory(BadSpecValue):
+    desc = "Expected a path to a directory"
+
+class BadFilename(BadSpecValue):
+    desc = "Expected a path to a filename"
 

@@ -102,7 +102,7 @@ def make_pushable(harpoon, **kwargs):
     make_all(harpoon, push=False, only_pushable=True)
 
 @a_task
-def run_task(harpoon, image=None, command=None, bash=None, env=None, volumes=None, ports=None, **kwargs):
+def run(harpoon, image=None, command=None, bash=None, env=None, volumes=None, ports=None, **kwargs):
     """Run specified task in this image"""
     if bash:
         command = "/bin/bash -c '{0}'".format(bash)
