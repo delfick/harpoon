@@ -178,8 +178,17 @@ class Harpoon(object):
         """Find the tasks in the specified key"""
         if path not in configuration:
             return {}
+
         found = configuration.get(path)
-        return HarpoonSpec().tasks_spec(available_tasks).normalise(Meta(configuration, path), found)
+        tasks = HarpoonSpec().tasks_spec(available_tasks).normalise(Meta(configuration, path), found)
+
+        for key, task in tasks.items():
+            if task.options:
+                task_path = "{0}.{1}".format(path, key)
+                formatter = lambda s: MergedOptionStringFormatter(self.configuration, task_path, value=s).format()
+                task.options = dict((k, formatter(v)) for k, v in task.options.items())
+
+        return tasks
 
     def find_tasks(self, configuration=None):
         """Find some tasks"""
