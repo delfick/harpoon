@@ -13,6 +13,7 @@ setup(
       , "docker-py==0.4.0"
       , "humanize"
       , "glob2"
+      , "namedlist"
       , "dockerpty==0.2.3"
       , "pyYaml==3.10"
       , "input_algorithms==0.3.2"

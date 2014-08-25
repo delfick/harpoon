@@ -1,7 +1,8 @@
-from input_algorithms.objs import objMaker
 from harpoon.tasks import available_tasks
 
-class Task(objMaker("Task", ("action", "run"), "options", "overrides", "description", ("label", "Project"))):
+from namedlist import namedlist
+
+class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")])):
     def run(self, harpoon, other_args):
         """Run this task"""
         options = self.options or {}
