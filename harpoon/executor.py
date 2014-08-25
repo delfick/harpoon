@@ -91,8 +91,13 @@ class CliParser(object):
         opts = {}
         if os.path.exists("./harpoon.yml"):
             opts["default"] = "./harpoon.yml"
+            opts["required"] = False
         else:
             opts["required"] = True
+
+        if "HARPOON_CONFIG" in os.environ:
+            opts["default"] = os.environ["HARPOON_CONFIG"]
+            del opts["required"]
         parser.add_argument("--harpoon-config"
             , help = "The config file specifying what harpoon should care about"
             , type = argparse.FileType("r")
