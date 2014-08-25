@@ -4,6 +4,9 @@ Harpoon
 An opinionated wrapper around the docker-py API to docker that knows how to read
 yaml files and make things happen.
 
+.. image:: https://travis-ci.org/realestate-com-au/harpoon.png?branch=master
+    :target: https://travis-ci.org/realestate-com-au/harpoon
+
 Installation
 ------------
 
