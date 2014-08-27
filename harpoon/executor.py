@@ -162,6 +162,11 @@ class CliParser(object):
             , action = "append"
             )
 
+        parser.add_argument("--flat"
+            , help = "Used with the show command"
+            , action = "store_true"
+            )
+
         return parser
 
 def docker_context():

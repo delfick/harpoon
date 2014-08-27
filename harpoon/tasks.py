@@ -146,16 +146,21 @@ def delete_untagged(harpoon, **kwargs):
         log.info("Didn't find any untagged images to delete!")
 
 @a_task
-def show(harpoon, only_pushable=False, **kwargs):
+def show(harpoon, only_pushable=False, flat=False, **kwargs):
     """Show what images we have"""
     for index, layer in enumerate(harpoon.imager.layered(only_pushable=only_pushable)):
-        print("Layer {0}".format(index))
-        for _, image in layer:
-            print("    {0}".format(image.display_line()))
-        print("")
+        if flat:
+            for _, image in layer:
+                print(image.image_name)
+        else:
+            print("Layer {0}".format(index))
+            for _, image in layer:
+                print("    {0}".format(image.display_line()))
+            print("")
 
 @a_task
 def show_pushable(harpoon, **kwargs):
     """Show what images we have"""
-    show(harpoon, only_pushable=True)
+    kwargs['only_pushable'] = True
+    show(harpoon, **kwargs)
 
