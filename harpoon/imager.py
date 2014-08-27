@@ -566,6 +566,13 @@ class Image(object):
         files = []
         if host_context:
             if use_git:
+                output, status = command_output("git rev-parse --show-toplevel", cwd=self.parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to find top level directory of git repository", directory=self.parent_dir, output=output)
+                top_level = ''.join(output).strip()
+                if use_git_timestamps and os.path.exists(os.path.join(top_level, ".git", "shallow")):
+                    raise HarpoonError("Can't get git timestamps from a shallow clone", directory=self.parent_dir)
+
                 output, status = command_output("git diff --name-only", cwd=self.parent_dir)
                 if status != 0:
                     raise HarpoonError("Failed to determine what files have changed", directory=self.parent_dir, output=output)
