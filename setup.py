@@ -9,6 +9,7 @@ setup(
 
     , install_requires =
       [ "rainbow_logging_handler==2.2.2"
+      , "delfick_error>=1.6"
       , "option_merge>=0.6"
       , "docker-py==0.4.0"
       , "humanize"
