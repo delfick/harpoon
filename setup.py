@@ -8,16 +8,18 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "rainbow_logging_handler==2.2.2"
-      , "delfick_error>=1.6"
-      , "option_merge>=0.6"
+      [ "delfick_error==1.6"
+      , "option_merge==0.7"
+      , "input_algorithms==0.3.4"
+
       , "docker-py==0.4.0"
+      , "dockerpty==0.2.3"
+
       , "humanize"
       , "glob2"
       , "namedlist"
-      , "dockerpty==0.2.3"
       , "pyYaml==3.10"
-      , "input_algorithms==0.3.2"
+      , "rainbow_logging_handler==2.2.2"
       ]
 
     , extras_require =
