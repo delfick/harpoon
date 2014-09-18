@@ -132,11 +132,11 @@ class Image(object):
         """Push this image"""
         self.push_or_pull("push")
 
-    def pull(self):
+    def pull(self, ignore_missing=False):
         """Push this image"""
-        self.push_or_pull("pull")
+        self.push_or_pull("pull", ignore_missing=ignore_missing)
 
-    def push_or_pull(self, action=None):
+    def push_or_pull(self, action=None, ignore_missing=False):
         """Push or pull this image"""
         if action not in ("push", "pull"):
             raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
@@ -152,7 +152,11 @@ class Image(object):
 
             if line_detail:
                 if "errorDetail" in line_detail:
-                    raise FailedImage("Failed to {0} an image".format(action), image=self.name, image_name=self.image_name, msg=line_detail["errorDetail"].get("message", line_detail["errorDetail"]))
+                    msg = line_detail["errorDetail"].get("message", line_detail["errorDetail"])
+                    if ignore_missing and action == "pull":
+                        log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, self.name, self.image_name, msg)
+                    else:
+                        raise FailedImage("Failed to {0} an image".format(action), image=self.name, image_name=self.image_name, msg=msg)
                 if "status" in line_detail:
                     line = line_detail["status"].strip()
 

@@ -53,8 +53,15 @@ pull
   Takes in an --image option, and pulls in the corresponding image.
   (Only if it has a image_index option)
 
+  Also takes in an "--ignore-missing" argument that means it won't error out
+  if the image you are pulling doesn't exist.
+
 pull_all
   Pulls in all the images in layered order
+
+  Takes in an "--ignore-missing" argument which is useful if you're using pull_all
+  to get the latest images before building them and you haven't built one of the
+  images yet
 
 push
   Takes in an --image option, creates your specified image and pushes it

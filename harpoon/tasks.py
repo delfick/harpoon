@@ -60,21 +60,21 @@ def push_all(harpoon, **kwargs):
     make_all(harpoon, push=True)
 
 @a_task
-def pull(harpoon, image=None, **kwargs):
+def pull(harpoon, image=None, ignore_missing=False, **kwargs):
     """Pull an image"""
     images, image = determine_image(harpoon, image)
     pullable = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
     if image not in pullable:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pullable.keys())
-    pullable[image].pull()
+    pullable[image].pull(ignore_missing=ignore_missing)
 
 @a_task
-def pull_all(harpoon, **kwargs):
+def pull_all(harpoon, ignore_missing=False, **kwargs):
     """Pull all the images"""
     for layer in harpoon.imager.layered(only_pushable=True):
         for image_name, image in layer:
             log.info("Pulling %s", image_name)
-            image.pull()
+            image.pull(ignore_missing=ignore_missing)
 
 @a_task
 def make(harpoon, image=None, **kwargs):

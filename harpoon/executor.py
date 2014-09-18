@@ -167,6 +167,11 @@ class CliParser(object):
             , action = "store_true"
             )
 
+        parser.add_argument("--ignore-missing"
+            , help = "Used by the pull commands to ignore if an image doesn't exist"
+            , action = "store_true"
+            )
+
         return parser
 
 def docker_context():
