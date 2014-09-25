@@ -795,8 +795,10 @@ so when I get options for the image, these different sources are already merged.
 Tests
 -----
 
-Run the helpful script::
+Install testing deps and run the helpful script::
 
+  pip install -e .
+  pip install -e ".[tests]"
   ./test.sh
 
 Note that I essentially have no automated tests.
