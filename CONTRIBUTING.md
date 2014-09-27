@@ -13,9 +13,4 @@ virtualenv .
 pip install -e .
 ```
 
-And then harpoon is in your PATH
-
-Instead of using harpoon.sh you just use the harpoon binary in your path
-(harpoon.sh activates it's own virtualenv)
-
-And you can create a debugger by doing `"from pdb import set_trace; set_trace()"` anywhere
+And then `harpoon` is in your PATH
