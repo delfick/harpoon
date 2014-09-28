@@ -32,7 +32,7 @@ class MergedOptionStringFormatter(string.Formatter):
     def get_string(self, key):
         """Get a string from all_options"""
         if key not in self.all_options:
-            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain)
+            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain[:-1], source=self.all_options.source_for(self.chain[:-1]))
 
         val = self.all_options[key]
         if isinstance(val, dict) or isinstance(val, MergedOptions):
