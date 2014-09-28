@@ -910,7 +910,7 @@ class Imager(object):
                 raise HarpoonError("Sorry, a limitation with option_merge means we can't have dots in key names", illegal=illegal)
 
             options = {"docker_context": self.docker_context, "interactive": self.interactive, "silent_build": self.silent_build}
-            images = dict((key, Image(key, self.configuration, "images.{0}".format(key), **options)) for key, val in self.configuration["images"].items())
+            images = dict((key, Image(key, self.configuration, ["images", key], **options)) for key, val in self.configuration["images"].items())
             for image in images.values():
                 image.setup_configuration()
             for image in images.values():
