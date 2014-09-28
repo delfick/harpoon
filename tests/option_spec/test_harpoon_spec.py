@@ -18,21 +18,12 @@ describe HarpoonCase, "HarpoonSpec":
         __only_run_tests_in_children__ = True
 
         @property
-        def no_dots_reason(self):
-            raise NotImplementedError
-
-        @property
         def spec(self):
             raise NotImplementedError
 
         it "can't have whitespace":
             for value in (" adsf", "d  d", "\t", " ", "d "):
                 with self.fuzzyAssertRaisesError(BadSpecValue, "Expected no whitespace"):
-                    self.spec.normalise(self.meta, value)
-
-        it "can't have dots":
-            for value in ("ubuntu.14.04", "run.something", "."):
-                with self.fuzzyAssertRaisesError(BadSpecValue, self.no_dots_reason):
                     self.spec.normalise(self.meta, value)
 
         it "can only have alphanumeric, dashes and underscores and start with a letter":
@@ -48,13 +39,11 @@ describe HarpoonCase, "HarpoonSpec":
             @property
             def spec(self):
                 return HarpoonSpec().image_name_spec
-            no_dots_reason = "Image names can't have dots in them"
 
         describe "task_name_spec":
             @property
             def spec(self):
                 return HarpoonSpec().task_name_spec
-            no_dots_reason = "Task names can't have dots in them"
 
     describe "task spec":
         it "creates a Task object for each task":
