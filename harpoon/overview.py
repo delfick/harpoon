@@ -93,7 +93,7 @@ class Harpoon(object):
             raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
 
         result["__mtime__"] = self.get_committime_or_mtime(location)
-        return result
+        return location, result
 
     def read_yaml(self, filepath):
         """Read in a yaml file"""
@@ -115,11 +115,10 @@ class Harpoon(object):
     def collect_configuration(self, configuration_file):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
-        collected = []
         result = self.read_yaml(configuration_file)
         result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
-        configuration = MergedOptions.using(result)
+        configuration = MergedOptions.using(result, source=configuration_file)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
         if "images.__images_from__" in configuration:
             images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
@@ -131,6 +130,11 @@ class Harpoon(object):
             if not os.path.exists(images_from) or not os.path.isdir(images_from):
                 raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from)
 
+            configuration = MergedOptions()
+            source, conf = self.home_dir_configuration()
+            configuration.update(conf, source=source)
+            configuration.update(configuration)
+
             for root, dirs, files in os.walk(images_from):
                 for fle in files:
                     if fle.endswith(".yml") or fle.endswith(".yaml"):
@@ -139,11 +143,11 @@ class Harpoon(object):
                             name = os.path.splitext(fle)[0]
                             result = self.read_yaml(location)
                             result["__mtime__"] = self.get_committime_or_mtime(location)
-                            collected.append({"images": {name: result}})
+                            configuration.update({"images": {name: result}}, source=location)
                         except BadYaml as error:
                             errors.append(error)
 
-        return MergedOptions.using(self.home_dir_configuration(), configuration, *collected)
+        return configuration
 
     ########################
     ###   TASKS
