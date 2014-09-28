@@ -120,6 +120,10 @@ class Harpoon(object):
 
         configuration = MergedOptions.using(result, source=configuration_file)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
+
+        source, conf = self.home_dir_configuration()
+        configuration.update(conf, source=source)
+
         if "images.__images_from__" in configuration:
             images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
             del configuration["images.__images_from__"]
@@ -129,11 +133,6 @@ class Harpoon(object):
 
             if not os.path.exists(images_from) or not os.path.isdir(images_from):
                 raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from)
-
-            configuration = MergedOptions()
-            source, conf = self.home_dir_configuration()
-            configuration.update(conf, source=source)
-            configuration.update(configuration)
 
             for root, dirs, files in os.walk(images_from):
                 for fle in files:
