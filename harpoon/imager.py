@@ -4,6 +4,7 @@ from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadIma
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
 from harpoon.processes import command_output
+from option_merge.helper import dot_joiner
 from harpoon.layers import Layers
 
 from docker.errors import APIError as DockerAPIError
@@ -728,6 +729,9 @@ class Image(object):
                 if key in configuration:
                     val = configuration[key]
                     break
+        else:
+            if keys:
+                key = dot_joiner(keys)
 
         if val is NotSpecified:
             if default is NotSpecified:
@@ -736,7 +740,13 @@ class Image(object):
                 return default
 
         if path_prefix:
-            path = "{0}.{1}".format(path_prefix, key)
+            if isinstance(path_prefix, list):
+                if key:
+                    path = path_prefix + [key]
+                else:
+                    path = [thing for thing in path_prefix]
+            else:
+                path = "{0}.{1}".format(path_prefix, key)
         else:
             path = key
 

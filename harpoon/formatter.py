@@ -2,7 +2,6 @@ from harpoon.errors import BadOptionFormat
 
 from option_merge import MergedOptions
 import string
-import os
 
 class NotSpecified(object):
     """Tell the difference between not specified and None"""
@@ -11,7 +10,10 @@ class MergedOptionStringFormatter(string.Formatter):
     """Resolve format options into a MergedOptions dictionary"""
     def __init__(self, all_options, option_path, chain=None, value=NotSpecified):
         if chain is None:
-            chain = [option_path]
+            if isinstance(option_path, list):
+                chain = [thing for thing in option_path]
+            else:
+                chain = [option_path]
         self.chain = chain
         self.value = value
         self.option_path = option_path
