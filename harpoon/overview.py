@@ -203,8 +203,8 @@ class Harpoon(object):
 
         tasks = self.default_tasks()
         tasks.update(self.interpret_tasks(configuration, "tasks"))
-        for image in configuration["images"]:
-            nxt = self.interpret_tasks(configuration, "images.{0}.tasks".format(image))
+        for image in list(configuration["images"]):
+            nxt = self.interpret_tasks(configuration, ["images", image, "tasks"])
             for task in nxt.values():
                 task.add_option_defaults(image=image)
             tasks.update(nxt)
