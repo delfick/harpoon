@@ -714,7 +714,11 @@ class Image(object):
         """
         options = {"configuration": self.all_configuration, "path_prefix": None}
         options.update(kwargs)
-        return self.formatted("{0}.{1}".format(self.path, key), key, **options)
+        if isinstance(self.path, list):
+            path = self.path + [key]
+        else:
+            path = "{0}.{1}".format(self.path, key)
+        return self.formatted(path, key, **options)
 
     def formatted(self, *keys, **kwargs):
         """Get us a formatted value"""
