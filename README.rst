@@ -347,9 +347,6 @@ container_name
   This means if we fail to clean up, future invocations won't complain about
   conflicting container names.
 
-Note that this means image names can't have dots in them, because the formatter
-will split the name of the image by the dots and it won't do what you expect.
-
 Environment variables
 ---------------------
 

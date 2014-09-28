@@ -23,8 +23,7 @@ class HarpoonSpec(object):
         """
         return valid_string_spec(
               validators.no_whitespace()
-            , validators.no_dots(reason="Image names can't have dots in them")
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_]*$")
+            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
             )
 
     @memoized_property
@@ -32,8 +31,7 @@ class HarpoonSpec(object):
         """We restrict this for the same reasons as the image_name_spec"""
         return valid_string_spec(
               validators.no_whitespace()
-            , validators.no_dots(reason="Task names can't have dots in them")
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_]*$")
+            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
             )
 
     def tasks_spec(self, available_actions, default_action="run"):

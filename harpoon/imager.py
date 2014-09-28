@@ -909,10 +909,6 @@ class Imager(object):
     def images(self):
         """Make our image objects"""
         if not getattr(self, "_images", None):
-            if any('.' in key for key in self.configuration["images"].keys()):
-                illegal = [key for key in self.configuration["images"].keys() if '.' in key]
-                raise HarpoonError("Sorry, a limitation with option_merge means we can't have dots in key names", illegal=illegal)
-
             options = {"docker_context": self.docker_context, "interactive": self.interactive, "silent_build": self.silent_build}
             images = dict((key, Image(key, self.configuration, ["images", key], **options)) for key, val in self.configuration["images"].items())
             for image in images.values():
