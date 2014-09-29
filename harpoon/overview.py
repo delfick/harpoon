@@ -84,7 +84,7 @@ class Harpoon(object):
         """Return a dictionary from ~/.harpoon.yml"""
         location = os.path.expanduser("~/.harpoon.yml")
         if not os.path.exists(location):
-            return {}
+            return None, {}
 
         result = self.read_yaml(location)
         if not result:
@@ -122,7 +122,8 @@ class Harpoon(object):
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
 
         source, conf = self.home_dir_configuration()
-        configuration.update(conf, source=source)
+        if conf:
+            configuration.update(conf, source=source)
 
         if "images.__images_from__" in configuration:
             images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
