@@ -147,6 +147,9 @@ class Harpoon(object):
                         except BadYaml as error:
                             errors.append(error)
 
+        if errors:
+            raise BadConfiguration("Some of the configuration was broken", _errors=errors)
+
         return configuration
 
     ########################
