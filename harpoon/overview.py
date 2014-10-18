@@ -4,7 +4,6 @@ from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
 from harpoon.option_spec.objs import Task
-from harpoon.imager import Imager
 
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
@@ -15,39 +14,31 @@ import os
 log = logging.getLogger("harpoon.executor")
 
 class Harpoon(object):
-    def __init__(self, configuration_file, docker_context, silent_build=False, interactive=True, logging_handler=None):
-        self.interactive = interactive
+    def __init__(self, configuration_file, docker_context, logging_handler=None):
         self.docker_context = docker_context
         self.logging_handler = logging_handler
 
         self.configuration = self.collect_configuration(configuration_file)
         self.configuration_folder = os.path.dirname(os.path.abspath(configuration_file))
-        self.imager = Imager(self.configuration, docker_context, interactive=self.interactive, silent_build=silent_build)
         self.setup_logging_theme()
 
-    def start(self, task, extra=None, keep_replaced=False, no_intervention=False, env=None, ports=None, **kwargs):
+    def start(self, cli_args):
         """Do the harpooning"""
         if not self.configuration.get("images"):
             raise BadConfiguration("Didn't find any images in the configuration")
 
-        if extra is None:
-            extra = ""
-        self.configuration["$@"] = extra
-        self.configuration["config_root"] = self.configuration_folder
-
-        if "harpoon" not in self.configuration:
-            self.configuration["harpoon"] = {}
-
-        for (name, val) in [
-            ("env", env), ("ports", ports), ("keep_replaced", keep_replaced), ("no_intervention", no_intervention)
-        ]:
-            self.configuration["harpoon"][name] = val or self.configuration["harpoon"].get(name)
+        self.configuration.update(
+            { "$@": cli_args["harpoon"].get("extra", "")
+            , "config_root" : self.configuration_folder
+            }
+        )
 
         tasks = self.find_tasks()
+        task = cli_args["harpoon"]["chosen_task"]
         if task not in tasks:
             raise BadTask("Unknown task", task=task, available=tasks.keys())
 
-        tasks[task].run(self, kwargs)
+        tasks[task].run(self, cli_args)
 
     ########################
     ###   THEME
@@ -209,7 +200,7 @@ class Harpoon(object):
         for image in list(configuration["images"]):
             nxt = self.interpret_tasks(configuration, ["images", image, "tasks"])
             for task in nxt.values():
-                task.add_option_defaults(image=image)
+                task.specify_image(image)
             tasks.update(nxt)
 
         return tasks

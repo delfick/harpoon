@@ -29,16 +29,16 @@ class NotSpecified(object):
     """Tell the difference between not specified and None"""
 
 class Image(object):
-    def __init__(self, name, all_configuration, path, docker_context, interactive=False, silent_build=False):
+    def __init__(self, name, configuration, path, docker_context):
         self.name = name
         self.path = path
-        self.interactive = interactive
-        self.silent_build = silent_build
         self.docker_context = docker_context
-        self.all_configuration = all_configuration
+
+        self.configuration = configuration
+        self.interactive = self.formatted("harpoon.interactive", default=True)
+        self.silent_build = self.formatted("harpoon.silent_build", default=False)
 
         self.already_running = False
-        self.configuration = all_configuration[self.path]
 
     @property
     def image_name(self):
@@ -50,14 +50,21 @@ class Image(object):
 
     @property
     def mtime(self):
-        val = self.heira_formatted("__mtime__", default=None)
+        val = self.formatted("__mtime__", default=None)
         if val is not None:
             return int(val)
 
     @property
+    def commands(self):
+        """Interpret our commands"""
+        if not getattr(self, "_commands", None):
+            self._commands = self.interpret_commands(self.command_instructions)
+        return self._commands
+
+    @property
     def parent_image(self):
         """Look at the FROM statement to see what our parent image is"""
-        if not hasattr(self, "commands"):
+        if not getattr(self, "been_setup", None):
             raise ProgrammerError("Image.setup hasn't been called yet.")
 
         if not self.commands:
@@ -142,7 +149,7 @@ class Image(object):
         if action not in ("push", "pull"):
             raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
 
-        if not self.heira_formatted("image_index", default=None):
+        if not self.formatted("image_index", default=None):
             raise BadImage("Can't push without an image_index configuration", image=self.name)
         for line in getattr(self.docker_context, action)(self.image_name, stream=True):
             line_detail = None
@@ -173,16 +180,32 @@ class Image(object):
             else:
                 print(line)
 
-    def figure_out_env(self, extra_env):
-        """Figure out combination of env from configuration and extra env"""
-        env = self.heira_formatted("harpoon.env", default=None) or []
-        if isinstance(env, dict):
-            env = sorted("{0}={1}".format(key, val) for key, val in extra_env.items())
+    def find_missing_env(self, env):
+        """Find any missing environment variables"""
+        missing = []
+        if isinstance(env, list):
+            for thing in env:
+                if '=' not in thing and ":" not in thing:
+                    if thing not in os.environ:
+                        missing.append(thing)
 
+        if missing:
+            raise BadOption("Some environment variables aren't in the current environment", missing=missing)
+
+    def figure_out_env(self):
+        """Figure out combination of env from configuration and extra env"""
+        env = self.formatted("env", default=None) or []
+        if isinstance(env, dict):
+            env = sorted("{0}={1}".format(key, val) for key, val in env.items())
+
+        extra_env = self.formatted("extra_env", default=None)
         if isinstance(extra_env, dict):
             env.extend(sorted("{0}={1}".format(key, val) for key, val in extra_env.items()))
         elif extra_env:
             env.extend(extra_env)
+
+        # Complain about any missing environment variables
+        self.find_missing_env(env)
 
         result = []
         for thing in env:
@@ -195,12 +218,12 @@ class Image(object):
                 result.append("{0}={1}".format(thing, os.environ[thing]))
         return result
 
-    def figure_out_ports(self, extra_ports):
+    def figure_out_ports(self):
         """Figure out the combination of ports, return as a dictionary"""
         result = {}
-        harpoon_ports = self.heira_formatted("harpoon.ports", default=None)
-        formatted_ports = self.heira_formatted("ports", default=None)
-        for ports in (harpoon_ports, formatted_ports, extra_ports):
+        extra_ports = self.formatted("extra_ports", default=None)
+        specified_ports = self.formatted("ports", default=None)
+        for ports in (specified_ports, extra_ports):
             if ports:
                 if isinstance(ports, dict):
                     result.update(ports)
@@ -218,7 +241,7 @@ class Image(object):
                             result[port] = port
         return result
 
-    def run_container(self, images, detach=False, command=None, started=None, extra_env=None, extra_volumes=None, extra_ports=None, dependency=False):
+    def run_container(self, images, detach=False, started=None, dependency=False):
         """Run this image and all dependency images"""
         if self.already_running:
             return
@@ -230,17 +253,25 @@ class Image(object):
                 except Exception as error:
                     raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency_name, error=error)
 
-            env = self.figure_out_env(extra_env)
-            ports = self.figure_out_ports(extra_ports)
+            env = self.figure_out_env()
+            ports = self.figure_out_ports()
 
             tty = not detach and self.interactive
             links = [(link.split(":") if ":" in link else (link, link)) for link in self.link]
             volumes = self.volumes
+            extra_volumes = self.configuration.get('extra_volumes')
             if extra_volumes:
                 if volumes is None:
                     volumes = []
                 for volume in extra_volumes:
                     volumes.append(self.formatted("__specified__.volumes", value=volume))
+
+            bash = self.configuration.get('bash')
+            if bash:
+                command = "/bin/bash -c '{0}'".format(bash)
+            else:
+                command = self.configuration.get('command')
+
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
@@ -351,7 +382,7 @@ class Image(object):
 
             if inspection and not no_intervention:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                    if self.interactive and not self.heira_formatted("harpoon.no_intervention", default=False):
+                    if self.interactive and not self.formatted("harpoon.no_intervention", default=False):
                         print("!!!!")
                         print("Failed to run the container!")
                         print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
@@ -459,7 +490,7 @@ class Image(object):
             log.info("Building '%s' in '%s' with %s of context", self.name, self.parent_dir, context_size)
 
             current_ids = None
-            if not self.heira_formatted("harpoon.keep_replaced", default=False):
+            if not self.formatted("harpoon.keep_replaced", default=False):
                 images = self.docker_context.images()
                 current_ids = [image["Id"] for image in images if "{0}:latest".format(self.image_name) in image["RepoTags"]]
 
@@ -551,10 +582,10 @@ class Image(object):
     def make_context(self):
         """Context manager for creating the context of the image"""
         class Nope(object): pass
-        host_context = not self.heira_formatted("no_host_context", default=False)
-        context_exclude = self.heira_formatted("context_exclude", default=None)
-        respect_gitignore = self.heira_formatted("respect_gitignore", default=Nope)
-        use_git_timestamps = self.heira_formatted("use_git_timestamps", default=Nope)
+        host_context = not self.formatted("no_host_context", default=False)
+        context_exclude = self.formatted("context_exclude", default=None)
+        respect_gitignore = self.formatted("respect_gitignore", default=Nope)
+        use_git_timestamps = self.formatted("use_git_timestamps", default=Nope)
 
         use_git = False
         if respect_gitignore is not Nope and respect_gitignore:
@@ -671,7 +702,7 @@ class Image(object):
     @contextmanager
     def intervention(self, container_id):
         """Ask the user if they want to commit this container and run /bin/bash in it"""
-        if not self.interactive or self.heira_formatted("harpoon.no_intervention", default=False):
+        if not self.interactive or self.formatted("harpoon.no_intervention", default=False):
             yield
             return
 
@@ -707,19 +738,6 @@ class Image(object):
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
 
-    def heira_formatted(self, key, **kwargs):
-        """
-        Shortcut for
-        self.formatted("{0}.<key>".format(self.path), <key>, configuration=self.all_configuration, path_prefix=None)
-        """
-        options = {"configuration": self.all_configuration, "path_prefix": None}
-        options.update(kwargs)
-        if isinstance(self.path, list):
-            path = self.path + [key]
-        else:
-            path = "{0}.{1}".format(self.path, key)
-        return self.formatted(path, key, **options)
-
     def formatted(self, *keys, **kwargs):
         """Get us a formatted value"""
         val = kwargs.get("value", NotSpecified)
@@ -754,7 +772,7 @@ class Image(object):
         else:
             path = key
 
-        config = MergedOptions.using(self.all_configuration, {"this": {"name": self.name, "path": self.path}})
+        config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": self.path}})
         return MergedOptionStringFormatter(config, path, value=val).format()
 
     def formatted_list(self, *keys, **kwargs):
@@ -779,7 +797,7 @@ class Image(object):
 
     def setup_configuration(self):
         """Add any generated configuration"""
-        name_prefix = self.heira_formatted("image_name_prefix", default=None)
+        name_prefix = self.formatted("image_name_prefix", default=None)
         if not isinstance(self.configuration, dict) and not isinstance(self.configuration, MergedOptions):
             raise BadImage("Image options need to be a dictionary", image=self.name)
 
@@ -790,7 +808,7 @@ class Image(object):
                 image_name = self.name
             self.configuration["image_name"] = image_name
 
-        image_index = self.heira_formatted("image_index", default=None)
+        image_index = self.formatted("image_index", default=None)
         if image_index:
             self.configuration["image_name"] = "{0}{1}".format(image_index, self.configuration["image_name"])
 
@@ -800,9 +818,9 @@ class Image(object):
     def setup(self):
         """Setup this Image instance from configuration"""
         if "commands" not in self.configuration:
-            raise NoSuchKey("Image configuration doesn't contain commands option", image=self.name, found=self.configuration.keys())
+            raise NoSuchKey("Image configuration doesn't contain commands option", image=self.name, found=list(self.configuration.keys()))
 
-        self.parent_dir = self.heira_formatted("parent_dir", default=self.all_configuration["config_root"])
+        self.parent_dir = self.formatted("parent_dir", default=self.formatted("config_root"))
         if not os.path.exists(self.parent_dir):
             raise BadOption("Parent dir for image doesn't exist", parent_dir=self.parent_dir, image=self.name)
         self.parent_dir = os.path.abspath(self.parent_dir)
@@ -810,12 +828,14 @@ class Image(object):
         for listable in ("link", "volumes_from", "volumes", "ports"):
             setattr(self, listable, self.formatted_list(listable, default=[]))
         self.volumes = self.normalise_volumes(self.volumes)
+        self.command_instructions = self.configuration["commands"]
         self.extra_context = []
-        self.commands = self.interpret_commands(self.configuration["commands"])
 
-        self.dependency_options = self.heira_formatted("dependency_options", default={})
+        self.dependency_options = self.formatted("dependency_options", default={})
         if not isinstance(self.dependency_options, dict) and not isinstance(self.dependency_options, MergedOptions):
             raise BadOption("Dependency options must be a dictionary", got=self.dependency_options)
+
+        self.been_setup = True
 
     def normalise_volumes(self, volumes):
         """Return normalised version of these volumes"""
@@ -893,15 +913,13 @@ class Image(object):
     def display_line(self):
         """A single line describing this image"""
         msg = ["Image {0}".format(self.name)]
-        if self.heira_formatted("image_index", default=None):
+        if self.formatted("image_index", default=None):
             msg.append("Pushes to {0}".format(self.image_name))
         return ' : '.join(msg)
 
 class Imager(object):
     """Knows how to build and run docker images"""
-    def __init__(self, configuration, docker_context, interactive=True, silent_build=False):
-        self.interactive = interactive
-        self.silent_build = silent_build
+    def __init__(self, configuration, docker_context):
         self.configuration = configuration
         self.docker_context = docker_context
 
@@ -909,8 +927,15 @@ class Imager(object):
     def images(self):
         """Make our image objects"""
         if not getattr(self, "_images", None):
-            options = {"docker_context": self.docker_context, "interactive": self.interactive, "silent_build": self.silent_build}
-            images = dict((key, Image(key, self.configuration, ["images", key], **options)) for key, val in self.configuration["images"].items())
+            images = {}
+            image_confs = {}
+
+            options = {"docker_context": self.docker_context}
+            for key, val in self.configuration["images"].items():
+                conf = MergedOptions.using(self.configuration, self.configuration[["images", key]], {"images": image_confs})
+                image_confs[key] = conf
+                images[key] = Image(key, conf, ["images", key], **options)
+
             for image in images.values():
                 image.setup_configuration()
             for image in images.values():
@@ -919,11 +944,11 @@ class Imager(object):
             self._images = images
         return self._images
 
-    def run(self, image, command=None, env=None, volumes=None, ports=None):
+    def run(self, image, configuration):
         """Make this image and run it"""
         self.make_image(image)
         try:
-            self.images[image].run_container(self.images, command=command, extra_env=env, extra_volumes=volumes, extra_ports=ports)
+            self.images[image].run_container(self.images)
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
@@ -959,7 +984,7 @@ class Imager(object):
         """Yield layers of images"""
         images = self.images
         if only_pushable:
-            operate_on = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
+            operate_on = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
         else:
             operate_on = images
 

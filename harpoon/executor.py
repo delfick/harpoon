@@ -67,9 +67,9 @@ class CliParser(object):
 
         parser = self.make_parser(default_task=default_task, default_image=default_image)
         args = parser.parse_args(args)
-        if default_task is not NotSpecified and args.task != default_task:
+        if default_task is not NotSpecified and args.harpoon_chosen_task != default_task:
             raise BadOption("Please don't specify task as a positional argument and as a --task option", positional=default_task, kwarg=args.task)
-        if default_image is not NotSpecified and args.image != default_image:
+        if default_image is not NotSpecified and args.harpoon_chosen_image != default_image:
             raise BadOption("Please don't specify image as a positional argument and as a --image option", positional=default_image, kwargs=args.image)
 
         return args, other_args
@@ -109,12 +109,13 @@ class CliParser(object):
             extra["default"] = default_task
         parser.add_argument("--task"
             , help = "The task to run"
+            , dest = "harpoon_chosen_task"
             , **extra
             )
 
         parser.add_argument("--non-interactive"
             , help = "Make this non interactive"
-            , dest = "interactive"
+            , dest = "harpoon_interactive"
             , action = "store_false"
             )
 
@@ -123,6 +124,7 @@ class CliParser(object):
             extra["default"] = default_image
         parser.add_argument("--image"
             , help = "Specify a particular image"
+            , dest = "harpoon_chosen_image"
             , **extra
             )
 
@@ -138,37 +140,43 @@ class CliParser(object):
 
         parser.add_argument("--silent-build"
             , help = "Make the build process quiet"
+            , dest = "harpoon_silent_build"
             , action = "store_true"
             )
 
         parser.add_argument("--keep-replaced"
             , help = "Don't delete images that have their tag stolen by a new image"
+            , dest = "harpoon_keep_replaced"
             , action = "store_true"
             )
 
         parser.add_argument("--no-intervention"
             , help = "Don't ask to intervene broken builds"
+            , dest = "harpoon_no_intervention"
             , action = "store_true"
             )
 
         parser.add_argument("--env"
             , help = "Environment option to start the container with"
+            , dest = "extra_env"
             , action = "append"
             )
 
         parser.add_argument("--port"
             , help = "Specify a port to publish in the running container you make"
-            , dest = "ports"
+            , dest = "extra_ports"
             , action = "append"
             )
 
         parser.add_argument("--flat"
             , help = "Used with the show command"
+            , dest = "harpoon_flat"
             , action = "store_true"
             )
 
         parser.add_argument("--ignore-missing"
             , help = "Used by the pull commands to ignore if an image doesn't exist"
+            , dest = "harpoon_ignore_missing"
             , action = "store_true"
             )
 
@@ -192,9 +200,15 @@ def main(argv=None):
         args, extra = CliParser().parse_args(argv)
         handler = setup_logging(verbose=args.verbose, silent=args.silent)
 
-        kwargs = vars(args)
-        kwargs["extra"] = extra
-        Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), interactive=args.interactive, silent_build=args.silent_build, logging_handler=handler).start(**kwargs)
+        cli_args = {"harpoon": {}}
+        for key, val in sorted(vars(args).items()):
+            if key.startswith("harpoon_"):
+                cli_args["harpoon"][key[8:]] = val
+            else:
+                cli_args[key] = val
+        cli_args["harpoon"]["extra"] = extra
+
+        Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), logging_handler=handler).start(cli_args)
     except DelfickError as error:
         print ""
         print "!" * 80
