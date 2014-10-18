@@ -7,6 +7,8 @@ from delfick_error import DelfickError
 import requests
 import argparse
 import logging
+import docker
+import ssl
 import sys
 import os
 
@@ -184,15 +186,29 @@ class CliParser(object):
 
 def docker_context():
     """Make a docker context"""
-    base_url = None
-    if "DOCKER_HOST" in os.environ:
-        base_url = os.environ["DOCKER_HOST"]
-    client = DockerClient(base_url=base_url, timeout=10)
+    host = os.environ.get('DOCKER_HOST')
+    cert_path = os.environ.get('DOCKER_CERT_PATH')
+    tls_verify = os.environ.get('DOCKER_TLS_VERIFY')
+
+    options = {"timeout": 10}
+    if host:
+        options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
+
+    if tls_verify and cert_path:
+        options['tls'] = docker.tls.TLSConfig(
+              verify = True
+            , ca_cert = os.path.join(cert_path, 'ca.pem')
+            , client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
+            , ssl_version = ssl.PROTOCOL_TLSv1
+            , assert_hostname = False
+            )
+
+    client = DockerClient(**options)
     try:
         info = client.info()
         log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
     except requests.exceptions.ConnectionError as error:
-        raise BadDockerConnection(base_url=base_url, error=error)
+        raise BadDockerConnection(base_url=options['base_url'], error=error)
     return client
 
 def main(argv=None):

@@ -23,7 +23,6 @@ class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options
         image_name = None
         if task_func.needs_imager:
             imager, images, image_name = self.determine_image(harpoon, configuration, needs_image=task_func.needs_image)
-            configuration.update({"images": images})
 
         if image_name:
             conf = images[image_name].configuration
