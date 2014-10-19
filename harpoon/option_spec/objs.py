@@ -37,6 +37,10 @@ class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options
         if self.overrides:
             configuration.update(self.overrides)
 
+        # Complain about missing env early
+        if image_name:
+            images[image_name].env
+
         return available_tasks[self.action](harpoon, conf, imager=imager, images=images, image=image_name)
 
     def determine_image(self, harpoon, configuration, needs_image=True):

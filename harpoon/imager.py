@@ -62,6 +62,13 @@ class Image(object):
         return self._commands
 
     @property
+    def env(self):
+        """Determine the environment variables"""
+        if not getattr(self, "_env", None):
+            self._env = self.figure_out_env()
+        return self._env
+
+    @property
     def parent_image(self):
         """Look at the FROM statement to see what our parent image is"""
         if not getattr(self, "been_setup", None):
@@ -253,7 +260,6 @@ class Image(object):
                 except Exception as error:
                     raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency_name, error=error)
 
-            env = self.figure_out_env()
             ports = self.figure_out_ports()
 
             tty = not detach and self.interactive
@@ -274,7 +280,7 @@ class Image(object):
 
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
-                , detach=detach, command=command, tty=tty, env=env, ports=ports
+                , detach=detach, command=command, tty=tty, env=self.env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency
                 )
 
@@ -940,6 +946,10 @@ class Imager(object):
                 image.setup_configuration()
             for image in images.values():
                 image.setup()
+
+            # Complain about missing environment variables early on
+            for image in images.values():
+                image.env
 
             self._images = images
         return self._images
