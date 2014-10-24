@@ -28,10 +28,11 @@ def push(harpoon, configuration, imager, images, image):
     imager.make_image(image)
     pushable[image].push()
 
-@a_task(needs_image=True)
+@a_task(needs_imager=True)
 def push_all(harpoon, configuration, **kwargs):
     """Push all the images"""
-    make_all(harpoon, push=True, **kwargs)
+    configuration.update({"harpoon": {"do_push": True, "only_pushable": True}})
+    make_all(harpoon, configuration, **kwargs)
 
 @a_task(needs_image=True)
 def pull(harpoon, configuration, images, image, **kwargs):
