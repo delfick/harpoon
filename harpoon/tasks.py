@@ -22,7 +22,7 @@ class a_task(object):
 @a_task(needs_image=True)
 def push(harpoon, configuration, imager, images, image):
     """Push an image"""
-    pushable = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
+    pushable = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
     if image not in pushable:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pushable.keys())
     imager.make_image(image)
@@ -39,7 +39,7 @@ def pull(harpoon, configuration, images, image, **kwargs):
     """Pull an image"""
     ignore_missing = configuration.get("harpoon.ignore_missing", False)
 
-    pullable = dict((image, instance) for image, instance in images.items() if instance.heira_formatted("image_index", default=None))
+    pullable = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
     if image not in pullable:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pullable.keys())
     pullable[image].pull(ignore_missing=ignore_missing)
@@ -71,7 +71,7 @@ def make_all(harpoon, configuration, imager, **kwargs):
         for image_name, image in layer:
             imager.make_image(image_name, ignore_deps=True)
             print("Created image {0}".format(image.image_name))
-            if push and image.heira_formatted("image_index", default=None):
+            if push and image.formatted("image_index", default=None):
                 image.push()
 
 @a_task(needs_imager=True)
