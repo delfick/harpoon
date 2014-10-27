@@ -13,7 +13,7 @@ setup(
       , "input_algorithms==0.3.5"
 
       , "docker-py==0.5.3"
-      , "dockerpty==0.2.4"
+      , "dockerpty==0.3.1"
 
       , "humanize"
       , "glob2"
