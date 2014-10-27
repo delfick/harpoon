@@ -947,7 +947,6 @@ class Imager(object):
 
     def run(self, image, configuration):
         """Make this image and run it"""
-        self.setup_images(self.images)
         self.make_image(image)
 
         try:

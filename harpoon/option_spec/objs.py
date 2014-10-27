@@ -41,6 +41,7 @@ class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options
         if image_name:
             images[image_name].env
 
+        imager.setup_images(images)
         return available_tasks[self.action](harpoon, conf, imager=imager, images=images, image=image_name)
 
     def determine_image(self, harpoon, configuration, needs_image=True):
