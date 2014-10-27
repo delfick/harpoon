@@ -942,25 +942,29 @@ class Imager(object):
                 image_confs[key] = conf
                 images[key] = Image(key, conf, ["images", key], **options)
 
-            for image in images.values():
-                image.setup_configuration()
-            for image in images.values():
-                image.setup()
-
-            # Complain about missing environment variables early on
-            for image in images.values():
-                image.env
-
             self._images = images
         return self._images
 
     def run(self, image, configuration):
         """Make this image and run it"""
+        self.setup_images(self.images)
         self.make_image(image)
+
         try:
             self.images[image].run_container(self.images)
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
+
+    def setup_images(self, images):
+        """Run setup on these images"""
+        for image in images.values():
+            image.setup_configuration()
+        for image in images.values():
+            image.setup()
+
+        # Complain about missing environment variables early on
+        for image in images.values():
+            image.env
 
     def make_image(self, image, chain=None, made=None, ignore_deps=False):
         """Make us an image"""
