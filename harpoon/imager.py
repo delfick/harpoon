@@ -32,13 +32,21 @@ class Image(object):
     def __init__(self, name, configuration, path, docker_context):
         self.name = name
         self.path = path
-        self.docker_context = docker_context
-
         self.configuration = configuration
-        self.interactive = self.formatted("harpoon.interactive", default=True)
-        self.silent_build = self.formatted("harpoon.silent_build", default=False)
-
+        self.docker_context = docker_context
         self.already_running = False
+
+    @property
+    def interactive(self):
+        if not getattr(self, "_interactive", None):
+            self._interactive = self.formatted("harpoon.interactive", default=True)
+        return self._interactive
+
+    @property
+    def silent_build(self):
+        if not getattr(self, "_silent_build", None):
+            self._silent_build = self.formatted("harpoon.silent_build", default=False)
+        return self._silent_build
 
     @property
     def image_name(self):
