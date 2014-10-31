@@ -684,7 +684,7 @@ class Image(object):
                     arcname = "./{0}".format(relname)
                     if use_git_timestamps and (relname in git_files and relname not in changed_files and matches_glob(relname, use_git_timestamps)):
                         # Set the modified date from git
-                        date, status = command_output("git show -s --format=%at -n1 -- {0}".format(relname), cwd=self.parent_dir)
+                        date, status = command_output("git show -s --format=%at -n1 --", relname, cwd=self.parent_dir)
                         if status != 0 or not date or not date[0].isdigit():
                             log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", self.parent_dir, relname)
 

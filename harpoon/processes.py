@@ -31,11 +31,14 @@ def run_command(command):
     process.wait()
     return process.poll()
 
-def command_output(command, cwd=None, timeout=10):
+def command_output(command, *command_extras, **kwargs):
     """Get the output from a command"""
     output = []
+    cwd = kwargs.get("cwd", None)
     args = shlex.split(command)
-    process = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
+    timeout = kwargs.get("timeout", 10)
+
+    process = subprocess.Popen(args + list(command_extras), stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
     fcntl.fcntl(process.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
