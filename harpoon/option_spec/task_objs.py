@@ -2,10 +2,10 @@ from harpoon.tasks import available_tasks
 from harpoon.errors import BadOption
 from harpoon.imager import Imager
 
+from option_merge.storage import Converter
+from input_algorithms.meta import Meta
 from option_merge import MergedOptions
 from namedlist import namedlist
-
-import time
 
 class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")])):
     def run(self, harpoon, cli_args):
@@ -37,12 +37,13 @@ class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options
         if self.overrides:
             configuration.update(self.overrides)
 
+        if imager:
+            imager.setup_images(images)
+
         # Complain about missing env early
         if image_name:
             images[image_name].env
 
-        if imager:
-            imager.setup_images(images)
         return available_tasks[self.action](harpoon, conf, imager=imager, images=images, image=image_name)
 
     def determine_image(self, harpoon, configuration, needs_image=True):
@@ -57,7 +58,6 @@ class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options
             pass
 
         images = imager.images
-
         if needs_image:
             if image is None:
                 info = {}

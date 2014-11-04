@@ -2,6 +2,7 @@ from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.processes import command_output
+from option_merge.storage import Converter
 from harpoon.tasks import available_tasks
 from harpoon.option_spec.objs import Task
 
@@ -109,12 +110,39 @@ class Harpoon(object):
         result = self.read_yaml(configuration_file)
         result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
+        images = {}
+        if "images" in result:
+            images = result.pop("images")
+
         configuration = MergedOptions.using(result, source=configuration_file)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
+        configuration["images"] = MergedOptions()
 
         source, conf = self.home_dir_configuration()
         if conf:
             configuration.update(conf, source=source)
+
+        harpoon_spec = HarpoonSpec()
+
+        if isinstance(images, dict):
+            for image, result in images.items():
+                tasks = {}
+                if 'tasks' in result:
+                    tasks = result.pop("tasks")
+
+                def convert_image(val):
+                    return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
+                configuration["images"].update({image: result}, source=configuration_file, converter=Converter(convert=convert_image, convert_path=image))
+
+                def convert_task(val):
+                    spec = harpoon_spec.tasks_spec(available_tasks)
+                    meta = Meta(configuration, [('images', ''), (image, ""), ('tasks', ""), (image, "")])
+                    return spec.normalise(meta, val)
+
+                configuration["images"].update({image: {"tasks": tasks}}
+                    , source=configuration_file
+                    , converter=Converter(convert=convert_task, convert_path = [image, "tasks"])
+                    )
 
         if "images.__images_from__" in configuration:
             images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
@@ -134,7 +162,32 @@ class Harpoon(object):
                             name = os.path.splitext(fle)[0]
                             result = self.read_yaml(location)
                             result["__mtime__"] = self.get_committime_or_mtime(location)
-                            configuration.update({"images": {name: result}}, source=location)
+
+                            images = {}
+                            if 'images' in result:
+                                images = result.pop("images")
+
+                            if isinstance(images, dict):
+                                for image, result in images.items():
+                                    tasks = {}
+                                    if 'tasks' in result:
+                                        tasks = result.pop("tasks")
+
+                                    def convert_image(val):
+                                        return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
+                                    configuration["images"].update({image: result}, source=location, converter=Converter(convert=convert_image, convert_path=image))
+
+                                    def convert_task(val):
+                                        spec = harpoon_spec.tasks_spec(available_tasks)
+                                        meta = Meta(configuration, [('images', ''), (image, ""), ('tasks', ""), (image, "")])
+                                        return spec.normalise(meta, val)
+
+                                    configuration["images"].update({image: {"tasks": tasks}}
+                                        , source=location
+                                        , converter=Converter(convert=convert_task, convert_path = [image, "tasks"])
+                                        )
+
+                            configuration["images"].update({name: result}, source=location)
                         except BadYaml as error:
                             errors.append(error)
 
@@ -180,15 +233,15 @@ class Harpoon(object):
             return {}
 
         found = configuration.get(path)
-        tasks = HarpoonSpec().tasks_spec(available_tasks).normalise(Meta(configuration, path), found)
 
-        for key, task in tasks.items():
+        # from nose.tools import set_trace; set_trace()
+        for key, task in found.items():
             if task.options:
                 task_path = "{0}.{1}".format(path, key)
                 formatter = lambda s: MergedOptionStringFormatter(self.configuration, task_path, value=s).format()
                 task.options = dict((k, formatter(v)) for k, v in task.options.items())
 
-        return tasks
+        return dict(found.items())
 
     def find_tasks(self, configuration=None):
         """Find some tasks"""

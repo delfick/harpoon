@@ -37,28 +37,34 @@ class Image(object):
         self.already_running = False
 
     @property
+    def image_configuration(self):
+        if getattr(self, "_image_configuration", None) is None:
+            self._image_configuration = self.configuration[self.path]
+        return self._image_configuration
+
+    @property
     def interactive(self):
         if not getattr(self, "_interactive", None):
-            self._interactive = self.formatted("harpoon.interactive", default=True)
+            self._interactive = self.formatted("harpoon.interactive", default=True, path_prefix=None)
         return self._interactive
 
     @property
     def silent_build(self):
         if not getattr(self, "_silent_build", None):
-            self._silent_build = self.formatted("harpoon.silent_build", default=False)
+            self._silent_build = self.formatted("harpoon.silent_build", default=False, path_prefix=None)
         return self._silent_build
 
     @property
     def image_name(self):
-        return self.configuration["image_name"]
+        return self.image_configuration["image_name"]
 
     @property
     def container_name(self):
-        return self.configuration["container_name"]
+        return self.image_configuration["container_name"]
 
     @property
     def mtime(self):
-        val = self.formatted("__mtime__", default=None)
+        val = self.formatted("__mtime__", default=None, path_prefix=None)
         if val is not None:
             return int(val)
 
@@ -273,18 +279,18 @@ class Image(object):
             tty = not detach and self.interactive
             links = [(link.split(":") if ":" in link else (link, link)) for link in self.link]
             volumes = self.volumes
-            extra_volumes = self.configuration.get('extra_volumes')
+            extra_volumes = self.image_configuration.get('extra_volumes')
             if extra_volumes:
                 if volumes is None:
                     volumes = []
                 for volume in extra_volumes:
                     volumes.append(self.formatted("__specified__.volumes", value=volume))
 
-            bash = self.configuration.get('bash')
+            bash = self.image_configuration.get('bash')
             if bash:
                 command = "/bin/bash -c '{0}'".format(bash)
             else:
-                command = self.configuration.get('command')
+                command = self.image_configuration.get('command')
 
             volumes_from = self.volumes_from
             self._run_container(self.name, self.image_name, self.container_name
@@ -396,7 +402,7 @@ class Image(object):
 
             if inspection and not no_intervention:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                    if self.interactive and not self.formatted("harpoon.no_intervention", default=False):
+                    if self.interactive and not self.formatted("harpoon.no_intervention", default=False, path_prefix=None):
                         print("!!!!")
                         print("Failed to run the container!")
                         print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
@@ -504,7 +510,7 @@ class Image(object):
             log.info("Building '%s' in '%s' with %s of context", self.name, self.parent_dir, context_size)
 
             current_ids = None
-            if not self.formatted("harpoon.keep_replaced", default=False):
+            if not self.formatted("harpoon.keep_replaced", default=False, path_prefix=None):
                 images = self.docker_context.images()
                 current_ids = [image["Id"] for image in images if "{0}:latest".format(self.image_name) in image["RepoTags"]]
 
@@ -716,7 +722,7 @@ class Image(object):
     @contextmanager
     def intervention(self, container_id):
         """Ask the user if they want to commit this container and run /bin/bash in it"""
-        if not self.interactive or self.formatted("harpoon.no_intervention", default=False):
+        if not self.interactive or self.formatted("harpoon.no_intervention", default=False, path_prefix=None):
             yield
             return
 
@@ -786,7 +792,7 @@ class Image(object):
         else:
             path = key
 
-        config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": self.path}})
+        config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": path}})
         return MergedOptionStringFormatter(config, path, value=val).format()
 
     def formatted_list(self, *keys, **kwargs):
@@ -794,8 +800,8 @@ class Image(object):
         val = kwargs.get("val", NotSpecified)
 
         for key in keys:
-            if key in self.configuration:
-                val = self.configuration[key]
+            if key in self.image_configuration:
+                val = self.image_configuration[key]
                 if isinstance(val, basestring):
                     val = [val]
                 elif not isinstance(val, list):
@@ -815,26 +821,26 @@ class Image(object):
         if not isinstance(self.configuration, dict) and not isinstance(self.configuration, MergedOptions):
             raise BadImage("Image options need to be a dictionary", image=self.name)
 
-        if "image_name" not in self.configuration:
+        if "image_name" not in self.image_configuration:
             if name_prefix:
                 image_name = "{0}-{1}".format(name_prefix, self.name)
             else:
                 image_name = self.name
-            self.configuration["image_name"] = image_name
+            self.image_configuration["image_name"] = image_name
 
         image_index = self.formatted("image_index", default=None)
         if image_index:
-            self.configuration["image_name"] = "{0}{1}".format(image_index, self.configuration["image_name"])
+            self.image_configuration["image_name"] = "{0}{1}".format(image_index, self.image_configuration["image_name"])
 
-        if "container_name" not in self.configuration:
-            self.configuration["container_name"] = "{0}-{1}".format(self.configuration["image_name"].replace("/", "--"), str(uuid.uuid1()).lower())
+        if "container_name" not in self.image_configuration:
+            self.image_configuration["container_name"] = "{0}-{1}".format(self.image_configuration["image_name"].replace("/", "--"), str(uuid.uuid1()).lower())
 
     def setup(self):
         """Setup this Image instance from configuration"""
-        if "commands" not in self.configuration:
-            raise NoSuchKey("Image configuration doesn't contain commands option", image=self.name, found=list(self.configuration.keys()))
+        if "commands" not in self.image_configuration:
+            raise NoSuchKey("Image configuration doesn't contain commands option", image=self.name, found=list(self.image_configuration.keys()))
 
-        self.parent_dir = self.formatted("parent_dir", default=self.formatted("config_root"))
+        self.parent_dir = self.formatted("parent_dir", default=self.formatted("config_root", path_prefix=None))
         if not os.path.exists(self.parent_dir):
             raise BadOption("Parent dir for image doesn't exist", parent_dir=self.parent_dir, image=self.name)
         self.parent_dir = os.path.abspath(self.parent_dir)
@@ -842,7 +848,7 @@ class Image(object):
         for listable in ("link", "volumes_from", "volumes", "ports"):
             setattr(self, listable, self.formatted_list(listable, default=[]))
         self.volumes = self.normalise_volumes(self.volumes)
-        self.command_instructions = self.configuration["commands"]
+        self.command_instructions = self.image_configuration["commands"]
         self.extra_context = []
 
         self.dependency_options = self.formatted("dependency_options", default={})
@@ -942,13 +948,10 @@ class Imager(object):
         """Make our image objects"""
         if not getattr(self, "_images", None):
             images = {}
-            image_confs = {}
 
             options = {"docker_context": self.docker_context}
             for key, val in self.configuration["images"].items():
-                conf = MergedOptions.using(self.configuration, self.configuration[["images", key]], {"images": image_confs})
-                image_confs[key] = conf
-                images[key] = Image(key, conf, ["images", key], **options)
+                images[key] = Image(key, self.configuration, ["images", key], **options)
 
             self._images = images
         return self._images
