@@ -130,10 +130,6 @@ class Harpoon(object):
                 if 'tasks' in result:
                     tasks = result.pop("tasks")
 
-                def convert_image(val):
-                    return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
-                configuration["images"].update({image: result}, source=configuration_file, converter=Converter(convert=convert_image, convert_path=image))
-
                 def convert_task(val):
                     spec = harpoon_spec.tasks_spec(available_tasks)
                     meta = Meta(configuration, [('images', ''), (image, ""), ('tasks', ""), (image, "")])
@@ -143,6 +139,10 @@ class Harpoon(object):
                     , source=configuration_file
                     , converter=Converter(convert=convert_task, convert_path = [image, "tasks"])
                     )
+
+                def convert_image(val):
+                    return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
+                configuration["images"].update({image: result}, source=configuration_file, converter=Converter(convert=convert_image, convert_path=image))
 
         if "images.__images_from__" in configuration:
             images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
@@ -173,10 +173,6 @@ class Harpoon(object):
                                     if 'tasks' in result:
                                         tasks = result.pop("tasks")
 
-                                    def convert_image(val):
-                                        return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
-                                    configuration["images"].update({image: result}, source=location, converter=Converter(convert=convert_image, convert_path=image))
-
                                     def convert_task(val):
                                         spec = harpoon_spec.tasks_spec(available_tasks)
                                         meta = Meta(configuration, [('images', ''), (image, ""), ('tasks', ""), (image, "")])
@@ -186,6 +182,10 @@ class Harpoon(object):
                                         , source=location
                                         , converter=Converter(convert=convert_task, convert_path = [image, "tasks"])
                                         )
+
+                                    def convert_image(val):
+                                        return harpoon_spec.image_spec.normalise(Meta(configuration, [("images", ""), (image, "")]), val)
+                                    configuration["images"].update({image: result}, source=location, converter=Converter(convert=convert_image, convert_path=image))
 
                             configuration["images"].update({name: result}, source=location)
                         except BadYaml as error:
