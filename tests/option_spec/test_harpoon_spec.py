@@ -2,7 +2,7 @@
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.errors import BadSpec, BadSpecValue
-from harpoon.option_spec.objs import Task
+from harpoon.option_spec.task_objs import Task
 
 from tests.helpers import HarpoonCase
 
