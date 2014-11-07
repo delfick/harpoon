@@ -378,7 +378,7 @@ class Image(object):
 
             if not detach and not dependency:
                 try:
-                    dockerpty.start(self.docker_context, container_id)
+                    dockerpty.start(self.docker_context, container_id, interactive=tty)
                 except KeyboardInterrupt:
                     pass
 
