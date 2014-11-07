@@ -5,6 +5,28 @@ import os
 
 class FilesAssertionsMixin:
 
+    def make_temp_dir(self):
+        """
+        Make a temp directory and remove it.
+        Record it so it can be cleaned up later
+        """
+        if not hasattr(self, "_temp_dirs"):
+            self._temp_dirs = []
+
+        tmp = tempfile.mkdtemp()
+        self._temp_dirs.append(tmp)
+        return tmp
+
+    def cleanup_temp_things(self):
+        """
+        Clean up any temporary things that were made during this test
+        """
+        if hasattr(self, "_temp_dirs"):
+            for tmp in self._temp_dirs:
+                if os.path.exists(tmp):
+                    shutil.rmtree(tmp)
+    cleanup_temp_things._harpoon_case_teardown = True
+
     @contextmanager
     def a_temp_file(self, body=None, removed=False):
         """

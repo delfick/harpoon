@@ -1,9 +1,9 @@
 from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.option_spec.task_objs import Task
 from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
-from harpoon.option_spec.objs import Task
 
 from input_algorithms.dictobj import dictobj
 from option_merge.storage import Converter
@@ -108,6 +108,14 @@ class Harpoon(object):
     def collect_configuration(self, configuration_file):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
+
+        source, conf = self.home_dir_configuration()
+        if conf:
+            conf["__mtime__"] = self.get_committime_or_mtime(source)
+            configuration = MergedOptions.using(conf, source=source, dont_prefix=[dictobj])
+        else:
+            configuration = MergedOptions(dont_prefix=[dictobj])
+
         result = self.read_yaml(configuration_file)
         result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
@@ -115,13 +123,9 @@ class Harpoon(object):
         if "images" in result:
             images = result.pop("images")
 
-        configuration = MergedOptions.using(result, source=configuration_file, dont_prefix=[dictobj])
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
+        configuration.update(result, dont_prefix=[dictobj])
         configuration["images"] = MergedOptions(dont_prefix=[dictobj])
-
-        source, conf = self.home_dir_configuration()
-        if conf:
-            configuration.update(conf, source=source)
 
         harpoon_spec = HarpoonSpec()
 
