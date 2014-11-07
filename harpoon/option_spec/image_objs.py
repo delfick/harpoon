@@ -1,12 +1,28 @@
-from namedlist import namedlist
+from input_algorithms.dictobj import dictobj
 
-class Image(namedlist("Image", ["commands", "links", "context", "lxc_conf", "volumes", "env", "ports", "other_options", "network", "privileged"])): pass
-class Command(namedlist("Command", ["command"])): pass
-class Link(namedlist("Link", ["link"])): pass
-class Context(namedlist("Context", ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"])): pass
-class Volumes(namedlist("Volumes", ["mount", "share_with"])): pass
-class Mount(namedlist("Mount", ["mount"])): pass
-class Environment(namedlist("Environment", ["environment"])): pass
-class Port(namedlist("Port", ["port"])): pass
-class Network(namedlist("Network", ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"])): pass
+class Image(dictobj):
+	fields = ["commands", "links", "context", "lxc_conf", "volumes", "env", "ports", "other_options", "network", "privileged"]
 
+class Command(dictobj):
+	fields = ["command"]
+
+class Link(dictobj):
+	fields = ["link"]
+
+class Context(dictobj):
+	fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
+
+class Volumes(dictobj):
+	fields = ["mount", "share_with"]
+
+class Mount(dictobj):
+	fields = ["mount"]
+
+class Environment(dictobj):
+	fields = ["environment"]
+
+class Port(dictobj):
+	fields = ["port"]
+
+class Network(dictobj):
+	fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"]

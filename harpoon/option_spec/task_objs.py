@@ -2,12 +2,12 @@ from harpoon.tasks import available_tasks
 from harpoon.errors import BadOption
 from harpoon.imager import Imager
 
-from option_merge.storage import Converter
-from input_algorithms.meta import Meta
+from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
-from namedlist import namedlist
 
-class Task(namedlist("Task", [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")])):
+class Task(dictobj):
+    fields = [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")]
+
     def run(self, harpoon, cli_args):
         """Run this task"""
         task_func = available_tasks[self.action]

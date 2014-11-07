@@ -17,7 +17,6 @@ setup(
 
       , "humanize"
       , "glob2"
-      , "namedlist"
       , "pyYaml==3.10"
       , "rainbow_logging_handler==2.2.2"
       ]

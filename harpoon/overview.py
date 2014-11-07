@@ -2,10 +2,11 @@ from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.processes import command_output
-from option_merge.storage import Converter
 from harpoon.tasks import available_tasks
 from harpoon.option_spec.objs import Task
 
+from input_algorithms.dictobj import dictobj
+from option_merge.storage import Converter
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
 import logging
@@ -114,9 +115,9 @@ class Harpoon(object):
         if "images" in result:
             images = result.pop("images")
 
-        configuration = MergedOptions.using(result, source=configuration_file)
+        configuration = MergedOptions.using(result, source=configuration_file, dont_prefix=[dictobj])
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
-        configuration["images"] = MergedOptions()
+        configuration["images"] = MergedOptions(dont_prefix=[dictobj])
 
         source, conf = self.home_dir_configuration()
         if conf:
