@@ -11,40 +11,34 @@ class Task(dictobj):
     def run(self, harpoon, cli_args):
         """Run this task"""
         task_func = available_tasks[self.action]
-        configuration = MergedOptions.using(harpoon.configuration)
-
         image = getattr(self, "image", cli_args["harpoon"].get("chosen_image"))
+
+        configuration = MergedOptions.using(harpoon.configuration, dont_prefix=[dictobj])
+
         if image:
             configuration.update({"harpoon": {"chosen_image": image}})
         del cli_args["harpoon"]["chosen_image"]
 
-        imager = None
-        images = None
-        image_name = None
-        if task_func.needs_imager:
-            imager, images, image_name = self.determine_image(harpoon, configuration, needs_image=task_func.needs_image)
-
-        if image_name:
-            conf = images[image_name].configuration
-        else:
-            conf = configuration
-
         if self.options:
-            conf.update(self.options)
+            if image:
+                configuration.update({"images": {image: self.options}})
+            else:
+                configuration.update(self.options)
 
         configuration.update(cli_args)
 
         if self.overrides:
             configuration.update(self.overrides)
 
+        imager = None
+        images = None
+        if task_func.needs_imager:
+            imager, images = self.determine_image(harpoon, configuration, needs_image=task_func.needs_image)
+
         if imager:
             imager.setup_images(images)
 
-        # Complain about missing env early
-        if image_name:
-            images[image_name].env
-
-        return available_tasks[self.action](harpoon, conf, imager=imager, images=images, image=image_name)
+        return available_tasks[self.action](harpoon, configuration, imager=imager, images=images, image=image)
 
     def determine_image(self, harpoon, configuration, needs_image=True):
         """Complain if we don't have an image"""
@@ -52,10 +46,7 @@ class Task(dictobj):
         imager = Imager(configuration, harpoon.docker_context)
 
         available = None
-        try:
-            available = imager.images.keys()
-        except:
-            pass
+        available = imager.images.keys()
 
         images = imager.images
         if needs_image:
@@ -68,7 +59,7 @@ class Task(dictobj):
             if image not in images:
                 raise BadOption("No such image", wanted=image, available=images.keys())
 
-        return imager, images, image
+        return imager, images
 
     def specify_image(self, image):
         """Specify the image this task belongs to"""
