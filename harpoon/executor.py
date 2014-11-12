@@ -17,7 +17,7 @@ log = logging.getLogger("harpoon.executor")
 class NotSpecified(object):
     """Tell the difference between None and Empty"""
 
-def setup_logging(verbose=False, silent=False):
+def setup_logging(verbose=False, silent=False, debug=False):
     log = logging.getLogger("")
     handler = RainbowLoggingHandler(sys.stderr)
     handler._column_color['%(asctime)s'] = ('cyan', None, False)
@@ -25,11 +25,11 @@ def setup_logging(verbose=False, silent=False):
     handler._column_color['%(message)s'][logging.INFO] = ('blue', None, False)
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)-15s %(message)s"))
     log.addHandler(handler)
-    log.setLevel([logging.INFO, logging.DEBUG][verbose])
+    log.setLevel([logging.INFO, logging.DEBUG][verbose or debug])
     if silent:
         log.setLevel(logging.ERROR)
 
-    logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose])
+    logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
     return handler
 
 class CliParser(object):
@@ -87,6 +87,11 @@ class CliParser(object):
 
         logging.add_argument("--silent"
             , help = "Only log errors"
+            , action = "store_true"
+            )
+
+        logging.add_argument("--debug"
+            , help = "Debug logs"
             , action = "store_true"
             )
 
@@ -214,7 +219,7 @@ def docker_context():
 def main(argv=None):
     try:
         args, extra = CliParser().parse_args(argv)
-        handler = setup_logging(verbose=args.verbose, silent=args.silent)
+        handler = setup_logging(verbose=args.verbose, silent=args.silent, debug=args.debug)
 
         cli_args = {"harpoon": {}}
         for key, val in sorted(vars(args).items()):
@@ -230,6 +235,8 @@ def main(argv=None):
         print "!" * 80
         print "Something went wrong! -- {0}".format(error.__class__.__name__)
         print "\t{0}".format(error)
+        if args.debug:
+            raise
         sys.exit(1)
 
 if __name__ == '__main__':
