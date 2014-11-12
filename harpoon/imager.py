@@ -97,46 +97,6 @@ class Image(object):
 
         return first_command.split(" ", 1)[1]
 
-    def dependencies(self, images):
-        """Yield just the dependency images"""
-        for image, _ in self.dependency_images(images):
-            yield image
-
-    def dependency_images(self, images, ignore_parent=False):
-        """
-        What images does this one require
-
-        Taking into account parent image, and those in link and volumes_from options
-        """
-        candidates = []
-        detach = dict((candidate, not options.get("attached", False)) for candidate, options in self.dependency_options.items())
-
-        if not ignore_parent:
-            for image, instance in images.items():
-                if self.parent_image == instance.image_name:
-                    candidates.append(image)
-                    break
-
-        container_names = dict((instance.container_name, image) for image, instance in images.items())
-
-        if self.link:
-            for image in self.link:
-                if ":" in image:
-                    image = image.split(":", 1)[0]
-                if image in container_names:
-                    candidates.append(container_names[image])
-
-        if self.volumes_from:
-            for image in self.volumes_from:
-                if image in container_names:
-                    candidates.append(container_names[image])
-
-        done = set()
-        for candidate in candidates:
-            if candidate not in done:
-                done.add(candidate)
-                yield candidate, detach.get(candidate, True)
-
     @property
     def container_id(self):
         """Find a container id"""
@@ -815,26 +775,6 @@ class Image(object):
 
         return self.formatted(*keys, **kwargs)
 
-    def setup_configuration(self):
-        """Add any generated configuration"""
-        name_prefix = self.formatted("image_name_prefix", default=None)
-        if not isinstance(self.configuration, dict) and not isinstance(self.configuration, MergedOptions):
-            raise BadImage("Image options need to be a dictionary", image=self.name)
-
-        if "image_name" not in self.image_configuration:
-            if name_prefix:
-                image_name = "{0}-{1}".format(name_prefix, self.name)
-            else:
-                image_name = self.name
-            self.image_configuration["image_name"] = image_name
-
-        image_index = self.formatted("image_index", default=None)
-        if image_index:
-            self.image_configuration["image_name"] = "{0}{1}".format(image_index, self.image_configuration["image_name"])
-
-        if "container_name" not in self.image_configuration:
-            self.image_configuration["container_name"] = "{0}-{1}".format(self.image_configuration["image_name"].replace("/", "--"), str(uuid.uuid1()).lower())
-
     def setup(self):
         """Setup this Image instance from configuration"""
         if "commands" not in self.image_configuration:
@@ -845,9 +785,6 @@ class Image(object):
             raise BadOption("Parent dir for image doesn't exist", parent_dir=self.parent_dir, image=self.name)
         self.parent_dir = os.path.abspath(self.parent_dir)
 
-        for listable in ("link", "volumes_from", "volumes", "ports"):
-            setattr(self, listable, self.formatted_list(listable, default=[]))
-        self.volumes = self.normalise_volumes(self.volumes)
         self.command_instructions = self.image_configuration["commands"]
         self.extra_context = []
 
@@ -856,17 +793,6 @@ class Image(object):
             raise BadOption("Dependency options must be a dictionary", got=self.dependency_options)
 
         self.been_setup = True
-
-    def normalise_volumes(self, volumes):
-        """Return normalised version of these volumes"""
-        result = []
-        for volume in self.volumes:
-            if ":" not in volume:
-                result.append(volume)
-            else:
-                volume, rest = volume.split(":", 1)
-                result.append("{0}:{1}".format(os.path.abspath(os.path.normpath(volume)), rest))
-        return result
 
     def interpret_commands(self, commands):
         """Return the commands as a list of strings to go into a docker file"""
@@ -968,8 +894,6 @@ class Imager(object):
     def setup_images(self, images):
         """Run setup on these images"""
         for image in images.values():
-            image.setup_configuration()
-        for image in images.values():
             image.setup()
 
         # Complain about missing environment variables early on
@@ -995,7 +919,7 @@ class Imager(object):
             raise NoSuchImage(looking_for=image, available=images.keys())
 
         if not ignore_deps:
-            for dependency, _ in images[image].dependency_images(images):
+            for dependency, _ in images[image].image_configuration.dependency_images(images):
                 self.make_image(dependency, chain=chain + [image], made=made)
 
         # Should have all our dependencies now

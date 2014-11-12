@@ -3,10 +3,11 @@ from input_algorithms.spec_base import (
     , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
     , listof, optional_spec, or_spec
     , directory_spec, filename_spec
-    , boolean, required
+    , boolean, required, formatted, overridden
     )
 
 from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
+from harpoon.formatter import MergedOptionStringFormatter
 
 from harpoon.option_spec import task_objs, image_objs
 from harpoon.helpers import memoized_property
@@ -72,6 +73,12 @@ class HarpoonSpec(object):
             # Changed how volumes_from works
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
 
+            # default the name to the key of the image
+            , name = formatted(defaulted(string_spec(), "{_key_name}"), formatter=MergedOptionStringFormatter)
+            , key_name = formatted(overridden("{_key_name}"), formatter=MergedOptionStringFormatter)
+            , image_name = formatted(overridden("{harpoon.image_names.{this.name}}"), formatter=MergedOptionStringFormatter)
+            , container_name = formatted(overridden("{harpoon.container_names.{this.name}}"), formatter=MergedOptionStringFormatter)
+
             # The spec itself
             , commands = required(listof(command_spec(), expect=image_objs.Command))
             , links = listof(link_spec(), expect=image_objs.Link)
@@ -92,7 +99,13 @@ class HarpoonSpec(object):
 
             , volumes = create_spec(image_objs.Volumes
                 , mount = listof(mount_spec(), expect=image_objs.Mount)
-                , share_with = listof(self.container_name_spec)
+                , share_with = listof(formatted(string_spec(), MergedOptionStringFormatter, expected_type=image_objs.Image))
+                )
+
+            , dependency_options = dictof(self.image_name_spec
+                , create_spec(image_objs.DependencyOptions
+                  , attached = defaulted(boolean(), False)
+                  )
                 )
 
             , env = listof(env_spec(), expect=image_objs.Environment)
