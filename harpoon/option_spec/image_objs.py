@@ -16,7 +16,10 @@ class Image(dictobj):
 
     @property
     def parent_image(self):
-        return self.commands[0].value
+        for commands in self.commands:
+            for command in commands:
+                if command.startswith("FROM"):
+                    return command.split(" ", 1)[1]
 
     def dependency_images(self, images, ignore_parent=False):
         """
@@ -48,7 +51,7 @@ class Image(dictobj):
                 yield candidate, detach.get(candidate, True)
 
 class Command(dictobj):
-    fields = ["action", "value"]
+    fields = ['commands']
 
 class Link(dictobj):
     fields = ["container_name", "link_name"]

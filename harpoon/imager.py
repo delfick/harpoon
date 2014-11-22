@@ -4,12 +4,13 @@ from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadIma
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
 from harpoon.processes import command_output
-from option_merge.helper import dot_joiner
+from option_merge.joiner import dot_joiner
 from harpoon.layers import Layers
 
 from docker.errors import APIError as DockerAPIError
 from option_merge import MergedOptions
 from contextlib import contextmanager
+from itertools import chain
 import dockerpty
 import humanize
 import fnmatch
@@ -72,7 +73,7 @@ class Image(object):
     def commands(self):
         """Interpret our commands"""
         if not getattr(self, "_commands", None):
-            self._commands = self.interpret_commands(self.command_instructions)
+            self._commands = list(chain.from_iterable(command.commands for command in self.image_configuration.commands))
         return self._commands
 
     @property
@@ -793,42 +794,6 @@ class Image(object):
             raise BadOption("Dependency options must be a dictionary", got=self.dependency_options)
 
         self.been_setup = True
-
-    def interpret_commands(self, commands):
-        """Return the commands as a list of strings to go into a docker file"""
-        result = []
-        errors = []
-        for command in commands:
-            if isinstance(command, basestring):
-                result.append(command)
-            elif isinstance(command, list):
-                if len(command) != 2:
-                    errors.append(BadCommand("Command spec as a list can only be two items", found_length=len(command), found=command, image=self.name))
-
-                name, value = command
-                if not isinstance(name, basestring):
-                    errors.append(BadCommand("Command spec must have a string value as the first option", found=command, iamge=self.name))
-                    continue
-
-                if isinstance(value, basestring):
-                    value = [self.formatted("commands", value=value)]
-
-                if isinstance(value, dict) or isinstance(value, MergedOptions):
-                    try:
-                        result.extend(list(self.complex_command_spec(name, value)))
-                    except BadCommand as error:
-                        errors.append(error)
-
-                else:
-                    for thing in value:
-                        result.append("{0} {1}".format(name, thing))
-            else:
-                errors.append(BadCommand("Command spec must be a string or a list", found=command, image=self.name))
-
-        if errors:
-            raise BadCommand("Command spec had errors", image=self.name, _errors=errors)
-
-        return result
 
     def complex_command_spec(self, name, value):
         """Turn a complex command spec into a list of "KEY VALUE" strings"""

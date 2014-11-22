@@ -11,10 +11,52 @@ class any_spec(object):
 port_spec = any_spec
 
 class command_spec(Spec):
-    def normalise(self, meta, val):
-        action = val[val.find(" "):].strip()
-        value = val[:val.find(" ")].strip()
-        return Command(action, value)
+    def normalise(self, meta, command):
+        return Command(self.determine_commands(meta, command))
+
+    def determine_commands(self, meta, command):
+        errors = []
+        if not command:
+            return
+
+        elif isinstance(command, (str, unicode)):
+            yield command
+            return
+
+        if isinstance(command, dict):
+            command = command.items()
+            if len(command) > 1:
+                errors.append(BadCommand("Command spec as a dictionary can only be one {key: val}", found_length=len(command)))
+
+            command = command[0]
+
+        if len(command) != 2:
+            errors.append(BadCommand("Command spec as a list can only be two items", found_length=len(command), found=command))
+
+        name, value = command
+        if not isinstance(name, basestring):
+            errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
+        else:
+            if isinstance(value, basestring):
+                value = [MergedOptionStringFormatter("commands", meta.path, value=value)]
+
+        if isinstance(value, dict) or isinstance(value, MergedOptions):
+            try:
+                for part in self.complex_spec(name, value):
+                    yield part
+            except BadCommand as error:
+                errors.append(error)
+        else:
+            for part in value:
+                yield "{0} {1}".format(name, part)
+            else:
+                errors.append(BadCommand("Command spec must be a string or a list", found=command))
+
+        if errors:
+            raise BadCommand("Command spec had errors", path=meta.path, source=meta.source, _errors=errors)
+
+    def complex_spec(self, name, value):
+        raise NotImplementedError()
 
 class mount_spec(many_item_formatted_spec):
     value_name = "Volume mounting"
