@@ -63,7 +63,7 @@ class Mount(dictobj):
     fields = ["mount"]
 
 class Environment(dictobj):
-    fields = ["environment"]
+    fields = ["env_name", "default_val"]
 
 class Port(dictobj):
     fields = ["port"]
