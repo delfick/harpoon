@@ -876,7 +876,7 @@ class Imager(object):
             images = {}
 
             options = {"docker_context": self.docker_context}
-            for key, val in self.configuration["images"].items():
+            for key in self.configuration["images"].keys():
                 images[key] = Image(key, self.configuration, ["images", key], **options)
 
             self._images = images
