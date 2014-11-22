@@ -7,9 +7,9 @@ from harpoon.tasks import available_tasks
 
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
-from option_merge.storage import Converter
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
+from option_merge import Converter
 from itertools import chain
 import logging
 import uuid
@@ -154,7 +154,7 @@ class Harpoon(object):
             configuration.update(result, dont_prefix=[dictobj])
 
             if "images" not in configuration:
-                configuration["images"] = MergedOptions(dont_prefix=[dictobj])
+                configuration["images"] = MergedOptions(dont_prefix=[dictobj], converters=configuration.converters)
 
             if isinstance(images, dict):
                 for image, result in images.items():
@@ -162,28 +162,22 @@ class Harpoon(object):
                     if 'tasks' in result:
                         tasks = result.pop("tasks")
 
-                    def convert_task(val):
-                        spec = harpoon_spec.tasks_spec(available_tasks)
-                        meta = Meta(configuration
-                            , [('images', ''), (image, ""), ('tasks', ""), (image, "")]
-                            )
-                        return spec.normalise(meta, val)
-
-                    converter = Converter(convert=convert_task, convert_path=[image, "tasks"])
-                    configuration["images"].update(
-                          {image: {"tasks": tasks}}, source=source, converter=converter
-                        )
-                    converters.append(converter)
-
-                    def convert_image(val):
+                    def convert_image(path, val):
                         spec = harpoon_spec.image_spec
-                        meta = Meta(configuration, [("images", ""), (image, "")])
+                        meta = Meta(path.configuration, [("images", ""), (image, "")])
                         return spec.normalise(meta, val)
-                    converter = Converter(convert=convert_image, convert_path=image)
-                    configuration["images"].update(
-                          {image: result}, source=source, converter=converter
-                        )
+
+                    configuration["images"].update({image: result}, source=source)
+                    converter = Converter(convert=convert_image, convert_path=["images", image])
                     converters.append(converter)
+
+                    def convert_task(path, val):
+                        spec = harpoon_spec.tasks_spec(available_tasks)
+                        meta = Meta(path.configuration, [('images', ""), (image, ""), ('tasks', "")])
+                        return spec.normalise(meta, val)
+
+                    configuration["images"].update({image: {"tasks": tasks}}, source=source)
+                    converters.append(Converter(convert=convert_task, convert_path=["images", image, "tasks"]))
 
         if errors:
             raise BadConfiguration("Some of the configuration was broken", _errors=errors)
@@ -195,7 +189,7 @@ class Harpoon(object):
 
         for image_name, image_options in configuration["images"].items():
             path = ["images", image_name]
-            image_conf = MergedOptions.using(configuration, {"this": MergedOptions.using({"name": image_name, "path": path}, image_options)})
+            image_conf = MergedOptions.using(configuration, {"this": MergedOptions.using({"name": image_name, "path": path}, image_options)}, converters=configuration.converters)
 
             vals = {}
             for val in ("name", "name_prefix", "image_name", "image_index", "container_name"):
@@ -237,7 +231,7 @@ class Harpoon(object):
             )
 
         for converter in converters:
-            converter.activate()
+            configuration.add_converter(converter)
 
         return configuration
 
@@ -277,9 +271,9 @@ class Harpoon(object):
         if path not in configuration:
             return {}
 
+        configuration.converters.activate()
         found = configuration.get(path)
 
-        # from nose.tools import set_trace; set_trace()
         for key, task in found.items():
             if task.options:
                 task_path = "{0}.{1}".format(path, key)

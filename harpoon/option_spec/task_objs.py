@@ -13,7 +13,7 @@ class Task(dictobj):
         task_func = available_tasks[self.action]
         image = getattr(self, "image", cli_args["harpoon"].get("chosen_image"))
 
-        configuration = MergedOptions.using(harpoon.configuration, dont_prefix=[dictobj])
+        configuration = MergedOptions.using(harpoon.configuration, dont_prefix=[dictobj], converters=harpoon.configuration.converters)
 
         if image:
             configuration.update({"harpoon": {"chosen_image": image}})

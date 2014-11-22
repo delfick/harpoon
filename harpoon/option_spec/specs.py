@@ -62,22 +62,22 @@ class many_item_formatted_spec(Spec):
                 )
 
         formatted_vals = []
-        for index, spec in enumerate(self.specs + self.other_specs):
+        for index, spec in enumerate(self.specs + self.optional_specs):
             index += 1
             expected_type = NotSpecified
             if isinstance(spec, (list, tuple)):
                 spec, expected_type = spec
 
             if len(vals) < index:
-                val = getattr(self, "determine_{0}".format(index), lambda *args: val)
+                val = getattr(self, "determine_{0}".format(index), lambda *args: val)(*list(vals) + [meta, val])
             else:
                 val = vals[index]
 
             if val is not NotSpecified and (expected_type is NotSpecified or not isinstance(val, expected_type)):
-                val = formatted(string_spec, formatter=self.formatter).normalise(meta, val)
+                val = formatted(string_spec(), formatter=self.formatter).normalise(meta, val)
 
             func = getattr(self, "alter_{0}".format(index), lambda *args: val)
             formatted_vals.append(func(*(formatted_vals[:index] + [meta, original_val])))
 
-        return self.create_result(*(formatted_vals + (meta, original_val)))
+        return self.create_result(*list(formatted_vals) + [meta, original_val])
 
