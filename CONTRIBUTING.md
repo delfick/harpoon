@@ -26,15 +26,15 @@ Supporting libraries
 
 Delfick:
 
-[Delfick Error|https://github.com/delfick/delfick_error]:
+[Delfick Error](https://github.com/delfick/delfick_error):
 Custom Exception class (orderable, hashable, pretty_printed, supports testing)
 
-[Option Merge|https://github.com/delfick/option_merge]:
+[Option Merge](https://github.com/delfick/option_merge):
 Deep merge of Python dictionaries
 Enables deep referencing
 Supports conversion on reference (memoises)
 
-[Input Algorithms|https://github.com/delfick/input_algorithms]:
+[Input Algorithms](https://github.com/delfick/input_algorithms):
 Specify a .yaml and verifies, converts and normalises it to python objects
 
 Harpoon:
