@@ -17,12 +17,11 @@ And then `harpoon` is in your PATH
 
 # Intro to Harpoon
 
-## 4 things
+## Harpoon consists of 4 things:
 * Harpoon (app)
-## Supporting libraries
-* delfick_error
-* option_merge
-* input_algorithms
+* delfick_error (supporting library)
+* option_merge (supporting library)
+* input_algorithms (supporting library)
 
 ## [Delfick Error](https://github.com/delfick/delfick_error):
 Custom Exception class (orderable, hashable, pretty_printed, supports testing)
@@ -54,23 +53,17 @@ images:
   __images_from__: <folder to .yml>
 ```
 
-What is a converter?
-Converter says for this path & val; Return a new val.
-
-lazy evaluated
-
-### Runs it through input_algorithms
-
-* File.read(~/harpoon.yml, <local>.yml, <image_from>*.yml) -> MergedOptions
-* cli args tacked on
-* config_root tacked on (where harpoon.yml is specified)
+## Sequence of events
+File.read(~/harpoon.yml, <local>.yml, <image_from>*.yml) -> MergedOptions
+cli args tacked on
+config_root tacked on (where harpoon.yml is specified)
 
 ### Go through images dir
 * for each image
-** find a task
-** interpret the task with the given config
-** convert each task to a TaskObject
-** set a chosen image
+  * find a task
+  * interpret the task with the given config
+  * convert each task to a TaskObject
+* set a chosen task (harpoon.chosen_task)
 * run the task
 * chosen_task = --task or harpoon_chosen_task
 * Positional arg parsing
