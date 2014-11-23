@@ -198,6 +198,9 @@ class Harpoon(object):
                 else:
                     vals[val] = MergedOptionStringFormatter(image_conf, path + [path]).format()
 
+            if vals["name_prefix"] is NotSpecified:
+                vals["name_prefix"] = ""
+
             if vals["name"] is NotSpecified:
                 vals["name"] = image_name
 
@@ -207,8 +210,8 @@ class Harpoon(object):
                 else:
                     vals["image_name"] = vals["name"]
 
-            if vals["image_index"] is not NotSpecified:
-                vals["image_name"] = "{0}{1}".format(vals["image_index"], vals["image_name"])
+            if vals["image_index"] is NotSpecified:
+                vals["image_index"] = "{0}{1}".format(vals["image_index"], vals["image_name"])
 
             if vals["container_name"] is NotSpecified:
                 vals["container_name"] = "{0}-{1}".format(vals["image_name"].replace("/", "--"), str(uuid.uuid1()).lower())

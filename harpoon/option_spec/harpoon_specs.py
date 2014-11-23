@@ -3,7 +3,7 @@ from input_algorithms.spec_base import (
     , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
     , listof, optional_spec, or_spec
     , directory_spec, filename_spec
-    , boolean, required, formatted, overridden
+    , boolean, required, formatted, overridden, retrieved
     )
 
 from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
@@ -76,8 +76,8 @@ class HarpoonSpec(object):
             # default the name to the key of the image
             , name = formatted(defaulted(string_spec(), "{_key_name}"), formatter=MergedOptionStringFormatter)
             , key_name = formatted(overridden("{_key_name}"), formatter=MergedOptionStringFormatter)
-            , image_name = formatted(overridden("{harpoon.image_names.{this.name}}"), formatter=MergedOptionStringFormatter)
-            , container_name = formatted(overridden("{harpoon.container_names.{this.name}}"), formatter=MergedOptionStringFormatter)
+            , image_name = retrieved(overridden("harpoon.image_names.{this.name}"), formatter=MergedOptionStringFormatter)
+            , container_name = retrieved(overridden("harpoon.container_names.{this.name}"), formatter=MergedOptionStringFormatter)
 
             # The spec itself
             , commands = required(listof(command_spec(), expect=image_objs.Command))
@@ -95,7 +95,7 @@ class HarpoonSpec(object):
                     )
                 )
 
-            , lxc_conf = filename_spec()
+            , lxc_conf = optional_spec(filename_spec())
 
             , volumes = create_spec(image_objs.Volumes
                 , mount = listof(mount_spec(), expect=image_objs.Mount)
@@ -125,6 +125,6 @@ class HarpoonSpec(object):
                 , publish_all_ports = optional_spec(boolean())
                 )
 
-            , privileged = defaulted(boolean, False)
+            , privileged = defaulted(boolean(), False)
             )
 
