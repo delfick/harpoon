@@ -241,6 +241,8 @@ class Harpoon(object):
         for converter in converters:
             configuration.add_converter(converter)
 
+        configuration.converters.activate()
+
         return configuration
 
     ########################
@@ -279,7 +281,6 @@ class Harpoon(object):
         if path not in configuration:
             return {}
 
-        configuration.converters.activate()
         found = configuration.get(path)
 
         for key, task in found.items():
