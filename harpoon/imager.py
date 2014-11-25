@@ -229,7 +229,7 @@ class Image(object):
             return
 
         try:
-            for dependency_name, detached in self.dependency_images(images, ignore_parent=True):
+            for dependency_name, detached in self.image_configuration.dependency_images(images, ignore_parent=True):
                 try:
                     images[dependency_name].run_container(images, detach=detached, dependency=True)
                 except Exception as error:
@@ -238,8 +238,8 @@ class Image(object):
             ports = self.figure_out_ports()
 
             tty = not detach and self.interactive
-            links = [(link.split(":") if ":" in link else (link, link)) for link in self.link]
-            volumes = self.volumes
+            links = self.image_configuration.get('links')
+            volumes = self.image_configuration.get('volumes')
             extra_volumes = self.image_configuration.get('extra_volumes')
             if extra_volumes:
                 if volumes is None:
@@ -253,7 +253,7 @@ class Image(object):
             else:
                 command = self.image_configuration.get('command')
 
-            volumes_from = self.volumes_from
+            volumes_from = self.image_configuration.get('volumes_from')
             self._run_container(self.name, self.image_name, self.container_name
                 , detach=detach, command=command, tty=tty, env=self.env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency
@@ -261,7 +261,7 @@ class Image(object):
 
         finally:
             if not detach and not dependency:
-                for dependency, _ in self.dependency_images(images, ignore_parent=True):
+                for dependency, _ in self.image_configuration.dependency_images(images, ignore_parent=True):
                     try:
                         images[dependency].stop_container(fail_on_bad_exit=True, fail_reason="Failed to run dependency container")
                     except BadImage:
