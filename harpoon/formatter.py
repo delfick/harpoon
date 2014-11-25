@@ -85,16 +85,10 @@ class MergedOptionStringFormatter(string.Formatter):
         if format_spec in ("env", ):
             return value, ()
 
-        if self.option_path is None:
-            this = self.all_options
-        else:
-            this = self.all_options.get(self.option_path)
-        options = MergedOptions.using(self.all_options, {"this": this})
-
         if value in self.chain:
             raise BadOptionFormat("Recursive option", chain=self.chain + [value])
 
-        return MergedOptionStringFormatter(options, value, chain=self.chain + [value]).format(), ()
+        return MergedOptionStringFormatter(self.all_options, value, chain=self.chain + [value]).format(), ()
 
     def format_field(self, obj, format_spec):
         """Know about any special formats"""
