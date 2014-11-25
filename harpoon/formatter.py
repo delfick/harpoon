@@ -1,6 +1,8 @@
 from harpoon.errors import BadOptionFormat
 
+from option_merge.joiner import dot_joiner
 from option_merge import MergedOptions
+from input_algorithms.meta import Meta
 import string
 
 class NotSpecified(object):
@@ -32,7 +34,10 @@ class MergedOptionStringFormatter(string.Formatter):
     def get_string(self, key):
         """Get a string from all_options"""
         if key not in self.all_options:
-            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain[:-1], source=self.all_options.source_for(self.chain[:-1]))
+            kwargs = {}
+            if len(self.chain) > 1:
+                kwargs['source'] = Meta(self.all_options, self.chain[-2]).source
+            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain, **kwargs)
 
         val = self.all_options[key]
         if isinstance(val, dict) or isinstance(val, MergedOptions):
