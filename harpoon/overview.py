@@ -143,6 +143,7 @@ class Harpoon(object):
                 result = self.read_yaml(source)
             except BadYaml as error:
                 errors.append(error)
+                continue
 
             result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
