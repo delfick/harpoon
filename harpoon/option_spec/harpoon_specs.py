@@ -3,7 +3,7 @@ from input_algorithms.spec_base import (
     , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
     , listof, optional_spec, or_spec
     , directory_spec, filename_spec
-    , boolean, required, formatted, overridden, retrieved
+    , boolean, required, formatted, overridden, many_format
     )
 
 from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
@@ -74,10 +74,10 @@ class HarpoonSpec(object):
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
 
             # default the name to the key of the image
-            , name = formatted(defaulted(string_spec(), "{_key_name}"), formatter=MergedOptionStringFormatter)
-            , key_name = formatted(overridden("{_key_name}"), formatter=MergedOptionStringFormatter)
-            , image_name = retrieved(overridden("harpoon.image_names.{this.name}"), formatter=MergedOptionStringFormatter)
-            , container_name = retrieved(overridden("harpoon.container_names.{this.name}"), formatter=MergedOptionStringFormatter)
+            , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , image_name = many_format(overridden("harpoon.image_names.{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , container_name = many_format(overridden("harpoon.container_names.{_key_name_1}"), formatter=MergedOptionStringFormatter)
 
             # The spec itself
             , commands = required(listof(command_spec(), expect=image_objs.Command))
