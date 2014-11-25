@@ -165,7 +165,11 @@ class Harpoon(object):
 
                     def convert_image(path, val):
                         spec = harpoon_spec.image_spec
-                        meta = Meta(path.configuration, [("images", ""), (image, "")])
+                        meta = Meta(path.configuration.root(), [("images", ""), (image, "")])
+                        meta.result = {}
+                        for key, v, in val.items():
+                            meta.result[key] = v
+                        configuration.converters.done(path, meta.result)
                         return spec.normalise(meta, val)
 
                     configuration["images"].update({image: result}, source=source)
@@ -174,7 +178,7 @@ class Harpoon(object):
 
                     def convert_task(path, val):
                         spec = harpoon_spec.tasks_spec(available_tasks)
-                        meta = Meta(path.configuration, [('images', ""), (image, ""), ('tasks', "")])
+                        meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
                         return spec.normalise(meta, val)
 
                     configuration["images"].update({image: {"tasks": tasks}}, source=source)
