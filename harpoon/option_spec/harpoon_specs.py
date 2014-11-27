@@ -89,7 +89,7 @@ class HarpoonSpec(object):
                     , exclude = listof(string_spec())
                     , enabled = defaulted(boolean(), True)
 
-                    , parent_dir = optional_spec(directory_spec())
+                    , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
                     , use_gitignore = defaulted(boolean(), True)
                     , use_git_timestamps = defaulted(or_spec(boolean(), listof(string_spec())), False)
                     )
