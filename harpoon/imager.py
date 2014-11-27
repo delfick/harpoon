@@ -38,6 +38,10 @@ class Image(object):
         self.already_running = False
 
     @property
+    def dependencies(self):
+        return self.image_configuration.dependencies
+
+    @property
     def image_configuration(self):
         if getattr(self, "_image_configuration", None) is None:
             self._image_configuration = self.configuration[self.path]
