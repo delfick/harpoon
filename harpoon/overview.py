@@ -120,10 +120,11 @@ class Harpoon(object):
             configuration = MergedOptions(dont_prefix=[dictobj])
 
         result = self.read_yaml(configuration_file)
+        configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
+
         images_from = []
         if "images" in result and "__images_from__" in result["images"]:
             images_from = result["images"]["__images_from__"]
-            del result["images.__images_from__"]
 
             if not images_from.startswith("/"):
                 images_from = os.path.join(configuration_dir, images_from)
@@ -145,44 +146,38 @@ class Harpoon(object):
                 errors.append(error)
                 continue
 
-            result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
+            if "images" in result and "__images_from__" in result["images"]:
+                del result["images"]["__images_from__"]
 
-            images = {}
-            if "images" in result:
-                images = result.pop("images")
+            if source in images_from:
+                result = {"images": {os.path.splitext(os.path.basename(source))[0]: result}}
 
-            configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
-            configuration.update(result, dont_prefix=[dictobj])
+            result["__mtime__"] = self.get_committime_or_mtime(source)
+            configuration.update(result, dont_prefix=[dictobj], source=source)
 
-            if "images" not in configuration:
-                configuration["images"] = MergedOptions(dont_prefix=[dictobj], converters=configuration.converters)
+            def make_converters(image):
+                def convert_image(path, val):
+                    spec = harpoon_spec.image_spec
+                    meta = Meta(path.configuration.root(), [("images", ""), (image, "")])
+                    meta.result = {}
+                    for key, v, in val.items():
+                        meta.result[key] = v
+                    configuration.converters.done(path, meta.result)
+                    return spec.normalise(meta, val)
 
-            if isinstance(images, dict):
-                for image, result in images.items():
-                    tasks = {}
-                    if 'tasks' in result:
-                        tasks = result.pop("tasks")
+                converter = Converter(convert=convert_image, convert_path=["images", image])
+                converters.append(converter)
 
-                    def convert_image(path, val):
-                        spec = harpoon_spec.image_spec
-                        meta = Meta(path.configuration.root(), [("images", ""), (image, "")])
-                        meta.result = {}
-                        for key, v, in val.items():
-                            meta.result[key] = v
-                        configuration.converters.done(path, meta.result)
-                        return spec.normalise(meta, val)
+                def convert_tasks(path, val):
+                    spec = harpoon_spec.tasks_spec(available_tasks)
+                    meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
+                    return spec.normalise(meta, val)
 
-                    configuration["images"].update({image: result}, source=source)
-                    converter = Converter(convert=convert_image, convert_path=["images", image])
-                    converters.append(converter)
+                converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
+                converters.append(converter)
 
-                    def convert_task(path, val):
-                        spec = harpoon_spec.tasks_spec(available_tasks)
-                        meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
-                        return spec.normalise(meta, val)
-
-                    configuration["images"].update({image: {"tasks": tasks}}, source=source)
-                    converters.append(Converter(convert=convert_task, convert_path=["images", image, "tasks"]))
+            for image in result.get('images', {}).keys():
+                make_converters(image)
 
         if errors:
             raise BadConfiguration("Some of the configuration was broken", _errors=errors)
