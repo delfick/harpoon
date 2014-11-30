@@ -27,9 +27,6 @@ import os
 
 log = logging.getLogger("harpoon.imager")
 
-class NotSpecified(object):
-    """Tell the difference between not specified and None"""
-
 class Image(object):
     def __init__(self, name, configuration, path, docker_context):
         self.name = name
