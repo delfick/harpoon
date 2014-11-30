@@ -648,7 +648,7 @@ class Image(object):
                             os.utime(thing, (date, date))
                     t.add(thing, arcname=arcname)
 
-            for content, arcname in self.extra_context:
+            for content, arcname in self.image_configuration.commands.extra_context:
                 with a_temp_file() as fle:
                     fle.write(content)
                     fle.seek(0)
@@ -763,32 +763,6 @@ class Image(object):
                 return result
 
         return self.formatted(*keys, **kwargs)
-
-    def complex_command_spec(self, name, value):
-        """Turn a complex command spec into a list of "KEY VALUE" strings"""
-        if name == "ADD":
-            if "content" in value:
-                if "dest" not in value:
-                    raise BadOption("When doing an ADD with content, must specify dest", image=self.name, command=[name, value])
-                dest = value.get("dest")
-                context_name = "{0}-{1}".format(hashlib.md5(value.get('content')).hexdigest(), dest.replace("/", "-").replace(" ", "--"))
-                self.extra_context.append((value.get("content"), context_name))
-                yield "ADD {0} {1}".format(context_name, dest)
-            else:
-                prefix = value.get("prefix", "/")
-                if "get" not in value:
-                    raise BadOption("Command spec didn't contain 'get' option", command=[name, value], image=self.name)
-
-                get = value["get"]
-                if isinstance(get, basestring):
-                    get = [get]
-                elif not isinstance(get, list):
-                    raise BadOption("Command spec value for 'get' should be string or a list", command=[name, value], image=self.name)
-
-                for val in get:
-                    yield "ADD {0} {1}/{2}".format(val, prefix, val)
-        else:
-            raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
     def display_line(self):
         """A single line describing this image"""

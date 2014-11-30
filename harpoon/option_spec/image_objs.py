@@ -1,8 +1,9 @@
 from harpoon.formatter import MergedOptionStringFormatter
 
 from input_algorithms.spec_base import NotSpecified
+from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
-from harpoon.errors import BadCommand
+import hashlib
 import uuid
 
 class Image(dictobj):
@@ -75,6 +76,10 @@ class Image(dictobj):
 class Command(dictobj):
     fields = ['meta', 'orig_command']
 
+    def __init__(self, *args, **kwargs):
+        super(Command, self).__init__(*args, **kwargs)
+        self.extra_context = []
+
     @property
     def commands(self):
         if not getattr(self, "_commands", None):
@@ -144,7 +149,7 @@ class Command(dictobj):
         name, value = command
         if not isinstance(name, basestring):
             errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
-        else:
+        elif isinstance(value, basestring):
             value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
             if name == "FROM":
                 if value[0] in meta.everything:
@@ -168,7 +173,30 @@ class Command(dictobj):
             raise BadCommand("Command spec had errors", path=meta.path, source=meta.source, _errors=errors)
 
     def complex_spec(self, name, value):
-        raise NotImplementedError()
+        """Turn a complex command spec into a list of "KEY VALUE" strings"""
+        if name == "ADD":
+            if "content" in value:
+                if "dest" not in value:
+                    raise BadOption("When doing an ADD with content, must specify dest", image=self.name, command=[name, value])
+                dest = value.get("dest")
+                context_name = "{0}-{1}".format(hashlib.md5(value.get('content')).hexdigest(), dest.replace("/", "-").replace(" ", "--"))
+                self.extra_context.append((value.get("content"), context_name))
+                yield "ADD", "{0} {1}".format(context_name, dest)
+            else:
+                prefix = value.get("prefix", "/")
+                if "get" not in value:
+                    raise BadOption("Command spec didn't contain 'get' option", command=[name, value], image=self.name)
+
+                get = value["get"]
+                if isinstance(get, basestring):
+                    get = [get]
+                elif not isinstance(get, list):
+                    raise BadOption("Command spec value for 'get' should be string or a list", command=[name, value], image=self.name)
+
+                for val in get:
+                    yield "ADD", "{0} {1}/{2}".format(val, prefix, val)
+        else:
+            raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
 class Link(dictobj):
     fields = ["container_name", "link_name"]
