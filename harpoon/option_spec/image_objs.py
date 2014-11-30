@@ -2,6 +2,7 @@ from harpoon.formatter import MergedOptionStringFormatter
 
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
+from harpoon.errors import BadCommand
 import uuid
 
 class Image(dictobj):
