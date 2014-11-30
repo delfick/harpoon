@@ -625,7 +625,7 @@ class Image(object):
             if context_exclude and not self.silent_build: log.info("Adding %s things from %s to the context", len(files), self.parent_dir)
 
         mtime = self.mtime
-        docker_lines = '\n'.join(self.image_configuration.commands.commands)
+        docker_lines = self.image_configuration.commands.docker_file()
         def matches_glob(string, globs):
             """Returns whether this string matches any of the globs"""
             if isinstance(globs, bool):
@@ -850,7 +850,7 @@ class Imager(object):
 
         # Should have all our dependencies now
         instance = images[image]
-        log.info("Making image for '%s' (%s) - FROM %s", instance.image_configuration.name, instance.image_configuration.image_name, instance.image_configuration.commands.parent_image)
+        log.info("Making image for '%s' (%s) - FROM %s", instance.image_configuration.name, instance.image_configuration.image_name, instance.image_configuration.commands.parent_image_name)
         instance.build_image()
         made[image] = True
 

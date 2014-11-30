@@ -55,10 +55,8 @@ class Image(dictobj):
         detach = dict((candidate, not options.attached) for candidate, options in self.dependency_options.items())
 
         if not ignore_parent:
-            for image, instance in images.items():
-                if self.commands.parent_image == instance.image_name:
-                    candidates.append(image)
-                    break
+            if not isinstance(self.commands.parent_image, basestring):
+                candidates.append(self.commands.parent_image.name)
 
         for link in self.links:
             if link.container_name in managed_containers:
@@ -89,7 +87,9 @@ class Command(dictobj):
     @property
     def parent_image(self):
         if hasattr(self, "_commands"):
-            return self._commands[0].split(" ", 1)[1]
+            for name, command in self._commands:
+                if name == "FROM":
+                    return command
 
         for command in self.orig_command:
             cmd = command
@@ -100,7 +100,27 @@ class Command(dictobj):
                 cmd, _ = command
 
             if cmd.startswith("FROM"):
-                return list(self.determine_commands(self.meta, command))[0].split(" ", 1)[1]
+                val = list(self.determine_commands(self.meta, command))[0][1]
+                return val
+
+    @property
+    def parent_image_name(self):
+        """Return the image name of the parent"""
+        parent = self.parent_image
+        if isinstance(parent, basestring):
+            return parent
+        else:
+            return parent.image_name
+
+    def docker_file(self):
+        res = []
+        for name, value in self.commands:
+            if name == "FROM" and not isinstance(value, basestring):
+                value = value.image_name
+            res.append("{0} {1}".format(name, value))
+
+        return '\n'.join(res)
+
 
     def determine_commands(self, meta, command):
         errors = []
@@ -108,7 +128,7 @@ class Command(dictobj):
             return
 
         elif isinstance(command, (str, unicode)):
-            yield command
+            yield command.split(" ", 1)
             return
 
         if isinstance(command, dict):
@@ -126,6 +146,10 @@ class Command(dictobj):
             errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
         else:
             value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
+            if name == "FROM":
+                if value[0] in meta.everything:
+                    yield name, meta.everything[value[0]]
+                    return
 
         if isinstance(value, dict):
             try:
@@ -135,7 +159,7 @@ class Command(dictobj):
                 errors.append(error)
         else:
             for part in value:
-                yield "{0} {1}".format(name, part)
+                yield name, part
 
             if not value:
                 errors.append(BadCommand("Command spec must be a string or a list", found=command))
