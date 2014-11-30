@@ -5,17 +5,13 @@ from harpoon.option_spec.task_objs import Task
 from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
 
-from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
-from option_merge.path import Path
 from option_merge import Converter
 from itertools import chain
 import logging
-import uuid
 import yaml
-import sys
 import os
 
 log = logging.getLogger("harpoon.executor")
