@@ -40,9 +40,6 @@ class MergedOptionStringFormatter(string.Formatter):
             raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain, **kwargs)
 
         val = self.all_options[key]
-        if isinstance(val, dict) or isinstance(val, MergedOptions):
-            raise BadOptionFormat("Shouldn't format in a dictionary", key=key, val=type(val), chain=self.chain)
-
         return val
 
     def _vformat(self, format_string, args, kwargs, used_args, recursion_depth):
