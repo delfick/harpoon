@@ -76,8 +76,10 @@ class HarpoonSpec(object):
             # default the name to the key of the image
             , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
-            , image_name = many_format(overridden("harpoon.image_names.{_key_name_1}"), formatter=MergedOptionStringFormatter)
-            , container_name = many_format(overridden("harpoon.container_names.{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , image_name = optional_spec(string_spec())
+            , image_index = defaulted(string_spec(), "")
+            , name_prefix = defaulted(string_spec(), "")
+            , container_name = optional_spec(string_spec())
 
             # The spec itself
             , commands = required(command_spec())

@@ -1,13 +1,43 @@
+from harpoon.formatter import MergedOptionStringFormatter
+
+from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
+import uuid
 
 class Image(dictobj):
     fields = [
           "commands", "links", "context"
         , "lxc_conf", "volumes", "env", "ports"
-        , "other_options", "network", "privileged"
-        , "image_name", "dependency_options"
+        , "other_options", "network", "privileged", "name_prefix"
+        , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name"
         ]
+
+    @property
+    def image_name(self):
+        if getattr(self, "_image_name", NotSpecified) is NotSpecified:
+            if self.name_prefix:
+                self._image_name = "{0}-{1}".format(self.name_prefix, self.name)
+            else:
+                self._image_name = self.name
+
+            if self.image_index:
+                self._image_name = "{0}{1}".format(self.image_index, self._image_name)
+        return self._image_name
+
+    @image_name.setter
+    def image_name(self, val):
+        self._image_name = val
+
+    @property
+    def container_name(self):
+        if getattr(self, "_container_name", NotSpecified) is NotSpecified:
+            self.container_name = "{0}-{1}".format(self.image_name.replace("/", "--"), str(uuid.uuid1()).lower())
+        return self._container_name
+
+    @container_name.setter
+    def container_name(self, val):
+        self._container_name = val
 
     def dependencies(self, images):
         """Yield just the dependency images"""
