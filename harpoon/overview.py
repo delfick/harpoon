@@ -168,12 +168,15 @@ class Harpoon(object):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
             spec = harpoon_spec.image_spec
-            meta = Meta(MergedOptions.using(path.configuration.root()), [("images", ""), (image, "")])
+            everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters)
+
+            meta = Meta(everything, [("images", ""), (image, "")])
             meta.result = {}
-            for key, v, in val.items():
-                meta.result[key] = v
             configuration.converters.done(path, meta.result)
-            return spec.normalise(meta, val)
+
+            for key, v in val.items(ignore_converters=True):
+                meta.result[key] = v
+            return spec.normalise(meta, meta.result)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])
         configuration.converters.append(converter)
