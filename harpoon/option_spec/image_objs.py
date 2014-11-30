@@ -5,6 +5,7 @@ from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
 import hashlib
 import uuid
+import os
 
 class Image(dictobj):
     fields = [
@@ -72,6 +73,17 @@ class Image(dictobj):
             if candidate not in done:
                 done.add(candidate)
                 yield candidate, detach.get(candidate, True)
+
+    def find_missing_env(self):
+        """Find any missing environment variables"""
+        missing = []
+        for e in self.env:
+            if not e.default_val and not e.set_val:
+                if e.env_name not in os.environ:
+                    missing.append(e.env_name)
+
+        if missing:
+            raise BadOption("Some environment variables aren't in the current environment", missing=missing)
 
 class Command(dictobj):
     fields = ['meta', 'orig_command']
@@ -211,7 +223,16 @@ class Mount(dictobj):
     fields = ["mount"]
 
 class Environment(dictobj):
-    fields = ["env_name", "default_val"]
+    fields = ["env_name", ("default_val", None), ("set_val", None)]
+
+    def pair(self):
+        """Get the name and value for this environment variable"""
+        if self.set_val:
+            return self.env_name, self.set_val
+        elif self.default_val:
+            return self.env_name, os.environ.get(self.env_name, self.default_val)
+        else:
+            return self.env_name, os.environ[self.env_name]
 
 class Port(dictobj):
     fields = ["port"]

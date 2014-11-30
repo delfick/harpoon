@@ -30,7 +30,6 @@ class Image(object):
     def __init__(self, name, configuration, path, docker_context):
         self.name = name
         self.path = path
-        self.extra_context = []
         self.configuration = configuration
         self.docker_context = docker_context
         self.already_running = False
@@ -79,13 +78,6 @@ class Image(object):
                 val = int(val)
             self._mtime = val
         return self._mtime
-
-    @property
-    def env(self):
-        """Determine the environment variables"""
-        if not getattr(self, "_env", None):
-            self._env = self.figure_out_env()
-        return self._env
 
     @property
     def container_id(self):
@@ -151,44 +143,6 @@ class Image(object):
             else:
                 print(line)
 
-    def find_missing_env(self, env):
-        """Find any missing environment variables"""
-        missing = []
-        if isinstance(env, list):
-            for thing in env:
-                if '=' not in thing and ":" not in thing:
-                    if thing not in os.environ:
-                        missing.append(thing)
-
-        if missing:
-            raise BadOption("Some environment variables aren't in the current environment", missing=missing)
-
-    def figure_out_env(self):
-        """Figure out combination of env from configuration and extra env"""
-        env = self.formatted("env", default=None) or []
-        if isinstance(env, dict):
-            env = sorted("{0}={1}".format(key, val) for key, val in env.items())
-
-        extra_env = self.formatted("extra_env", default=None)
-        if isinstance(extra_env, dict):
-            env.extend(sorted("{0}={1}".format(key, val) for key, val in extra_env.items()))
-        elif extra_env:
-            env.extend(extra_env)
-
-        # Complain about any missing environment variables
-        self.find_missing_env(env)
-
-        result = []
-        for thing in env:
-            if '=' in thing:
-                result.append(thing)
-            elif ":" in thing:
-                name, dflt = thing.split(":", 1)
-                result.append("{0}={1}".format(name, os.environ.get(name, dflt)))
-            else:
-                result.append("{0}={1}".format(thing, os.environ[thing]))
-        return result
-
     def figure_out_ports(self):
         """Figure out the combination of ports, return as a dictionary"""
         result = {}
@@ -242,9 +196,11 @@ class Image(object):
             else:
                 command = self.image_configuration.get('command')
 
+            env = dict(e.pair() for e in self.image_configuration.env)
+
             volumes_from = self.image_configuration.get('volumes_from')
             self._run_container(self.name, self.image_name, self.container_name
-                , detach=detach, command=command, tty=tty, env=self.env, ports=ports
+                , detach=detach, command=command, tty=tty, env=env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency
                 )
 
@@ -292,8 +248,9 @@ class Image(object):
 
         if volumes:
             log.info("\tUsing volumes\tvolumes=%s", volumes)
+
         if env:
-            log.info("\tUsing environment\tenv=%s", [thing.split('=', 1)[0] for thing in env])
+            log.info("\tUsing environment\tenv=%s", sorted(env.keys()))
         if ports:
             log.info("\tUsing ports\tports=%s", ports.keys())
         container = self.docker_context.create_container(image_name

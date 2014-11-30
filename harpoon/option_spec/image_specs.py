@@ -1,10 +1,8 @@
-from harpoon.formatter import MergedOptionStringFormatter
-
 from harpoon.option_spec.image_objs import Link, Command, Mount, Environment
 from harpoon.option_spec.specs import many_item_formatted_spec
-from harpoon.errors import BadCommand
+from harpoon.formatter import MergedOptionStringFormatter
 
-from input_algorithms.spec_base import string_spec, Spec
+from input_algorithms.spec_base import string_spec, Spec, NotSpecified, string_or_int_as_string_spec
 
 class any_spec(object):
     def normalise(self, meta, val):
@@ -29,12 +27,19 @@ class mount_spec(many_item_formatted_spec):
 
 class env_spec(many_item_formatted_spec):
     value_name = "Environment Variable"
+    seperators = [':', '=']
+
     specs = [string_spec()]
-    optional_specs = [string_spec()]
+    optional_specs = [string_or_int_as_string_spec()]
     formatter = MergedOptionStringFormatter
 
-    def create_result(self, env_name, default_val, meta, val):
-        return Environment(env_name, default_val)
+    def create_result(self, env_name, other_val, meta, val, dividers):
+        args = [env_name]
+        if dividers[0] == ':':
+            args.append(other_val)
+        elif dividers[0] == '=':
+            args.extend([None, other_val])
+        return Environment(*args)
 
 class link_spec(many_item_formatted_spec):
     value_name = "Container link"
@@ -43,11 +48,13 @@ class link_spec(many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def determine_2(self, container_name, meta, val):
+        if not isinstance(container_name, basestring):
+            container_name = container_name.container_name
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
     def alter_1(self, container_name, meta, val):
-        if isinstance(container_name, Image):
-            return container_name.container_name
+        if container_name in meta.everything:
+            container_name = meta.everything[container_name]
         return container_name
 
     def create_result(self, container_name, link_name, meta, val):

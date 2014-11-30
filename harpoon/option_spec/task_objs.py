@@ -35,6 +35,9 @@ class Task(dictobj):
         if task_func.needs_imager:
             imager, images = self.determine_image(harpoon, configuration, needs_image=task_func.needs_image)
 
+        if image:
+            images[image].image_configuration.find_missing_env()
+
         return available_tasks[self.action](harpoon, configuration, imager=imager, images=images, image=image)
 
     def determine_image(self, harpoon, configuration, needs_image=True):

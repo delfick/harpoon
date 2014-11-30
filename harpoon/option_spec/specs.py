@@ -1,7 +1,7 @@
 from input_algorithms.errors import BadSpecValue
 from input_algorithms.spec_base import (
       NotSpecified, Spec
-    , string_spec, formatted
+    , string_or_int_as_string_spec, formatted
     )
 
 class many_item_formatted_spec(Spec):
@@ -25,6 +25,7 @@ class many_item_formatted_spec(Spec):
     """
     specs = []
     value_name = None
+    seperators = ":"
     optional_specs = []
 
     def setup(self, *args, **kwargs):
@@ -33,26 +34,38 @@ class many_item_formatted_spec(Spec):
 
     def normalise(self, meta, val):
         original_val = val
-        second = NotSpecified
         if isinstance(val, (list, tuple)):
             vals = val
+            dividers = [':']
 
         elif isinstance(val, basestring):
             vals = []
-            while val and ':' in val:
-                nxt, val = val.split(':', 1)
-                vals.append(nxt)
+            dividers = []
+            while val and any(seperator in val for seperator in self.seperators):
+                for seperator in self.seperators:
+                    if seperator in val:
+                        nxt, val = val.split(seperator, 1)
+                        vals.append(nxt)
+                        dividers.append(seperator)
+                        break
+                vals.append(val)
 
-            if ':' in val:
-                first, second = val
-            else:
-                first = val
+            if not vals:
+                vals = [val]
+                dividers=[None]
+
+        elif isinstance(val, dict):
+            if len(val) > 1:
+                raise BadSpecValue("Value as a dict must only be one item", got=val, meta=meta)
+            vals = val.items()[0]
+            dividers = [':']
+
         else:
             raise BadSpecValue("Value must be a list or a string", got=type(val)
                 , looking_at=self.value_name
                 )
 
-        if len(self.specs) < len(vals) or len(vals) > len(self.specs) + len(self.optional_specs):
+        if len(vals) < len(self.specs) > len(self.specs) + len(self.optional_specs):
             raise BadSpecValue("The value is a list with the wrong number of items"
                 , got=val
                 , got_length=len(val)
@@ -68,16 +81,16 @@ class many_item_formatted_spec(Spec):
             if isinstance(spec, (list, tuple)):
                 spec, expected_type = spec
 
-            if len(vals) < index:
+            val = NotSpecified
+            if index <= len(vals):
+                val = vals[index-1]
                 val = getattr(self, "determine_{0}".format(index), lambda *args: val)(*list(vals) + [meta, val])
-            else:
-                val = vals[index]
 
             if val is not NotSpecified and (expected_type is NotSpecified or not isinstance(val, expected_type)):
-                val = formatted(string_spec(), formatter=self.formatter).normalise(meta, val)
+                val = formatted(string_or_int_as_string_spec(), formatter=self.formatter).normalise(meta, val)
 
             func = getattr(self, "alter_{0}".format(index), lambda *args: val)
             formatted_vals.append(func(*(formatted_vals[:index] + [meta, original_val])))
 
-        return self.create_result(*list(formatted_vals) + [meta, original_val])
+        return self.create_result(*list(formatted_vals) + [meta, original_val, dividers])
 
