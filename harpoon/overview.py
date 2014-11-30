@@ -167,6 +167,7 @@ class Harpoon(object):
     def make_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
+            log.info("Converting %s", path)
             spec = harpoon_spec.image_spec
             everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters)
 

@@ -11,7 +11,6 @@ from input_algorithms.spec_base import NotSpecified
 from option_merge.joiner import dot_joiner
 from option_merge import MergedOptions
 from contextlib import contextmanager
-from itertools import chain
 import dockerpty
 import humanize
 import fnmatch
@@ -458,7 +457,7 @@ class Image(object):
         """Build this image"""
         with self.make_context() as context:
             context_size = humanize.naturalsize(os.stat(context.name).st_size)
-            log.info("Building '%s' in '%s' with %s of context", self.name, self.parent_dir, context_size)
+            log.info("Building '%s' in '%s' with %s of context", self.image_configuration.name, self.image_configuration.context.parent_dir, context_size)
 
             current_ids = None
             if not self.formatted("harpoon.keep_replaced", default=False, path_prefix=None):
