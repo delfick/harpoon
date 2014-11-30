@@ -4,10 +4,11 @@ from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadIma
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.helpers import a_temp_file, until
 from harpoon.processes import command_output
-from option_merge.joiner import dot_joiner
 from harpoon.layers import Layers
 
 from docker.errors import APIError as DockerAPIError
+from input_algorithms.spec_base import NotSpecified
+from option_merge.joiner import dot_joiner
 from option_merge import MergedOptions
 from contextlib import contextmanager
 from itertools import chain
@@ -33,9 +34,14 @@ class Image(object):
     def __init__(self, name, configuration, path, docker_context):
         self.name = name
         self.path = path
+        self.extra_context = []
         self.configuration = configuration
         self.docker_context = docker_context
         self.already_running = False
+
+    @property
+    def parent_dir(self):
+        return self.image_configuration.context.parent_dir
 
     @property
     def dependencies(self):
@@ -69,16 +75,14 @@ class Image(object):
 
     @property
     def mtime(self):
-        val = self.formatted("__mtime__", default=None, path_prefix=None)
-        if val is not None:
-            return int(val)
-
-    @property
-    def commands(self):
-        """Interpret our commands"""
-        if not getattr(self, "_commands", None):
-            self._commands = list(chain.from_iterable(command.commands for command in self.image_configuration.commands))
-        return self._commands
+        if not getattr(self, "_mtime", None):
+            val = self.formatted("__mtime__", default=None, path_prefix=None)
+            if callable(val):
+                val = val()
+            if val is not None:
+                val = int(val)
+            self._mtime = val
+        return self._mtime
 
     @property
     def env(self):
@@ -120,7 +124,7 @@ class Image(object):
         if action not in ("push", "pull"):
             raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
 
-        if not self.formatted("image_index", default=None):
+        if not self.image_configuration.image_index:
             raise BadImage("Can't push without an image_index configuration", image=self.name)
         for line in getattr(self.docker_context, action)(self.image_name, stream=True):
             line_detail = None
@@ -551,20 +555,19 @@ class Image(object):
     @contextmanager
     def make_context(self):
         """Context manager for creating the context of the image"""
-        class Nope(object): pass
-        host_context = not self.formatted("no_host_context", default=False)
-        context_exclude = self.formatted("context_exclude", default=None)
-        respect_gitignore = self.formatted("respect_gitignore", default=Nope)
-        use_git_timestamps = self.formatted("use_git_timestamps", default=Nope)
+        host_context = not self.image_configuration.context.enabled
+        context_exclude = self.image_configuration.context.exclude
+        use_gitignore = self.image_configuration.context.use_gitignore
+        use_git_timestamps = self.image_configuration.context.use_git_timestamps
 
         use_git = False
-        if respect_gitignore is not Nope and respect_gitignore:
+        if use_gitignore is not NotSpecified and use_gitignore:
             use_git = True
-        if use_git_timestamps is not Nope and use_git_timestamps:
+        if use_git_timestamps is not NotSpecified and use_git_timestamps:
             use_git = True
 
-        respect_gitignore = use_git if respect_gitignore is Nope else respect_gitignore
-        use_git_timestamps = use_git if use_git_timestamps is Nope else use_git_timestamps
+        use_gitignore = use_git if use_gitignore is NotSpecified else use_gitignore
+        use_git_timestamps = use_git if use_git_timestamps is NotSpecified else use_git_timestamps
 
         git_files = set()
         changed_files = set()
@@ -765,25 +768,6 @@ class Image(object):
 
         return self.formatted(*keys, **kwargs)
 
-    def setup(self):
-        """Setup this Image instance from configuration"""
-        if "commands" not in self.image_configuration:
-            raise NoSuchKey("Image configuration doesn't contain commands option", image=self.name, found=list(self.image_configuration.keys()))
-
-        self.parent_dir = self.formatted("parent_dir", default=self.formatted("config_root", path_prefix=None))
-        if not os.path.exists(self.parent_dir):
-            raise BadOption("Parent dir for image doesn't exist", parent_dir=self.parent_dir, image=self.name)
-        self.parent_dir = os.path.abspath(self.parent_dir)
-
-        self.command_instructions = self.image_configuration["commands"]
-        self.extra_context = []
-
-        self.dependency_options = self.formatted("dependency_options", default={})
-        if not isinstance(self.dependency_options, dict) and not isinstance(self.dependency_options, MergedOptions):
-            raise BadOption("Dependency options must be a dictionary", got=self.dependency_options)
-
-        self.been_setup = True
-
     def complex_command_spec(self, name, value):
         """Turn a complex command spec into a list of "KEY VALUE" strings"""
         if name == "ADD":
@@ -813,7 +797,7 @@ class Image(object):
     def display_line(self):
         """A single line describing this image"""
         msg = ["Image {0}".format(self.name)]
-        if self.formatted("image_index", default=None):
+        if self.image_configuration.image_index:
             msg.append("Pushes to {0}".format(self.image_name))
         return ' : '.join(msg)
 
@@ -845,15 +829,6 @@ class Imager(object):
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
-    def setup_images(self, images):
-        """Run setup on these images"""
-        for image in images.values():
-            image.setup()
-
-        # Complain about missing environment variables early on
-        for image in images.values():
-            image.env
-
     def make_image(self, image, chain=None, made=None, ignore_deps=False):
         """Make us an image"""
         if chain is None:
@@ -878,7 +853,7 @@ class Imager(object):
 
         # Should have all our dependencies now
         instance = images[image]
-        log.info("Making image for '%s' (%s) - FROM %s", instance.name, instance.image_name, instance.parent_image)
+        log.info("Making image for '%s' (%s) - FROM %s", instance.image_configuration.name, instance.image_configuration.image_name, instance.image_configuration.commands.parent_image)
         instance.build_image()
         made[image] = True
 
@@ -886,7 +861,7 @@ class Imager(object):
         """Yield layers of images"""
         images = self.images
         if only_pushable:
-            operate_on = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
+            operate_on = dict((image, instance) for image, instance in images.items() if instance.image_configuration.image_index)
         else:
             operate_on = images
 
