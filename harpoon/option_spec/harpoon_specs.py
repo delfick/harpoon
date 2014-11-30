@@ -80,7 +80,7 @@ class HarpoonSpec(object):
             , container_name = many_format(overridden("harpoon.container_names.{_key_name_1}"), formatter=MergedOptionStringFormatter)
 
             # The spec itself
-            , commands = required(listof(command_spec(), expect=image_objs.Command))
+            , commands = required(command_spec())
             , links = listof(link_spec(), expect=image_objs.Link)
 
             , context = dict_from_bool_spec(lambda meta, val: {"enabled": val}

@@ -88,21 +88,6 @@ class Image(object):
         return self._env
 
     @property
-    def parent_image(self):
-        """Look at the FROM statement to see what our parent image is"""
-        if not getattr(self, "been_setup", None):
-            raise ProgrammerError("Image.setup hasn't been called yet.")
-
-        if not self.commands:
-            raise BadImage("Image has no commands.....")
-
-        first_command = self.commands[0]
-        if not first_command.startswith("FROM"):
-            raise BadImage("The first command isn't a FROM statement!", found=first_command, image=self.name)
-
-        return first_command.split(" ", 1)[1]
-
-    @property
     def container_id(self):
         """Find a container id"""
         if getattr(self, "_container_id", None):
@@ -640,7 +625,7 @@ class Image(object):
             if context_exclude and not self.silent_build: log.info("Adding %s things from %s to the context", len(files), self.parent_dir)
 
         mtime = self.mtime
-        docker_lines = '\n'.join(self.commands)
+        docker_lines = '\n'.join(self.image_configuration.commands.commands)
         def matches_glob(string, globs):
             """Returns whether this string matches any of the globs"""
             if isinstance(globs, bool):
