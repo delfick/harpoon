@@ -9,11 +9,13 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
+from option_merge.path import Path
 from option_merge import Converter
 from itertools import chain
 import logging
 import uuid
 import yaml
+import sys
 import os
 
 log = logging.getLogger("harpoon.executor")
@@ -76,21 +78,6 @@ class Harpoon(object):
     ###   CONFIG
     ########################
 
-    def home_dir_configuration(self):
-        """Return a dictionary from ~/.harpoon.yml"""
-        location = os.path.expanduser("~/.harpoon.yml")
-        if not os.path.exists(location):
-            return None, {}
-
-        result = self.read_yaml(location)
-        if not result:
-            result = {}
-        if not isinstance(result, dict):
-            raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
-
-        result["__mtime__"] = self.get_committime_or_mtime(location)
-        return location, result
-
     def read_yaml(self, filepath):
         """Read in a yaml file"""
         try:
@@ -112,34 +99,38 @@ class Harpoon(object):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
 
-        source, conf = self.home_dir_configuration()
-        if conf:
-            conf["__mtime__"] = self.get_committime_or_mtime(source)
-            configuration = MergedOptions.using(conf, source=source, dont_prefix=[dictobj])
-        else:
-            configuration = MergedOptions(dont_prefix=[dictobj])
-
         result = self.read_yaml(configuration_file)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
 
         images_from = []
+        images_from_path = None
         if "images" in result and "__images_from__" in result["images"]:
-            images_from = result["images"]["__images_from__"]
+            images_from_path = result["images"]["__images_from__"]
 
-            if not images_from.startswith("/"):
-                images_from = os.path.join(configuration_dir, images_from)
+            if not images_from_path.startswith("/"):
+                images_from_path = os.path.join(configuration_dir, images_from_path)
 
-            if not os.path.exists(images_from) or not os.path.isdir(images_from):
-                raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from)
+            if not os.path.exists(images_from_path) or not os.path.isdir(images_from_path):
+                raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from_path)
 
             images_from = sorted(chain.from_iterable([
                   [os.path.join(root, fle) for fle in files if fle.endswith(".yml") or fle.endswith(".yaml")]
-                  for root, dirs, files in os.walk(images_from)
+                  for root, dirs, files in os.walk(images_from_path)
                 ]))
 
-        converters = []
         harpoon_spec = HarpoonSpec()
-        for source in [configuration_file] + images_from:
+        configuration = MergedOptions(dont_prefix=[dictobj])
+
+        home_dir_configuration = os.path.expanduser("~/.harpoon.yml")
+        sources = [home_dir_configuration, configuration_file] + images_from
+
+        def make_mtime_func(source):
+            return lambda: self.get_committime_or_mtime(source)
+
+        for source in sources:
+            if source is None or not os.path.exists(source):
+                continue
+
             try:
                 result = self.read_yaml(source)
             except BadYaml as error:
@@ -152,93 +143,52 @@ class Harpoon(object):
             if source in images_from:
                 result = {"images": {os.path.splitext(os.path.basename(source))[0]: result}}
 
-            result["__mtime__"] = self.get_committime_or_mtime(source)
+            result["__mtime__"] = make_mtime_func(source)
+
+            if "images" in result:
+                images = result.pop("images")
+                images = dict(
+                      (image, MergedOptions.using(configuration.root(), val, converters=configuration.converters))
+                      for image, val in images.items()
+                    )
+                result["images"] = images
+
             configuration.update(result, dont_prefix=[dictobj], source=source)
 
-            def make_converters(image):
-                def convert_image(path, val):
-                    spec = harpoon_spec.image_spec
-                    meta = Meta(path.configuration.root(), [("images", ""), (image, "")])
-                    meta.result = {}
-                    for key, v, in val.items():
-                        meta.result[key] = v
-                    configuration.converters.done(path, meta.result)
-                    return spec.normalise(meta, val)
-
-                converter = Converter(convert=convert_image, convert_path=["images", image])
-                converters.append(converter)
-
-                def convert_tasks(path, val):
-                    spec = harpoon_spec.tasks_spec(available_tasks)
-                    meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
-                    return spec.normalise(meta, val)
-
-                converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
-                converters.append(converter)
-
             for image in result.get('images', {}).keys():
-                make_converters(image)
+                self.make_converters(image, configuration, harpoon_spec)
 
         if errors:
             raise BadConfiguration("Some of the configuration was broken", _errors=errors)
 
-        image_names = {}
-        managed_images = {}
-        container_names = {}
-        managed_containers = {}
-
-        for image_name, image_options in configuration["images"].items():
-            path = ["images", image_name]
-            image_conf = MergedOptions.using(configuration, {"this": MergedOptions.using({"name": image_name, "path": path}, image_options)}, converters=configuration.converters)
-
-            vals = {}
-            for val in ("name", "name_prefix", "image_name", "image_index", "container_name"):
-                if val not in image_options:
-                    vals[val] = NotSpecified
-                else:
-                    vals[val] = MergedOptionStringFormatter(image_conf, path + [path]).format()
-
-            if vals["name_prefix"] is NotSpecified:
-                vals["name_prefix"] = ""
-
-            if vals["name"] is NotSpecified:
-                vals["name"] = image_name
-
-            if vals["image_name"] is NotSpecified:
-                if vals["name_prefix"]:
-                    vals["image_name"] = "{0}-{1}".format(vals["name_prefix"], vals["name"])
-                else:
-                    vals["image_name"] = vals["name"]
-
-            if vals["image_index"] is NotSpecified:
-                vals["image_index"] = "{0}{1}".format(vals["image_index"], vals["image_name"])
-
-            if vals["container_name"] is NotSpecified:
-                vals["container_name"] = "{0}-{1}".format(vals["image_name"].replace("/", "--"), str(uuid.uuid1()).lower())
-
-            image_names[image_name] = vals["image_name"]
-            container_names[image_name] = vals["container_name"]
-
-            managed_images[vals["image_name"]] = image_name
-            managed_containers[vals["container_name"]] = image_name
-
-        configuration.update(
-              { "harpoon":
-                dict(
-                  image_names=image_names
-                , managed_images=managed_images
-                , container_names=container_names
-                , managed_containers=managed_containers
-                )
-              }
-            )
-
-        for converter in converters:
+        for converter in configuration.converters:
             configuration.add_converter(converter)
 
         configuration.converters.activate()
 
         return configuration
+
+    def make_converters(self, image, configuration, harpoon_spec):
+        """Make converters for this image and add them to the configuration"""
+        def convert_image(path, val):
+            spec = harpoon_spec.image_spec
+            meta = Meta(MergedOptions.using(path.configuration.root()), [("images", ""), (image, "")])
+            meta.result = {}
+            for key, v, in val.items():
+                meta.result[key] = v
+            configuration.converters.done(path, meta.result)
+            return spec.normalise(meta, val)
+
+        converter = Converter(convert=convert_image, convert_path=["images", image])
+        configuration.converters.append(converter)
+
+        def convert_tasks(path, val):
+            spec = harpoon_spec.tasks_spec(available_tasks)
+            meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
+            return spec.normalise(meta, val)
+
+        converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
+        configuration.converters.append(converter)
 
     ########################
     ###   TASKS
@@ -294,7 +244,7 @@ class Harpoon(object):
         tasks = self.default_tasks()
         tasks.update(self.interpret_tasks(configuration, "tasks"))
         for image in list(configuration["images"]):
-            nxt = self.interpret_tasks(configuration, ["images", image, "tasks"])
+            nxt = self.interpret_tasks(configuration, configuration.path(["images", image, "tasks"], joined="images.{0}.tasks".format(image)))
             for task in nxt.values():
                 task.specify_image(image)
             tasks.update(nxt)
