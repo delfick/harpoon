@@ -133,7 +133,7 @@ def show(harpoon, configuration, imager, **kwargs):
         else:
             print("Layer {0}".format(index))
             for _, image in layer:
-                print("    {0}".format(image.display_line()))
+                print("    {0}".format(image.image_configuration.display_line()))
             print("")
 
 @a_task(needs_imager=True)

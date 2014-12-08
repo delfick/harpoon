@@ -565,13 +565,6 @@ class Image(object):
         config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": path}})
         return MergedOptionStringFormatter(config, path, value=val).format()
 
-    def display_line(self):
-        """A single line describing this image"""
-        msg = ["Image {0}".format(self.name)]
-        if self.image_configuration.image_index:
-            msg.append("Pushes to {0}".format(self.image_name))
-        return ' : '.join(msg)
-
 class Imager(object):
     """Knows how to build and run docker images"""
     def __init__(self, configuration, docker_context):
