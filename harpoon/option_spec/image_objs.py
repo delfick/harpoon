@@ -1,4 +1,5 @@
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.errors import DeprecatedFeature
 
 from input_algorithms.spec_base import NotSpecified
 from harpoon.errors import BadCommand, BadOption
@@ -162,6 +163,9 @@ class Command(dictobj):
         if not isinstance(name, basestring):
             errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
         elif isinstance(value, basestring):
+            if name == "FROM" and value.endswith(".image_name}"):
+                raise DeprecatedFeature("Just specify the image in the FROM, not it's image_name", value=value, meta=meta)
+
             value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
             if name == "FROM":
                 if not isinstance(value, basestring):
