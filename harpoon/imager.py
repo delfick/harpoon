@@ -1,9 +1,8 @@
 from __future__ import print_function
 
-from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadImage, ProgrammerError, HarpoonError, FailedImage, BadResult, UserQuit
+from harpoon.errors import NoSuchKey, BadOption, NoSuchImage, BadCommand, BadImage, ProgrammerError, FailedImage, BadResult, UserQuit
 from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.helpers import a_temp_file, until
-from harpoon.processes import command_output
+from harpoon.helpers import until
 from harpoon.layers import Layers
 
 from docker.errors import APIError as DockerAPIError
@@ -13,12 +12,8 @@ from option_merge import MergedOptions
 from contextlib import contextmanager
 import dockerpty
 import humanize
-import fnmatch
-import hashlib
-import tarfile
 import logging
 import socket
-import glob2
 import json
 import uuid
 import sys
@@ -400,7 +395,8 @@ class Image(object):
 
     def build_image(self):
         """Build this image"""
-        with self.make_context() as context:
+        docker_lines = self.image_configuration.commands.docker_file()
+        with self.image_configuration.context.make_context(self.parent_dir, docker_lines, self.mtime, silent_build=self.silent_build, extra_context=self.image_configuration.commands.extra_context) as context:
             context_size = humanize.naturalsize(os.stat(context.name).st_size)
             log.info("Building '%s' in '%s' with %s of context", self.image_configuration.name, self.image_configuration.context.parent_dir, context_size)
 
@@ -492,126 +488,6 @@ class Image(object):
                     raise UserQuit()
                 else:
                     raise exc_info[1], None, exc_info[2]
-
-    @contextmanager
-    def make_context(self):
-        """Context manager for creating the context of the image"""
-        host_context = not self.image_configuration.context.enabled
-        context_exclude = self.image_configuration.context.exclude
-        use_gitignore = self.image_configuration.context.use_gitignore
-        use_git_timestamps = self.image_configuration.context.use_git_timestamps
-
-        use_git = False
-        if use_gitignore is not NotSpecified and use_gitignore:
-            use_git = True
-        if use_git_timestamps is not NotSpecified and use_git_timestamps:
-            use_git = True
-
-        use_gitignore = use_git if use_gitignore is NotSpecified else use_gitignore
-        use_git_timestamps = use_git if use_git_timestamps is NotSpecified else use_git_timestamps
-
-        git_files = set()
-        changed_files = set()
-
-        files = []
-        if host_context:
-            if use_git:
-                output, status = command_output("git rev-parse --show-toplevel", cwd=self.parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to find top level directory of git repository", directory=self.parent_dir, output=output)
-                top_level = ''.join(output).strip()
-                if use_git_timestamps and os.path.exists(os.path.join(top_level, ".git", "shallow")):
-                    raise HarpoonError("Can't get git timestamps from a shallow clone", directory=self.parent_dir)
-
-                output, status = command_output("git diff --name-only", cwd=self.parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to determine what files have changed", directory=self.parent_dir, output=output)
-                changed_files = set(output)
-
-                if not self.silent_build: log.info("Determining context from git ls-files")
-                options = ""
-                if context_exclude:
-                    for excluder in context_exclude:
-                        options = "{0} --exclude={1}".format(options, excluder)
-
-                # Unfortunately --exclude doesn't work on committed/staged files, only on untracked things :(
-                output, status = command_output("git ls-files --exclude-standard", cwd=self.parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to do a git ls-files", directory=self.parent_dir, output=output)
-
-                others, status = command_output("git ls-files --exclude-standard --others {0}".format(options), cwd=self.parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to do a git ls-files to get untracked files", directory=self.parent_dir, output=others)
-
-                if not (output or others) or any(out and out[0].startswith("fatal: Not a git repository") for out in (output, others)):
-                    raise HarpoonError("Told to use git features, but git ls-files says no", directory=self.parent_dir, output=output, others=others)
-
-                combined = set(output + others)
-                git_files = set(output)
-            else:
-                combined = set()
-                if context_exclude:
-                    combined = set([os.path.relpath(location, self.parent_dir) for location in glob2.glob("{0}/**".format(self.parent_dir))])
-                else:
-                    combined = set([self.parent_dir])
-
-            if context_exclude:
-                if not self.silent_build: log.info("Filtering %s items\texcluding=%s", len(combined), context_exclude)
-                excluded = set()
-                for filename in combined:
-                    for excluder in context_exclude:
-                        if fnmatch.fnmatch(filename, excluder):
-                            excluded.add(filename)
-                            break
-                combined = combined - excluded
-
-            files = sorted(os.path.join(self.parent_dir, filename) for filename in combined)
-            if context_exclude and not self.silent_build: log.info("Adding %s things from %s to the context", len(files), self.parent_dir)
-
-        mtime = self.mtime
-        docker_lines = self.image_configuration.commands.docker_file()
-        def matches_glob(string, globs):
-            """Returns whether this string matches any of the globs"""
-            if isinstance(globs, bool):
-                return globs
-            return any(fnmatch.fnmatch(string, glob) for glob in globs)
-
-        with a_temp_file() as tmpfile:
-            t = tarfile.open(mode='w:gz', fileobj=tmpfile)
-            for thing in files:
-                if os.path.exists(thing):
-                    relname = os.path.relpath(thing, self.parent_dir)
-                    arcname = "./{0}".format(relname)
-                    if use_git_timestamps and (relname in git_files and relname not in changed_files and matches_glob(relname, use_git_timestamps)):
-                        # Set the modified date from git
-                        date, status = command_output("git show -s --format=%at -n1 --", relname, cwd=self.parent_dir)
-                        if status != 0 or not date or not date[0].isdigit():
-                            log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", self.parent_dir, relname)
-
-                        if date:
-                            date = int(date[0])
-                            os.utime(thing, (date, date))
-                    t.add(thing, arcname=arcname)
-
-            for content, arcname in self.image_configuration.commands.extra_context:
-                with a_temp_file() as fle:
-                    fle.write(content)
-                    fle.seek(0)
-                    if mtime:
-                        os.utime(fle.name, (mtime, mtime))
-                    t.add(fle.name, arcname=arcname)
-
-            # And add our docker file
-            with a_temp_file() as dockerfile:
-                dockerfile.write(docker_lines)
-                dockerfile.seek(0)
-                if mtime:
-                    os.utime(dockerfile.name, (mtime, mtime))
-                t.add(dockerfile.name, arcname="./Dockerfile")
-
-            t.close()
-            tmpfile.seek(0)
-            yield tmpfile
 
     @contextmanager
     def intervention(self, container_id):

@@ -1,12 +1,21 @@
+from harpoon.errors import DeprecatedFeature, HarpoonError
 from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.errors import DeprecatedFeature
 
 from input_algorithms.spec_base import NotSpecified
 from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
+from harpoon.processes import command_output
+from harpoon.helpers import a_temp_file
+from contextlib import contextmanager
+import logging
+import fnmatch
+import tarfile
 import hashlib
+import glob2
 import uuid
 import os
+
+log = logging.getLogger("option_spec.image_objs")
 
 class Image(dictobj):
     fields = [
@@ -229,6 +238,118 @@ class Link(dictobj):
 
 class Context(dictobj):
     fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
+
+    @contextmanager
+    def make_context(self, parent_dir, docker_lines, mtime, silent_build=False, extra_context=None):
+        """Context manager for creating the context of the image"""
+        use_git = False
+        if self.use_gitignore is not NotSpecified and self.use_gitignore:
+            use_git = True
+        if self.use_git_timestamps is not NotSpecified and self.use_git_timestamps:
+            use_git = True
+
+        files = []
+        git_files = set()
+        changed_files = set()
+        use_git_timestamps = use_git if self.use_git_timestamps is NotSpecified else self.use_git_timestamps
+
+        if self.enabled:
+            if use_git:
+                output, status = command_output("git rev-parse --show-toplevel", cwd=parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to find top level directory of git repository", directory=parent_dir, output=output)
+                top_level = ''.join(output).strip()
+                if use_git_timestamps and os.path.exists(os.path.join(top_level, ".git", "shallow")):
+                    raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
+
+                output, status = command_output("git diff --name-only", cwd=parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to determine what files have changed", directory=parent_dir, output=output)
+                changed_files = set(output)
+
+                if not silent_build: log.info("Determining context from git ls-files")
+                options = ""
+                if self.exclude:
+                    for excluder in self.exclude:
+                        options = "{0} --exclude={1}".format(options, excluder)
+
+                # Unfortunately --exclude doesn't work on committed/staged files, only on untracked things :(
+                output, status = command_output("git ls-files --exclude-standard", cwd=parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to do a git ls-files", directory=parent_dir, output=output)
+
+                others, status = command_output("git ls-files --exclude-standard --others {0}".format(options), cwd=parent_dir)
+                if status != 0:
+                    raise HarpoonError("Failed to do a git ls-files to get untracked files", directory=parent_dir, output=others)
+
+                if not (output or others) or any(out and out[0].startswith("fatal: Not a git repository") for out in (output, others)):
+                    raise HarpoonError("Told to use git features, but git ls-files says no", directory=parent_dir, output=output, others=others)
+
+                combined = set(output + others)
+                git_files = set(output)
+            else:
+                combined = set()
+                if self.exclude:
+                    combined = set([os.path.relpath(location, parent_dir) for location in glob2.glob("{0}/**".format(parent_dir))])
+                else:
+                    combined = set([parent_dir])
+
+            if self.exclude:
+                if not silent_build: log.info("Filtering %s items\texcluding=%s", len(combined), self.exclude)
+                excluded = set()
+                for filename in combined:
+                    for excluder in self.exclude:
+                        if fnmatch.fnmatch(filename, excluder):
+                            excluded.add(filename)
+                            break
+                combined = combined - excluded
+
+            files = sorted(os.path.join(parent_dir, filename) for filename in combined)
+            if self.exclude and not silent_build: log.info("Adding %s things from %s to the context", len(files), parent_dir)
+
+        def matches_glob(string, globs):
+            """Returns whether this string matches any of the globs"""
+            if isinstance(globs, bool):
+                return globs
+            return any(fnmatch.fnmatch(string, glob) for glob in globs)
+
+        with a_temp_file() as tmpfile:
+            t = tarfile.open(mode='w:gz', fileobj=tmpfile)
+            for thing in files:
+                if os.path.exists(thing):
+                    relname = os.path.relpath(thing, parent_dir)
+                    arcname = "./{0}".format(relname)
+                    if use_git_timestamps and (relname in git_files and relname not in changed_files and matches_glob(relname, use_git_timestamps)):
+                        # Set the modified date from git
+                        date, status = command_output("git show -s --format=%at -n1 --", relname, cwd=parent_dir)
+                        if status != 0 or not date or not date[0].isdigit():
+                            log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", parent_dir, relname)
+
+                        if date:
+                            date = int(date[0])
+                            os.utime(thing, (date, date))
+                    t.add(thing, arcname=arcname)
+
+            if extra_context:
+                for content, arcname in extra_context:
+                    with a_temp_file() as fle:
+                        fle.write(content)
+                        fle.seek(0)
+                        if mtime:
+                            os.utime(fle.name, (mtime, mtime))
+                        t.add(fle.name, arcname=arcname)
+
+            # And add our docker file
+            with a_temp_file() as dockerfile:
+                dockerfile.write(docker_lines)
+                dockerfile.seek(0)
+                if mtime:
+                    os.utime(dockerfile.name, (mtime, mtime))
+                t.add(dockerfile.name, arcname="./Dockerfile")
+
+            t.close()
+            tmpfile.seek(0)
+            yield tmpfile
 
 class Volumes(dictobj):
     fields = ["mount", "share_with"]
