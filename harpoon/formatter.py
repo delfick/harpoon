@@ -48,6 +48,7 @@ class MergedOptionStringFormatter(string.Formatter):
             raise ValueError('Max string recursion exceeded')
 
         result = []
+
         for literal_text, field_name, format_spec, conversion in self.parse(format_string):
 
             # output the literal text
@@ -75,7 +76,9 @@ class MergedOptionStringFormatter(string.Formatter):
                 # format the object and append to the result
                 result.append(self.format_field(obj, format_spec))
 
-        return ''.join(result)
+        if len(result) == 1:
+            return result[0]
+        return ''.join(str(obj) for obj in result)
 
     def get_field(self, value, args, kwargs, format_spec=None):
         """Also take the spec into account"""
@@ -91,6 +94,8 @@ class MergedOptionStringFormatter(string.Formatter):
         """Know about any special formats"""
         if format_spec == "env":
             return "${{{0}}}".format(obj)
+        if isinstance(obj, dict):
+            return obj
         else:
             return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)
 

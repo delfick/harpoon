@@ -164,8 +164,8 @@ class Command(dictobj):
         elif isinstance(value, basestring):
             value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
             if name == "FROM":
-                if value[0] in meta.everything:
-                    yield name, meta.everything[value[0]]
+                if not isinstance(value, basestring):
+                    yield name, value[0]
                     return
 
         if isinstance(value, dict):
