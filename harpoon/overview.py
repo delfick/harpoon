@@ -176,7 +176,10 @@ class Harpoon(object):
             configuration.converters.done(path, meta.result)
 
             for key, v in val.items(ignore_converters=True):
+                if isinstance(v, MergedOptions):
+                    v.ignore_converters = True
                 meta.result[key] = v
+
             return spec.normalise(meta, meta.result)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])
