@@ -181,24 +181,12 @@ class Image(object):
             ports = self.figure_out_ports()
 
             tty = not detach and self.interactive
-            links = self.image_configuration.get('links')
-            volumes = self.image_configuration.get('volumes')
-            extra_volumes = self.image_configuration.get('extra_volumes')
-            if extra_volumes:
-                if volumes is None:
-                    volumes = []
-                for volume in extra_volumes:
-                    volumes.append(self.formatted("__specified__.volumes", value=volume))
-
-            bash = self.image_configuration.get('bash')
-            if bash:
-                command = "/bin/bash -c '{0}'".format(bash)
-            else:
-                command = self.image_configuration.get('command')
-
             env = dict(e.pair() for e in self.image_configuration.env)
+            links = [link.pair() for link in self.image_configuration.links]
+            volumes = self.image_configuration.volumes.mount_options()
+            command = self.image_configuration.formatted_command
+            volumes_from = self.image_configuration.volumes.share_with_names()
 
-            volumes_from = self.image_configuration.get('volumes_from')
             self._run_container(self.name, self.image_name, self.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency

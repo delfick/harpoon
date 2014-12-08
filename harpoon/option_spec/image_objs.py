@@ -39,6 +39,13 @@ class Image(dictobj):
             self.container_name = "{0}-{1}".format(self.image_name.replace("/", "--"), str(uuid.uuid1()).lower())
         return self._container_name
 
+    @property
+    def formatted_command(self):
+        if self.bash:
+            return "/bin/bash -c '{0}'".format(self.bash)
+        else:
+            return self.command
+
     @container_name.setter
     def container_name(self, val):
         self._container_name = val
@@ -62,12 +69,12 @@ class Image(dictobj):
                 candidates.append(self.commands.parent_image.name)
 
         for link in self.links:
-            if link.container_name in managed_containers:
-                candidates.append(managed_containers[link.container])
+            if link.container:
+                candidates.append(link.container)
 
         for container in self.volumes.share_with:
-            if container_name in managed_containers:
-                candidates.append(managed_containers[container_name])
+            if not isinstance(container, basestring):
+                candidates.append(container)
 
         done = set()
         for candidate in candidates:
@@ -217,14 +224,31 @@ class Command(dictobj):
 class Link(dictobj):
     fields = ["container_name", "link_name"]
 
+    def pair(self):
+        return (self.container_name, self.link_name)
+
 class Context(dictobj):
     fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
 
 class Volumes(dictobj):
     fields = ["mount", "share_with"]
 
+    @property
+    def share_with_names(self):
+        for container in self.share_with:
+            if isinstance(container, basestring):
+                yield container
+            else:
+                yield container.container_name
+
+    def mount_options(self):
+        return [mount.options() for mount in self.mount]
+
 class Mount(dictobj):
-    fields = ["mount"]
+    fields = ["local_path", "container_path", "permissions"]
+
+    def options(self):
+        return (self.local_path, self.container_path, self.permissions)
 
 class Environment(dictobj):
     fields = ["env_name", ("default_val", None), ("set_val", None)]

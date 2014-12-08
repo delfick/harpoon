@@ -20,7 +20,7 @@ class mount_spec(many_item_formatted_spec):
     optional_specs = [string_spec]
     formatter = MergedOptionStringFormatter
 
-    def create_result(self, local_path, container_path, permissions, meta, val):
+    def create_result(self, local_path, container_path, permissions, meta, val, dividers):
         if permissions is NotSpecified:
             permissions = 'rw'
         return Mount(local_path, container_path, permissions)
@@ -53,10 +53,12 @@ class link_spec(many_item_formatted_spec):
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
     def alter_1(self, container_name, meta, val):
-        if container_name in meta.everything:
-            container_name = meta.everything[container_name]
+        meta.container = None
+        if not isinstance(container_name, basestring):
+            meta.container = container_name
+            container_name = container_name.container_name
         return container_name
 
-    def create_result(self, container_name, link_name, meta, val):
-        return Link(container_name, link_name)
+    def create_result(self, container_name, link_name, meta, val, dividers):
+        return Link(meta.container, container_name, link_name)
 
