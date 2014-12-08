@@ -565,26 +565,6 @@ class Image(object):
         config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": path}})
         return MergedOptionStringFormatter(config, path, value=val).format()
 
-    def formatted_list(self, *keys, **kwargs):
-        """Get us a formatted list of values"""
-        val = kwargs.get("val", NotSpecified)
-
-        for key in keys:
-            if key in self.image_configuration:
-                val = self.image_configuration[key]
-                if isinstance(val, basestring):
-                    val = [val]
-                elif not isinstance(val, list):
-                    raise BadOption("Expected key to be a list", path="{0}.{1}".format(self.path, key), found=type(val))
-
-                result = []
-                for v in val:
-                    kwargs["value"] = v
-                    result.append(self.formatted(key, **kwargs))
-                return result
-
-        return self.formatted(*keys, **kwargs)
-
     def display_line(self):
         """A single line describing this image"""
         msg = ["Image {0}".format(self.name)]
