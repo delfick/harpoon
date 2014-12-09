@@ -391,7 +391,7 @@ class Environment(dictobj):
             return self.env_name, os.environ[self.env_name]
 
 class Port(dictobj):
-    fields = ["port"]
+    fields = ["ip", "host_port", "container_port"]
 
 class Network(dictobj):
     fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"]
