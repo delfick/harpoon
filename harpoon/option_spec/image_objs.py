@@ -393,6 +393,34 @@ class Environment(dictobj):
 class Port(dictobj):
     fields = ["ip", "host_port", "container_port"]
 
+    def pair(self):
+        """return (container_port, (ip, host_port)) or (container_port, host_port)"""
+        if self.ip is NotSpecified:
+            if self.ip is NotSpecified:
+                second = self.host_port
+            else:
+                second = (self.ip, )
+        else:
+            second = (self.ip, self.host_port)
+        return self.container_port.port_str(), second
+
+class ContainerPort(dictobj):
+    fields = ["port", ("transport", NotSpecified)]
+
+    @property
+    def port_pair(self):
+        if self.transport is NotSpecified:
+            return self.port
+        else:
+            return (self.port, self.transport)
+
+    @property
+    def port_str(self):
+        if self.transport is NotSpecified:
+            return str(self.port)
+        else:
+            return "{0}/{1}".format(self.port, self.transport)
+
 class Network(dictobj):
     fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"]
 

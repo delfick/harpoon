@@ -138,29 +138,6 @@ class Image(object):
             else:
                 print(line)
 
-    def figure_out_ports(self):
-        """Figure out the combination of ports, return as a dictionary"""
-        result = {}
-        extra_ports = self.formatted("extra_ports", default=None)
-        specified_ports = self.formatted("ports", default=None)
-        for ports in (specified_ports, extra_ports):
-            if ports:
-                if isinstance(ports, dict):
-                    result.update(ports)
-                    continue
-
-                if not isinstance(ports, list):
-                    ports = [ports]
-
-                if isinstance(ports, list):
-                    for port in ports:
-                        if isinstance(port, basestring) and ":" in port:
-                            key, val = port.split(":", 1)
-                            result[key] = val
-                        else:
-                            result[port] = port
-        return result
-
     def run_container(self, images, detach=False, started=None, dependency=False):
         """Run this image and all dependency images"""
         if self.already_running:
@@ -173,11 +150,10 @@ class Image(object):
                 except Exception as error:
                     raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency_name, error=error)
 
-            ports = self.figure_out_ports()
-
             tty = not detach and self.interactive
             env = dict(e.pair() for e in self.image_configuration.env)
             links = [link.pair() for link in self.image_configuration.links]
+            ports = dict([port.pair() for port in self.image_configuration.ports])
             volumes = self.image_configuration.volumes.mount_options()
             command = self.image_configuration.formatted_command
             volumes_from = self.image_configuration.volumes.share_with_names()
@@ -244,7 +220,7 @@ class Image(object):
             , environment=env
 
             , tty = tty
-            , ports = (ports or {}).keys()
+            , ports = [port.container_port.port_pair() for port in self.image_configuration.ports]
             , stdin_open = tty
             )
 

@@ -2,7 +2,7 @@ from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Po
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
-from input_algorithms.spec_base import string_spec, integer_spec, Spec, NotSpecified, string_or_int_as_string_spec
+from input_algorithms.spec_base import string_spec, integer_spec, required, Spec, NotSpecified, string_or_int_as_string_spec
 
 class command_spec(Spec):
     def normalise(self, meta, command):
@@ -74,10 +74,15 @@ class port_spec(many_item_formatted_spec):
         elif host_port in ('', NotSpecified):
             host_port = NotSpecified
 
+        if host_port == '':
+            host_port = NotSpecified
+        if container_port == '':
+            container_port = NotSpecified
+
         if host_port is not NotSpecified:
             host_port = integer_spec().normalise(meta.indexed_at('host_port'), host_port)
         if container_port is not NotSpecified:
-            container_port = integer_spec().normalise(meta.indexed_at('container_port'), container_port)
+            container_port = required(integer_spec()).normalise(meta.indexed_at('container_port'), container_port)
 
         return Port(ip, host_port, container_port)
 
