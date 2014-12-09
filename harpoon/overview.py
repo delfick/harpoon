@@ -144,7 +144,7 @@ class Harpoon(object):
             if "images" in result:
                 images = result.pop("images")
                 images = dict(
-                      (image, MergedOptions.using(configuration.root(), val, converters=configuration.converters))
+                      (image, MergedOptions.using(configuration.root(), val, converters=configuration.converters, source=source))
                       for image, val in images.items()
                     )
                 result["images"] = images
