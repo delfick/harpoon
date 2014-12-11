@@ -34,6 +34,12 @@ class Image(object):
         return self.image_configuration.context.parent_dir
 
     @property
+    def harpoon(self):
+        if getattr(self, "_harpoon", None) is None:
+            self._harpoon = self.configuration["harpoon"]
+        return self._harpoon
+
+    @property
     def dependencies(self):
         return self.image_configuration.dependencies
 
@@ -44,29 +50,9 @@ class Image(object):
         return self._image_configuration
 
     @property
-    def interactive(self):
-        if not getattr(self, "_interactive", None):
-            self._interactive = self.formatted("harpoon.interactive", default=True, path_prefix=None)
-        return self._interactive
-
-    @property
-    def silent_build(self):
-        if not getattr(self, "_silent_build", None):
-            self._silent_build = self.formatted("harpoon.silent_build", default=False, path_prefix=None)
-        return self._silent_build
-
-    @property
-    def image_name(self):
-        return self.image_configuration["image_name"]
-
-    @property
-    def container_name(self):
-        return self.image_configuration["container_name"]
-
-    @property
     def mtime(self):
         if not getattr(self, "_mtime", None):
-            val = self.formatted("__mtime__", default=None, path_prefix=None)
+            val = self.configuration.get("__mtime__")
             if callable(val):
                 val = val()
             if val is not None:
@@ -88,7 +74,7 @@ class Image(object):
 
         self._container_id = None
         for container in containers:
-            if any(name in container.get("Names", []) for name in (self.container_name, "/{0}".format(self.container_name))):
+            if any(name in container.get("Names", []) for name in (self.image_configuration.container_name, "/{0}".format(self.image_configuration.container_name))):
                 self._container_id = container["Id"]
                 break
 
@@ -109,7 +95,7 @@ class Image(object):
 
         if not self.image_configuration.image_index:
             raise BadImage("Can't push without an image_index configuration", image=self.name)
-        for line in getattr(self.docker_context, action)(self.image_name, stream=True):
+        for line in getattr(self.docker_context, action)(self.image_configuration.image_name, stream=True):
             line_detail = None
             try:
                 line_detail = json.loads(line)
@@ -120,9 +106,9 @@ class Image(object):
                 if "errorDetail" in line_detail:
                     msg = line_detail["errorDetail"].get("message", line_detail["errorDetail"])
                     if ignore_missing and action == "pull":
-                        log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, self.name, self.image_name, msg)
+                        log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, self.name, self.image_configuration.image_name, msg)
                     else:
-                        raise FailedImage("Failed to {0} an image".format(action), image=self.name, image_name=self.image_name, msg=msg)
+                        raise FailedImage("Failed to {0} an image".format(action), image=self.name, image_name=self.image_configuration.image_name, msg=msg)
                 if "status" in line_detail:
                     line = line_detail["status"].strip()
 
@@ -150,7 +136,7 @@ class Image(object):
                 except Exception as error:
                     raise BadImage("Failed to start dependency container", image=self.name, dependency=dependency_name, error=error)
 
-            tty = not detach and self.interactive
+            tty = not detach and self.harpoon.interactive
             env = dict(e.pair() for e in self.image_configuration.env)
             links = [link.pair() for link in self.image_configuration.links]
             ports = dict([port.pair() for port in self.image_configuration.ports])
@@ -158,7 +144,7 @@ class Image(object):
             command = self.image_configuration.formatted_command
             volumes_from = self.image_configuration.volumes.share_with_names()
 
-            self._run_container(self.name, self.image_name, self.container_name
+            self._run_container(self.name, self.image_configuration.image_name, self.image_configuration.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
                 , volumes=volumes, volumes_from=volumes_from, links=links, dependency=dependency
                 )
@@ -268,7 +254,7 @@ class Image(object):
 
             if inspection and not no_intervention:
                 if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                    if self.interactive and not self.formatted("harpoon.no_intervention", default=False, path_prefix=None):
+                    if self.harpoon.interactive and not self.harpoon.no_intervention:
                         print("!!!!")
                         print("Failed to run the container!")
                         print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
@@ -287,7 +273,7 @@ class Image(object):
         if container_id is None:
             return
 
-        self._stop_container(container_id, self.container_name, fail_on_bad_exit=fail_on_bad_exit, fail_reason=fail_reason)
+        self._stop_container(container_id, self.image_configuration.container_name, fail_on_bad_exit=fail_on_bad_exit, fail_reason=fail_reason)
         self._container_id = None
         self.already_running = False
 
@@ -316,7 +302,7 @@ class Image(object):
         if stopped:
             exit_code = inspection["State"]["ExitCode"]
             if exit_code != 0 and fail_on_bad_exit:
-                if not self.interactive:
+                if not self.harpoon.interactive:
                     print_logs = True
                 else:
                     print("!!!!")
@@ -372,21 +358,21 @@ class Image(object):
     def build_image(self):
         """Build this image"""
         docker_lines = self.image_configuration.commands.docker_file()
-        with self.image_configuration.context.make_context(self.parent_dir, docker_lines, self.mtime, silent_build=self.silent_build, extra_context=self.image_configuration.commands.extra_context) as context:
+        with self.image_configuration.context.make_context(self.parent_dir, docker_lines, self.mtime, silent_build=self.harpoon.silent_build, extra_context=self.image_configuration.commands.extra_context) as context:
             context_size = humanize.naturalsize(os.stat(context.name).st_size)
             log.info("Building '%s' in '%s' with %s of context", self.image_configuration.name, self.image_configuration.context.parent_dir, context_size)
 
             current_ids = None
-            if not self.formatted("harpoon.keep_replaced", default=False, path_prefix=None):
+            if not self.harpoon.keep_replaced:
                 images = self.docker_context.images()
-                current_ids = [image["Id"] for image in images if "{0}:latest".format(self.image_name) in image["RepoTags"]]
+                current_ids = [image["Id"] for image in images if "{0}:latest".format(self.image_configuration.image_name) in image["RepoTags"]]
 
             buf = []
             cached = None
             last_line = ""
             current_hash = None
             try:
-                for line in self.docker_context.build(fileobj=context, custom_context=True, tag=self.image_name, stream=True, rm=True):
+                for line in self.docker_context.build(fileobj=context, custom_context=True, tag=self.image_configuration.image_name, stream=True, rm=True):
                     line_detail = None
                     try: line_detail = json.loads(line)
                     except (ValueError, TypeError) as error:
@@ -425,7 +411,7 @@ class Image(object):
                             buf.append(line)
                             continue
 
-                    if not self.silent_build or not cached:
+                    if not self.harpoon.silent_build or not cached:
                         if buf:
                             for thing in buf:
                                 sys.stdout.write(thing.encode('utf-8', 'replace'))
@@ -440,7 +426,7 @@ class Image(object):
                     untagged = [image["Id"] for image in images if image["RepoTags"] == ["<none>:<none>"]]
                     for image in current_ids:
                         if image in untagged:
-                            log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}:latest".format(self.image_name), image)
+                            log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}:latest".format(self.image_configuration.image_name), image)
                             try:
                                 self.docker_context.remove_image(image)
                             except Exception as error:
@@ -468,7 +454,7 @@ class Image(object):
     @contextmanager
     def intervention(self, container_id):
         """Ask the user if they want to commit this container and run /bin/bash in it"""
-        if not self.interactive or self.formatted("harpoon.no_intervention", default=False, path_prefix=None):
+        if not self.harpoon.interactive or self.harpoon.no_intervention:
             yield
             return
 
@@ -503,43 +489,6 @@ class Image(object):
                     self.docker_context.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
-
-    def formatted(self, *keys, **kwargs):
-        """Get us a formatted value"""
-        val = kwargs.get("value", NotSpecified)
-        default = kwargs.get("default", NotSpecified)
-        path_prefix = kwargs.get("path_prefix", self.path)
-        configuration = kwargs.get("configuration", self.configuration)
-
-        key = ""
-        if val is NotSpecified:
-            for key in keys:
-                if key in configuration:
-                    val = configuration[key]
-                    break
-        else:
-            if keys:
-                key = dot_joiner(keys)
-
-        if val is NotSpecified:
-            if default is NotSpecified:
-                raise NoSuchKey("Couldn't find any of the specified keys in image options", keys=keys, image=self.name)
-            else:
-                return default
-
-        if path_prefix:
-            if isinstance(path_prefix, list):
-                if key:
-                    path = path_prefix + [key]
-                else:
-                    path = [thing for thing in path_prefix]
-            else:
-                path = "{0}.{1}".format(path_prefix, key)
-        else:
-            path = key
-
-        config = MergedOptions.using(self.configuration, {"this": {"name": self.name, "path": path}})
-        return MergedOptionStringFormatter(config, path, value=val).format()
 
 class Imager(object):
     """Knows how to build and run docker images"""

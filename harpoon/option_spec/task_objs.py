@@ -8,16 +8,10 @@ from option_merge import MergedOptions
 class Task(dictobj):
     fields = [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")]
 
-    def run(self, harpoon, cli_args):
+    def run(self, overview, cli_args, image):
         """Run this task"""
         task_func = available_tasks[self.action]
-        image = getattr(self, "image", cli_args["harpoon"].get("chosen_image"))
-
-        configuration = MergedOptions.using(harpoon.configuration, dont_prefix=[dictobj], converters=harpoon.configuration.converters)
-
-        if image:
-            configuration.update({"harpoon": {"chosen_image": image}})
-        del cli_args["harpoon"]["chosen_image"]
+        configuration = MergedOptions.using(overview.configuration, dont_prefix=[dictobj], converters=overview.configuration.converters)
 
         if self.options:
             if image:
@@ -33,24 +27,23 @@ class Task(dictobj):
         imager = None
         images = None
         if task_func.needs_imager:
-            imager, images = self.determine_image(harpoon, configuration, needs_image=task_func.needs_image)
+            imager, images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
 
         if image:
             images[image].image_configuration.find_missing_env()
 
-        return available_tasks[self.action](harpoon, configuration, imager=imager, images=images, image=image)
+        return available_tasks[self.action](overview, configuration, imager=imager, images=images, image=image)
 
-    def determine_image(self, harpoon, configuration, needs_image=True):
+    def determine_image(self, image, overview, configuration, needs_image=True):
         """Complain if we don't have an image"""
-        image = configuration.get("harpoon.chosen_image")
-        imager = Imager(configuration, harpoon.docker_context)
+        imager = Imager(configuration, overview.docker_context)
 
         available = None
         available = imager.images.keys()
 
         images = imager.images
         if needs_image:
-            if image is None:
+            if not image:
                 info = {}
                 if available:
                     info["available"] = available

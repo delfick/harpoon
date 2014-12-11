@@ -16,7 +16,7 @@ import os
 
 log = logging.getLogger("harpoon.executor")
 
-class Harpoon(object):
+class Overview(object):
     def __init__(self, configuration_file, docker_context, logging_handler=None):
         self.docker_context = docker_context
         self.logging_handler = logging_handler
@@ -30,18 +30,23 @@ class Harpoon(object):
         if "images" not in self.configuration:
             raise BadConfiguration("Didn't find any images in the configuration")
 
+        harpoon = cli_args.pop("harpoon")
         self.configuration.update(
-            { "$@": cli_args["harpoon"].get("extra", "")
+            { "$@": harpoon.get("extra", "")
+            , "harpoon": harpoon
             , "config_root" : self.configuration_folder
             }
+        , source = "<cli>"
         )
 
+        self.configuration.converters.activate()
         tasks = self.find_tasks()
-        task = cli_args["harpoon"]["chosen_task"]
+        task = harpoon["chosen_task"]
         if task not in tasks:
             raise BadTask("Unknown task", task=task, available=tasks.keys())
+        image = getattr(tasks[task], "image", harpoon["chosen_image"])
 
-        tasks[task].run(self, cli_args)
+        tasks[task].run(self, cli_args, image)
 
     ########################
     ###   THEME
@@ -152,19 +157,31 @@ class Harpoon(object):
             configuration.update(result, dont_prefix=[dictobj], source=source)
 
             for image in result.get('images', {}).keys():
-                self.make_converters(image, configuration, harpoon_spec)
+                self.make_image_converters(image, configuration, harpoon_spec)
+
+        def convert_harpoon(path, val):
+            log.info("Converting %s", path)
+            spec = harpoon_spec.harpoon_spec
+            meta = Meta(path.configuration, [("harpoon", "")])
+            meta.result = {}
+            configuration.converters.done(path, meta.result)
+
+            for key, v in val.items(ignore_converters=True):
+                if isinstance(v, MergedOptions):
+                    v.ignore_converters = True
+                meta.result[key] = v
+
+            return spec.normalise(meta, meta.result)
+
+        harpoon_converter = Converter(convert=convert_harpoon, convert_path=["harpoon"])
+        configuration.add_converter(harpoon_converter)
 
         if errors:
             raise BadConfiguration("Some of the configuration was broken", _errors=errors)
 
-        for converter in configuration.converters:
-            configuration.add_converter(converter)
-
-        configuration.converters.activate()
-
         return configuration
 
-    def make_converters(self, image, configuration, harpoon_spec):
+    def make_image_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
             log.info("Converting %s", path)
@@ -183,7 +200,7 @@ class Harpoon(object):
             return spec.normalise(meta, meta.result)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])
-        configuration.converters.append(converter)
+        configuration.add_converter(converter)
 
         def convert_tasks(path, val):
             spec = harpoon_spec.tasks_spec(available_tasks)
@@ -191,7 +208,7 @@ class Harpoon(object):
             return spec.normalise(meta, val)
 
         converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
-        configuration.converters.append(converter)
+        configuration.add_converter(converter)
 
     ########################
     ###   TASKS

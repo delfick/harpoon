@@ -20,7 +20,7 @@ class a_task(object):
         return func
 
 @a_task(needs_image=True)
-def push(harpoon, configuration, imager, images, image):
+def push(overview, configuration, imager, images, image):
     """Push an image"""
     pushable = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
     if image not in pushable:
@@ -29,13 +29,14 @@ def push(harpoon, configuration, imager, images, image):
     pushable[image].push()
 
 @a_task(needs_imager=True)
-def push_all(harpoon, configuration, **kwargs):
+def push_all(overview, configuration, **kwargs):
     """Push all the images"""
-    configuration.update({"harpoon": {"do_push": True, "only_pushable": True}})
-    make_all(harpoon, configuration, **kwargs)
+    configuration.harpoon.do_push = True
+    configuration.harpoon.only_pushable = True
+    make_all(overview, configuration, **kwargs)
 
 @a_task(needs_image=True)
-def pull(harpoon, configuration, images, image, **kwargs):
+def pull(overview, configuration, images, image, **kwargs):
     """Pull an image"""
     ignore_missing = configuration.get("harpoon.ignore_missing", False)
 
@@ -45,7 +46,7 @@ def pull(harpoon, configuration, images, image, **kwargs):
     pullable[image].pull(ignore_missing=ignore_missing)
 
 @a_task(needs_imager=True)
-def pull_all(harpoon, configuration, imager, **kwargs):
+def pull_all(overview, configuration, imager, **kwargs):
     """Pull all the images"""
     ignore_missing = configuration.get("harpoon.ignore_missing", False)
     for layer in imager.layered(only_pushable=True):
@@ -54,13 +55,13 @@ def pull_all(harpoon, configuration, imager, **kwargs):
             image.pull(ignore_missing=ignore_missing)
 
 @a_task(needs_image=True)
-def make(harpoon, configuration, imager, images, image):
+def make(overview, configuration, imager, images, image):
     """Just create an image"""
     imager.make_image(image)
     print("Created image {0}".format(images[image].image_name))
 
 @a_task(needs_imager=True)
-def make_all(harpoon, configuration, imager, **kwargs):
+def make_all(overview, configuration, imager, **kwargs):
     """Creates all the images in layered order"""
     push = configuration.get("harpoon.do_push", False)
     only_pushable = configuration.get("harpoon.only_pushable", False)
@@ -75,24 +76,25 @@ def make_all(harpoon, configuration, imager, **kwargs):
                 image.push()
 
 @a_task(needs_imager=True)
-def make_pushable(harpoon, configuration, **kwargs):
+def make_pushable(overview, configuration, **kwargs):
     """Make only the pushable images and their dependencies"""
-    configuration.update({"harpoon": {"do_push": False, "only_pushable": True}})
-    make_all(harpoon, configuration, **kwargs)
+    configuration.harpoon.do_push = True
+    configuration.harpoon.only_pushable = True
+    make_all(overview, configuration, **kwargs)
 
 @a_task(needs_image=True)
-def run(harpoon, configuration, imager, image, **kwargs):
+def run(overview, configuration, imager, image, **kwargs):
     """Run specified task in this image"""
     imager.run(image, configuration)
 
 @a_task()
-def list_tasks(harpoon, configuration, **kwargs):
+def list_tasks(overview, configuration, **kwargs):
     """List the available_tasks"""
     print("Available tasks to choose from are:")
     print("Use the --task option to choose one")
     print("")
     keygetter = lambda item: item[1].label
-    tasks = sorted(harpoon.find_tasks().items(), key=keygetter)
+    tasks = sorted(overview.find_tasks().items(), key=keygetter)
     for label, items in itertools.groupby(tasks, keygetter):
         print("--- {0}".format(label))
         print("----{0}".format("-" * len(label)))
@@ -103,9 +105,9 @@ def list_tasks(harpoon, configuration, **kwargs):
         print("")
 
 @a_task()
-def delete_untagged(harpoon, configuration, **kwargs):
+def delete_untagged(overview, configuration, **kwargs):
     """Find the untagged images and remove them"""
-    images = harpoon.docker_context.images()
+    images = overview.docker_context.images()
     found = False
     for image in images:
         if image["RepoTags"] == ["<none>:<none>"]:
@@ -113,7 +115,7 @@ def delete_untagged(harpoon, configuration, **kwargs):
             image_id = image["Id"]
             log.info("Deleting untagged image\thash=%s", image_id)
             try:
-                harpoon.docker_context.remove_image(image["Id"])
+                overview.docker_context.remove_image(image["Id"])
             except DockerAPIError as error:
                 log.error("Failed to delete image\thash=%s\terror=%s", image_id, error)
 
@@ -121,7 +123,7 @@ def delete_untagged(harpoon, configuration, **kwargs):
         log.info("Didn't find any untagged images to delete!")
 
 @a_task(needs_imager=True)
-def show(harpoon, configuration, imager, **kwargs):
+def show(overview, configuration, imager, **kwargs):
     """Show what images we have"""
     flat = configuration.get("harpoon.flat", False)
     only_pushable = configuration.get("harpoon.only_pushable", False)
@@ -137,8 +139,8 @@ def show(harpoon, configuration, imager, **kwargs):
             print("")
 
 @a_task(needs_imager=True)
-def show_pushable(harpoon, configuration, **kwargs):
+def show_pushable(overview, configuration, **kwargs):
     """Show what images we have"""
-    configuration.update({"harpoon": {'only_pushable': True}})
-    show(harpoon, configuration, **kwargs)
+    configuration.harpoon.only_pushable = True
+    show(overview, configuration, **kwargs)
 

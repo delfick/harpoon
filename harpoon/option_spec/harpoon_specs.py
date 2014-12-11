@@ -1,17 +1,21 @@
 from input_algorithms.spec_base import (
       create_spec, defaulted, string_choice_spec
     , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
-    , listof, optional_spec, or_spec
-    , directory_spec, filename_spec
-    , boolean, required, formatted, overridden, many_format
+    , listof, optional_spec, or_spec, any_spec
+    , directory_spec, filename_spec, file_spec
+    , boolean, required, formatted, overridden
     )
 
 from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
 from harpoon.formatter import MergedOptionStringFormatter
-
 from harpoon.option_spec import task_objs, image_objs
 from harpoon.helpers import memoized_property
+
+from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
+
+class Harpoon(dictobj):
+    fields = ["config", "chosen_image", "chosen_task", "flat", "silent_build", "extra", "no_intervention", "ignore_missing", "keep_replaced", "interactive", "do_push", "only_pushable"]
 
 class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""
@@ -73,6 +77,9 @@ class HarpoonSpec(object):
             # Changed how volumes_from works
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
 
+            # Harpoon options
+            , harpoon = any_spec()
+
             # default the name to the key of the image
             , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
@@ -128,5 +135,29 @@ class HarpoonSpec(object):
                 )
 
             , privileged = defaulted(boolean(), False)
+            )
+
+    @memoized_property
+    def harpoon_spec(self):
+        """Spec for harpoon options"""
+        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=basestring)
+        formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
+
+        return create_spec(Harpoon
+            , config = file_spec()
+
+            , extra = defaulted(formatted_string, "")
+            , chosen_task = defaulted(formatted_string, "list_tasks")
+            , chosen_image = defaulted(formatted_string, "")
+
+            , flat = defaulted(formatted_boolean, False)
+            , interactive = defaulted(formatted_boolean, True)
+            , silent_build = defaulted(formatted_boolean, False)
+            , keep_replaced = defaulted(formatted_boolean, False)
+            , ignore_missing = defaulted(formatted_boolean, False)
+            , no_intervention = defaulted(formatted_boolean, False)
+
+            , do_push = defaulted(formatted_boolean, False)
+            , only_pushable = defaulted(formatted_boolean, False)
             )
 

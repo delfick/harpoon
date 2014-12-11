@@ -1,5 +1,5 @@
 from harpoon.errors import BadOption, BadDockerConnection
-from harpoon.overview import Harpoon
+from harpoon.overview import Overview
 
 from rainbow_logging_handler import RainbowLoggingHandler
 from docker.client import Client as DockerClient
@@ -126,7 +126,7 @@ class CliParser(object):
             , action = "store_false"
             )
 
-        extra = {}
+        extra = {"default": ""}
         if default_image is not NotSpecified:
             extra["default"] = default_image
         parser.add_argument("--image"
@@ -229,7 +229,7 @@ def main(argv=None):
                 cli_args[key] = val
         cli_args["harpoon"]["extra"] = extra
 
-        Harpoon(configuration_file=args.harpoon_config.name, docker_context=docker_context(), logging_handler=handler).start(cli_args)
+        Overview(configuration_file=args.harpoon_config.name, docker_context=docker_context(), logging_handler=handler).start(cli_args)
     except DelfickError as error:
         print ""
         print "!" * 80

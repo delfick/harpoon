@@ -23,7 +23,7 @@ class Image(dictobj):
         , "lxc_conf", "volumes", "env", "ports"
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
-        , "container_name", "name", "key_name"
+        , "container_name", "name", "key_name", "harpoon"
         ]
 
     @property
