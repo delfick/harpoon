@@ -24,6 +24,7 @@ class Image(dictobj):
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name", "harpoon"
+        , "bash", "command"
         ]
 
     @property
@@ -50,10 +51,12 @@ class Image(dictobj):
 
     @property
     def formatted_command(self):
-        if self.bash:
+        if self.bash is not NotSpecified:
             return "/bin/bash -c '{0}'".format(self.bash)
-        else:
+        elif self.command is not NotSpecified:
             return self.command
+        else:
+            return None
 
     @container_name.setter
     def container_name(self, val):

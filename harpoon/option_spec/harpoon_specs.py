@@ -89,6 +89,8 @@ class HarpoonSpec(object):
             , container_name = optional_spec(string_spec())
 
             # The spec itself
+            , bash = optional_spec(string_spec())
+            , command = optional_spec(string_spec())
             , commands = required(command_spec())
             , links = listof(link_spec(), expect=image_objs.Link)
 
