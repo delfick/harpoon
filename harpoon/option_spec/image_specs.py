@@ -1,4 +1,4 @@
-from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Port
+from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Port, ContainerPort
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
@@ -81,8 +81,17 @@ class port_spec(many_item_formatted_spec):
 
         if host_port is not NotSpecified:
             host_port = integer_spec().normalise(meta.indexed_at('host_port'), host_port)
-        if container_port is not NotSpecified:
-            container_port = required(integer_spec()).normalise(meta.indexed_at('container_port'), container_port)
+        container_port = required(container_port_spec()).normalise(meta.indexed_at('container_port'), container_port)
 
         return Port(ip, host_port, container_port)
+
+class container_port_spec(many_item_formatted_spec):
+    value_name = "Container port"
+    specs = [integer_spec]
+    optional_specs = [string_spec]
+    formatter = MergedOptionStringFormatter
+    seperators = ['/']
+
+    def create_result(self, port, transport, meta, val, dividiers):
+        return ContainerPort(port, transport)
 
