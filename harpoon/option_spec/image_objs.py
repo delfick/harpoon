@@ -405,7 +405,7 @@ class Port(dictobj):
                 second = (self.ip, )
         else:
             second = (self.ip, self.host_port)
-        return self.container_port.port_str(), second
+        return self.container_port.port_str, second
 
 class ContainerPort(dictobj):
     fields = ["port", ("transport", NotSpecified)]

@@ -142,7 +142,7 @@ class Image(object):
             ports = dict([port.pair() for port in self.image_configuration.ports])
             volumes = self.image_configuration.volumes.mount_options()
             command = self.image_configuration.formatted_command
-            volumes_from = self.image_configuration.volumes.share_with_names()
+            volumes_from = list(self.image_configuration.volumes.share_with_names)
 
             self._run_container(self.name, self.image_configuration.image_name, self.image_configuration.container_name
                 , detach=detach, command=command, tty=tty, env=env, ports=ports
@@ -206,7 +206,7 @@ class Image(object):
             , environment=env
 
             , tty = tty
-            , ports = [port.container_port.port_pair() for port in self.image_configuration.ports]
+            , ports = [port.container_port.port_pair for port in self.image_configuration.ports]
             , stdin_open = tty
             )
 
