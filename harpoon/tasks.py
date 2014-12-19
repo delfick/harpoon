@@ -1,5 +1,6 @@
+from harpoon.ship.builder import Builder
+from harpoon.ship.syncer import Syncer
 from harpoon.errors import BadOption
-from harpoon.imager import Imager
 
 from docker.errors import APIError as DockerAPIError
 import itertools
@@ -9,26 +10,25 @@ log = logging.getLogger("harpoon.tasks")
 
 available_tasks = {}
 class a_task(object):
-    def __init__(self, needs_image=False, needs_imager=False):
+    def __init__(self, needs_image=False, needs_images=False):
         self.needs_image = needs_image
-        self.needs_imager = needs_image or needs_imager
+        self.needs_images = needs_image or needs_images
 
     def __call__(self, func):
         available_tasks[func.__name__] = func
         func.needs_image = self.needs_image
-        func.needs_imager = self.needs_imager
+        func.needs_images = self.needs_images
         return func
 
 @a_task(needs_image=True)
-def push(overview, configuration, imager, images, image):
+def push(overview, configuration, images, image):
     """Push an image"""
-    pushable = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
-    if image not in pushable:
-        raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pushable.keys())
-    imager.make_image(image)
+    if not image.image_index:
+        raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
+    Builder().make_image(image, images)
     pushable[image].push()
 
-@a_task(needs_imager=True)
+@a_task(needs_images=True)
 def push_all(overview, configuration, **kwargs):
     """Push all the images"""
     configuration.harpoon.do_push = True
@@ -38,44 +38,40 @@ def push_all(overview, configuration, **kwargs):
 @a_task(needs_image=True)
 def pull(overview, configuration, images, image, **kwargs):
     """Pull an image"""
-    ignore_missing = configuration.get("harpoon.ignore_missing", False)
+    if not image.image_index:
+        raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
+    Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
-    pullable = dict((image, instance) for image, instance in images.items() if instance.formatted("image_index", default=None))
-    if image not in pullable:
-        raise BadOption("The chosen image does not have a image_index configuration", wanted=image, available=pullable.keys())
-    pullable[image].pull(ignore_missing=ignore_missing)
-
-@a_task(needs_imager=True)
-def pull_all(overview, configuration, imager, **kwargs):
+@a_task(needs_images=True)
+def pull_all(overview, configuration, images, **kwargs):
     """Pull all the images"""
-    ignore_missing = configuration.get("harpoon.ignore_missing", False)
-    for layer in imager.layered(only_pushable=True):
+    for layer in Builder().layered(images, only_pushable=True):
         for image_name, image in layer:
             log.info("Pulling %s", image_name)
-            image.pull(ignore_missing=ignore_missing)
+            Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
 @a_task(needs_image=True)
-def make(overview, configuration, imager, images, image):
+def make(overview, configuration, images, image):
     """Just create an image"""
-    imager.make_image(image)
-    print("Created image {0}".format(images[image].image_name))
+    Builder().make_image(image)
+    print("Created image {0}".format(image.image_name))
 
-@a_task(needs_imager=True)
-def make_all(overview, configuration, imager, **kwargs):
+@a_task(needs_images=True)
+def make_all(overview, configuration, images, **kwargs):
     """Creates all the images in layered order"""
-    push = configuration.get("harpoon.do_push", False)
-    only_pushable = configuration.get("harpoon.only_pushable", False)
+    push = configuration.harpoon.do_push
+    only_pushable = configuration.harpoon.only_pushable
     if push:
         only_pushable = True
 
-    for layer in imager.layered(only_pushable=only_pushable):
+    for layer in Builder().layered(images, only_pushable=only_pushable):
         for image_name, image in layer:
-            imager.make_image(image_name, ignore_deps=True)
+            Builder().make_image(image_name, ignore_deps=True)
             print("Created image {0}".format(image.image_name))
-            if push and image.formatted("image_index", default=None):
-                image.push()
+            if push and image.image_index:
+                Syncer().push(image)
 
-@a_task(needs_imager=True)
+@a_task(needs_images=True)
 def make_pushable(overview, configuration, **kwargs):
     """Make only the pushable images and their dependencies"""
     configuration.harpoon.do_push = True
@@ -83,9 +79,9 @@ def make_pushable(overview, configuration, **kwargs):
     make_all(overview, configuration, **kwargs)
 
 @a_task(needs_image=True)
-def run(overview, configuration, imager, image, **kwargs):
+def run(overview, configuration, images, image, **kwargs):
     """Run specified task in this image"""
-    imager.run(image, configuration)
+    image.build_and_run(images)
 
 @a_task()
 def list_tasks(overview, configuration, **kwargs):
@@ -122,13 +118,13 @@ def delete_untagged(overview, configuration, **kwargs):
     if not found:
         log.info("Didn't find any untagged images to delete!")
 
-@a_task(needs_imager=True)
-def show(overview, configuration, imager, **kwargs):
+@a_task(needs_images=True)
+def show(overview, configuration, images, **kwargs):
     """Show what images we have"""
     flat = configuration.get("harpoon.flat", False)
     only_pushable = configuration.get("harpoon.only_pushable", False)
 
-    for index, layer in enumerate(imager.layered(only_pushable=only_pushable)):
+    for index, layer in enumerate(Builder().layered(images, only_pushable=only_pushable)):
         if flat:
             for _, image in layer:
                 print(image.image_name)
@@ -138,7 +134,7 @@ def show(overview, configuration, imager, **kwargs):
                 print("    {0}".format(image.image_configuration.display_line()))
             print("")
 
-@a_task(needs_imager=True)
+@a_task(needs_images=True)
 def show_pushable(overview, configuration, **kwargs):
     """Show what images we have"""
     configuration.harpoon.only_pushable = True

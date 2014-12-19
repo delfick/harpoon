@@ -228,8 +228,9 @@ def main(argv=None):
             else:
                 cli_args[key] = val
         cli_args["harpoon"]["extra"] = extra
+        cli_args["harpoon"]["docker_context"] = docker_context()
 
-        Overview(configuration_file=args.harpoon_config.name, docker_context=docker_context(), logging_handler=handler).start(cli_args)
+        Overview(configuration_file=args.harpoon_config.name, logging_handler=handler).start(cli_args)
     except DelfickError as error:
         print ""
         print "!" * 80

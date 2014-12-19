@@ -1,6 +1,9 @@
 from harpoon.errors import DeprecatedFeature, HarpoonError
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.ship.builder import Builder
+from harpoon.ship.runner import Runner
 
+from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
@@ -15,7 +18,7 @@ import glob2
 import uuid
 import os
 
-log = logging.getLogger("option_spec.image_objs")
+log = logging.getLogger("harpoon.option_spec.image_objs")
 
 class Image(dictobj):
     fields = [
@@ -24,7 +27,7 @@ class Image(dictobj):
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name", "harpoon"
-        , "bash", "command"
+        , "bash", "command", "mtime"
         ]
 
     @property
@@ -50,6 +53,30 @@ class Image(dictobj):
         return self._container_name
 
     @property
+    def container_id(self):
+        """Find a container id"""
+        if getattr(self, "_container_id", None):
+            return self._container_id
+
+        try:
+            containers = self.harpoon.docker_context.containers(all=True)
+        except ValueError:
+            log.warning("Failed to get a list of active docker files")
+            containers = []
+
+        self._container_id = None
+        for container in containers:
+            if any(self.name in container.get("Names", []) for name in (self.container_name, "/{0}".format(self.container_name))):
+                self._container_id = container["Id"]
+                break
+
+        return self._container_id
+
+    @container_id.setter
+    def container_id(self, container_id):
+        self._container_id = container_id
+
+    @property
     def formatted_command(self):
         if self.bash is not NotSpecified:
             return "/bin/bash -c '{0}'".format(self.bash)
@@ -67,7 +94,7 @@ class Image(dictobj):
         for image, _ in self.dependency_images(images):
             yield image
 
-    def dependency_images(self, images, ignore_parent=False):
+    def dependency_images(self, ignore_parent=False):
         """
         What images does this one require
 
@@ -111,6 +138,29 @@ class Image(dictobj):
         if self.image_index:
             msg.append("Pushes to {0}".format(self.image_name))
         return ' : '.join(msg)
+
+    @property
+    def mtime(self):
+        if callable(self._mtime):
+            self._mtime = self._mtime()
+
+        if self._mtime not in (NotSpecified, None) and type(self._mtime) is not int:
+            self._mtime = int(self._mtime)
+
+        return self._mtime
+
+    @mtime.setter
+    def mtime(self, val):
+        self._mtime = val
+
+    def build_and_run(self, images):
+        """Make this image and run it"""
+        Builder().make_image(self, images)
+
+        try:
+            Runner().run_container(self, images)
+        except DockerAPIError as error:
+            raise BadImage("Failed to start the container", error=error)
 
 class Command(dictobj):
     fields = ['meta', 'orig_command']
@@ -243,6 +293,7 @@ class Command(dictobj):
 class Link(dictobj):
     fields = ["container", "container_name", "link_name"]
 
+    @property
     def pair(self):
         return (self.container_name, self.link_name)
 
@@ -372,18 +423,30 @@ class Volumes(dictobj):
             else:
                 yield container.container_name
 
-    def mount_options(self):
-        return [mount.options() for mount in self.mount]
+    @property
+    def volume_names(self):
+        """Return just the volume names"""
+        return [mount.container_path for mount in self.mount]
+
+    @property
+    def binds(self):
+        """Return the bind options for these volumes"""
+        return dict(mount.pair for mount in self.mount)
 
 class Mount(dictobj):
     fields = ["local_path", "container_path", "permissions"]
 
-    def options(self):
-        return (self.local_path, self.container_path, self.permissions)
+    @property
+    def pair(self):
+        if permissions == 'rw':
+            return (self.local_path, {"bind": self.container_path, 'ro': False})
+        else:
+            return (self.local_path, {"bind": self.container_path, 'ro': True})
 
 class Environment(dictobj):
     fields = ["env_name", ("default_val", None), ("set_val", None)]
 
+    @property
     def pair(self):
         """Get the name and value for this environment variable"""
         if self.set_val:
@@ -396,6 +459,7 @@ class Environment(dictobj):
 class Port(dictobj):
     fields = ["ip", "host_port", "container_port"]
 
+    @property
     def pair(self):
         """return (container_port, (ip, host_port)) or (container_port, host_port)"""
         if self.ip is NotSpecified:

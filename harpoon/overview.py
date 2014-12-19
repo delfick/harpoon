@@ -17,8 +17,7 @@ import os
 log = logging.getLogger("harpoon.executor")
 
 class Overview(object):
-    def __init__(self, configuration_file, docker_context, logging_handler=None):
-        self.docker_context = docker_context
+    def __init__(self, configuration_file, logging_handler=None):
         self.logging_handler = logging_handler
 
         self.configuration = self.collect_configuration(configuration_file)
@@ -144,7 +143,7 @@ class Overview(object):
             if source in images_from:
                 result = {"images": {os.path.splitext(os.path.basename(source))[0]: result}}
 
-            result["__mtime__"] = make_mtime_func(source)
+            result["mtime"] = make_mtime_func(source)
 
             if "images" in result:
                 images = result.pop("images")
@@ -185,9 +184,10 @@ class Overview(object):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
             log.info("Converting %s", path)
-            everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters)
+            everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
             meta = Meta(everything, [("images", ""), (image, "")])
             configuration.converters.started(path)
+            val["harpoon"] = configuration["harpoon"]
             return harpoon_spec.image_spec.normalise(meta, val)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])

@@ -1,6 +1,5 @@
 from harpoon.tasks import available_tasks
 from harpoon.errors import BadOption
-from harpoon.imager import Imager
 
 from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
@@ -24,24 +23,22 @@ class Task(dictobj):
         if self.overrides:
             configuration.update(self.overrides)
 
-        imager = None
         images = None
-        if task_func.needs_imager:
-            imager, images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
+        if task_func.needs_images:
+            images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
 
         if image:
-            images[image].image_configuration.find_missing_env()
+            images[image].find_missing_env()
 
-        return available_tasks[self.action](overview, configuration, imager=imager, images=images, image=image)
+        return available_tasks[self.action](overview, configuration, images=images, image=images[image])
 
     def determine_image(self, image, overview, configuration, needs_image=True):
         """Complain if we don't have an image"""
-        imager = Imager(configuration, overview.docker_context)
+        images = configuration["images"]
 
         available = None
-        available = imager.images.keys()
+        available = images.keys()
 
-        images = imager.images
         if needs_image:
             if not image:
                 info = {}
@@ -52,7 +49,7 @@ class Task(dictobj):
             if image not in images:
                 raise BadOption("No such image", wanted=image, available=images.keys())
 
-        return imager, images
+        return images
 
     def specify_image(self, image):
         """Specify the image this task belongs to"""

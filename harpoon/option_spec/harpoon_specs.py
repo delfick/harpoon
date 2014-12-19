@@ -15,7 +15,14 @@ from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
 class Harpoon(dictobj):
-    fields = ["config", "chosen_image", "chosen_task", "flat", "silent_build", "extra", "no_intervention", "ignore_missing", "keep_replaced", "interactive", "do_push", "only_pushable"]
+    fields = [
+          "config", "chosen_image", "chosen_task", "flat", "silent_build"
+        , "extra", "no_intervention", "ignore_missing", "keep_replaced"
+        , "interactive", "do_push", "only_pushable", "docker_context"
+        ]
+
+class other_options(dictobj):
+    fields = ["run", "create", "build"]
 
 class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""
@@ -82,6 +89,7 @@ class HarpoonSpec(object):
 
             # default the name to the key of the image
             , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , mtime = any_spec()
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , image_name = optional_spec(string_spec())
             , image_index = defaulted(string_spec(), "")
@@ -122,9 +130,10 @@ class HarpoonSpec(object):
             , env = listof(env_spec(), expect=image_objs.Environment)
             , ports = listof(port_spec(), expect=image_objs.Port)
 
-            , other_options = set_options(
-                  build = dictionary_spec()
+            , other_options = create_spec(other_options
                 , run = dictionary_spec()
+                , build = dictionary_spec()
+                , create = dictionary_spec()
                 )
 
             , network = create_spec(image_objs.Network
@@ -161,5 +170,6 @@ class HarpoonSpec(object):
 
             , do_push = defaulted(formatted_boolean, False)
             , only_pushable = defaulted(formatted_boolean, False)
+            , docker_context = any_spec()
             )
 
