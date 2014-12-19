@@ -2,6 +2,7 @@ from harpoon.errors import BadOption, BadDockerConnection
 from harpoon.overview import Overview
 
 from rainbow_logging_handler import RainbowLoggingHandler
+from input_algorithms.spec_base import NotSpecified
 from docker.client import Client as DockerClient
 from delfick_error import DelfickError
 import requests
@@ -13,9 +14,6 @@ import sys
 import os
 
 log = logging.getLogger("harpoon.executor")
-
-class NotSpecified(object):
-    """Tell the difference between None and Empty"""
 
 def setup_logging(verbose=False, silent=False, debug=False):
     log = logging.getLogger("")
@@ -229,6 +227,10 @@ def main(argv=None):
                 cli_args[key] = val
         cli_args["harpoon"]["extra"] = extra
         cli_args["harpoon"]["docker_context"] = docker_context()
+
+        for key in ('bash', 'command'):
+            if cli_args[key] is None:
+                cli_args[key] = NotSpecified
 
         Overview(configuration_file=args.harpoon_config.name, logging_handler=handler).start(cli_args)
     except DelfickError as error:

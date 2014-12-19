@@ -10,7 +10,7 @@ class Task(dictobj):
     def run(self, overview, cli_args, image):
         """Run this task"""
         task_func = available_tasks[self.action]
-        configuration = MergedOptions.using(overview.configuration, dont_prefix=[dictobj], converters=overview.configuration.converters)
+        configuration = MergedOptions.using(overview.configuration, dont_prefix=overview.configuration.dont_prefix, converters=overview.configuration.converters)
 
         if self.options:
             if image:
@@ -18,7 +18,7 @@ class Task(dictobj):
             else:
                 configuration.update(self.options)
 
-        configuration.update(cli_args)
+        configuration.update(cli_args, source="<cli>")
 
         if self.overrides:
             configuration.update(self.overrides)

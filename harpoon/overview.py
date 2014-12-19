@@ -187,8 +187,11 @@ class Overview(object):
             everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
             meta = Meta(everything, [("images", ""), (image, "")])
             configuration.converters.started(path)
-            val["harpoon"] = configuration["harpoon"]
-            return harpoon_spec.image_spec.normalise(meta, val)
+
+            base = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
+            base.update(val)
+            base["harpoon"] = configuration["harpoon"]
+            return harpoon_spec.image_spec.normalise(meta, base)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])
         configuration.add_converter(converter)
