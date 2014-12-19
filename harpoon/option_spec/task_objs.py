@@ -26,11 +26,12 @@ class Task(dictobj):
         images = None
         if task_func.needs_images:
             images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
+            image = images[image]
 
         if image:
-            images[image].find_missing_env()
+            image.find_missing_env()
 
-        return available_tasks[self.action](overview, configuration, images=images, image=images[image])
+        return available_tasks[self.action](overview, configuration, images=images, image=image)
 
     def determine_image(self, image, overview, configuration, needs_image=True):
         """Complain if we don't have an image"""
