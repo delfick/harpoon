@@ -235,30 +235,15 @@ class Overview(object):
             , t("delete_untagged", "Delete untagged images")
             ])
 
-    def interpret_tasks(self, configuration, path):
-        """Find the tasks in the specified key"""
-        if path not in configuration:
-            return {}
-
-        found = configuration.get(path)
-
-        for key, task in found.items():
-            if task.options:
-                task_path = "{0}.{1}".format(path, key)
-                formatter = lambda s: MergedOptionStringFormatter(self.configuration, task_path, value=s).format()
-                task.options = dict((k, formatter(v)) for k, v in task.options.items())
-
-        return dict(found.items())
-
     def find_tasks(self, configuration=None):
         """Find some tasks"""
         if configuration is None:
             configuration = self.configuration
 
         tasks = self.default_tasks()
-        tasks.update(self.interpret_tasks(configuration, "tasks"))
         for image in list(configuration["images"]):
-            nxt = self.interpret_tasks(configuration, configuration.path(["images", image, "tasks"], joined="images.{0}.tasks".format(image)))
+            path = configuration.path(["images", image, "tasks"], joined="images.{0}.tasks".format(image))
+            nxt = configuration.get(path, {})
             for task in nxt.values():
                 task.specify_image(image)
             tasks.update(nxt)
