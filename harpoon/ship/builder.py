@@ -93,7 +93,7 @@ class Builder(object):
                 exc_info = sys.exc_info()
                 if current_hash:
                     conf = type("Conf", (object, ), {"container_id": None, "container_name": current_hash, "harpoon": conf.harpoon})
-                    conf.clone = lambda: conf
+                    conf.clone = lambda s: conf
                     with Runner().intervention(conf):
                         log.info("Removing bad container\thash=%s", current_hash)
 
