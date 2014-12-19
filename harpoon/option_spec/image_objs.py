@@ -82,16 +82,16 @@ class Image(dictobj):
 
         for link in self.links:
             if link.container:
-                candidates.append(link.container)
+                candidates.append(link.container.name)
 
         for container in self.volumes.share_with:
             if not isinstance(container, basestring):
-                candidates.append(container)
+                candidates.append(container.name)
 
-        done = set()
+        done = []
         for candidate in candidates:
             if candidate not in done:
-                done.add(candidate)
+                done.append(candidate)
                 yield candidate, detach.get(candidate, True)
 
     def find_missing_env(self):
