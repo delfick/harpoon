@@ -31,8 +31,8 @@ def push(overview, configuration, images, image):
 @a_task(needs_images=True)
 def push_all(overview, configuration, **kwargs):
     """Push all the images"""
-    configuration.harpoon.do_push = True
-    configuration.harpoon.only_pushable = True
+    configuration["harpoon"].do_push = True
+    configuration["harpoon"].only_pushable = True
     make_all(overview, configuration, **kwargs)
 
 @a_task(needs_image=True)
@@ -59,8 +59,8 @@ def make(overview, configuration, images, image):
 @a_task(needs_images=True)
 def make_all(overview, configuration, images, **kwargs):
     """Creates all the images in layered order"""
-    push = configuration.harpoon.do_push
-    only_pushable = configuration.harpoon.only_pushable
+    push = configuration["harpoon"].do_push
+    only_pushable = configuration["harpoon"].only_pushable
     if push:
         only_pushable = True
 
@@ -74,8 +74,8 @@ def make_all(overview, configuration, images, **kwargs):
 @a_task(needs_images=True)
 def make_pushable(overview, configuration, **kwargs):
     """Make only the pushable images and their dependencies"""
-    configuration.harpoon.do_push = True
-    configuration.harpoon.only_pushable = True
+    configuration["harpoon"].do_push = True
+    configuration["harpoon"].only_pushable = True
     make_all(overview, configuration, **kwargs)
 
 @a_task(needs_image=True)
@@ -131,12 +131,12 @@ def show(overview, configuration, images, **kwargs):
         else:
             print("Layer {0}".format(index))
             for _, image in layer:
-                print("    {0}".format(image.image_configuration.display_line()))
+                print("    {0}".format(image.display_line()))
             print("")
 
 @a_task(needs_images=True)
 def show_pushable(overview, configuration, **kwargs):
     """Show what images we have"""
-    configuration.harpoon.only_pushable = True
+    configuration['harpoon'].only_pushable = True
     show(overview, configuration, **kwargs)
 

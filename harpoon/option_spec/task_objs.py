@@ -26,7 +26,8 @@ class Task(dictobj):
         images = None
         if task_func.needs_images:
             images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
-            image = images[image]
+            if image:
+                image = images[image]
 
         if image:
             image.find_missing_env()

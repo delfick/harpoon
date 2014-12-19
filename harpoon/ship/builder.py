@@ -1,5 +1,6 @@
 from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit
 from harpoon.ship.runner import Runner
+from harpoon.layers import Layers
 
 import humanize
 import logging
@@ -140,7 +141,7 @@ class Builder(object):
     def layered(self, images, only_pushable=False):
         """Yield layers of images"""
         if only_pushable:
-            operate_on = dict((image, instance) for image, instance in images.items() if image.image_index)
+            operate_on = dict((image, instance) for image, instance in images.items() if instance.image_index)
         else:
             operate_on = images
 
