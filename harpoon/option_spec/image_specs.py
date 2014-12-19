@@ -41,7 +41,10 @@ class link_spec(many_item_formatted_spec):
     optional_specs = [string_spec]
     formatter = MergedOptionStringFormatter
 
-    def determine_2(self, container_name, meta, val):
+    def determine_2(self, container_name, container_alias, meta, val):
+        if container_alias is not NotSpecified:
+            return container_alias
+
         if not isinstance(container_name, basestring):
             container_name = container_name.container_name
         return container_name[container_name.rfind(":")+1:].replace('/', '-')

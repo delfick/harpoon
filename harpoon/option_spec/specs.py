@@ -90,7 +90,7 @@ class many_item_formatted_spec(Spec):
                 val = formatted(string_or_int_as_string_spec(), formatter=self.formatter).normalise(meta, val)
 
             func = getattr(self, "alter_{0}".format(index), lambda *args: val)
-            formatted_vals.append(func(*(formatted_vals[:index] + [meta, original_val])))
+            formatted_vals.append(func(*(formatted_vals[:index] + [val, meta, original_val])))
 
         return self.create_result(*list(formatted_vals) + [meta, original_val, dividers])
 

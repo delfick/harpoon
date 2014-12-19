@@ -241,7 +241,7 @@ class Command(dictobj):
             raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
 class Link(dictobj):
-    fields = ["container_name", "link_name"]
+    fields = ["container", "container_name", "link_name"]
 
     def pair(self):
         return (self.container_name, self.link_name)
