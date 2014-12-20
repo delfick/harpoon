@@ -89,12 +89,14 @@ class HarpoonSpec(object):
 
             # default the name to the key of the image
             , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
-            , mtime = any_spec()
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , image_name = optional_spec(string_spec())
             , image_index = defaulted(string_spec(), "")
             , name_prefix = defaulted(string_spec(), "")
             , container_name = optional_spec(string_spec())
+
+            , mtime = any_spec()
+            , configuration = any_spec()
 
             # The spec itself
             , bash = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))

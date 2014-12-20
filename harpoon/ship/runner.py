@@ -120,7 +120,7 @@ class Runner(object):
     ###   RUNNING
     ########################
 
-    def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False, delete_on_exit=False):
+    def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
         binds = conf.volumes.binds
         links = [link.pair for link in conf.links]
         ports = dict([port.pair for port in conf.ports])
@@ -128,7 +128,7 @@ class Runner(object):
         container_id = conf.container_id
         container_name = conf.container_name
 
-        log.info("Starting container %s", container_name)
+        log.info("Starting container %s (%s)", container_name, container_id)
         if links:
             log.info("\tLinks: %s", links)
         if volumes_from:
@@ -136,30 +136,26 @@ class Runner(object):
         if ports:
             log.info("\tPort bindings: %s", ports)
 
-        try:
-            conf.harpoon.docker_context.start(container_id
-                , links = links
-                , binds = binds
-                , port_bindings = ports
-                , volumes_from = volumes_from
-                , **conf.other_options.run
-                )
+        conf.harpoon.docker_context.start(container_id
+            , links = links
+            , binds = binds
+            , port_bindings = ports
+            , volumes_from = volumes_from
+            , **conf.other_options.run
+            )
 
-            if not detach and not is_dependency:
-                self.start_tty(conf, interactive=tty)
+        if not detach and not is_dependency:
+            self.start_tty(conf, interactive=tty)
 
-            inspection = None
-            if not detach and not is_dependency:
-                inspection = self.get_exit_code(conf)
+        inspection = None
+        if not detach and not is_dependency:
+            inspection = self.get_exit_code(conf)
 
-            if inspection and not no_intervention:
-                if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                    if self.harpoon.interactive and not self.harpoon.no_intervention:
-                        self.start_intervention(conf)
-                    raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
-        finally:
-            if delete_on_exit:
-                self._stop_container(conf)
+        if inspection and not no_intervention:
+            if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
+                if self.harpoon.interactive and not self.harpoon.no_intervention:
+                    self.start_intervention(conf)
+                raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
     def start_tty(self, conf, interactive):
         """Startup a tty"""
@@ -271,7 +267,7 @@ class Runner(object):
                 elif not inspection["State"]["Running"]:
                     break
             except Exception as error:
-                log.error("Failed to see if container exited normally or not\thash=%s\terror=%s", container_id, error)
+                log.error("Failed to see if container exited normally or not\thash=%s\terror=%s", conf.container_id, error)
 
     ########################
     ###   INTERVENTION
@@ -284,18 +280,15 @@ class Runner(object):
         print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
         answer = raw_input("[y]: ")
         if not answer or answer.lower().startswith("y"):
-            with self.commit_and_run(conf, command="/bin/bash"):
-                self.start_tty(conf, True)
+            with self.commit_and_run(conf.container_id, conf, command="/bin/bash"):
+                pass
 
     @contextmanager
-    def commit_and_run(self, conf, command="/bin/bash"):
+    def commit_and_run(self, commit, conf, command="/bin/bash"):
         """Commit this container id and run the provided command in it and clean up afterwards"""
         image_hash = None
         try:
-            if not conf.container_id:
-                image_hash = conf.container_name
-            else:
-                image_hash = conf.harpoon.docker_context.commit(conf.container_id)["Id"]
+            image_hash = conf.harpoon.docker_context.commit(commit)["Id"]
 
             new_conf = conf.clone()
             new_conf.bash = NotSpecified
@@ -307,8 +300,10 @@ class Runner(object):
             container_id = self.create_container(new_conf, False, True)
             new_conf.container_id = container_id
 
-            self.start_container(new_conf, tty=True, detach=False, is_dependency=False, no_intervention=True, delete_on_exit=True)
-            self.start_tty(conf, True)
+            try:
+                self.start_container(new_conf, tty=True, detach=False, is_dependency=False, no_intervention=True)
+            finally:
+                self.stop_container(new_conf)
             yield
         except Exception as error:
             log.error("Something failed about creating the intervention image\terror=%s", error)
@@ -316,12 +311,13 @@ class Runner(object):
         finally:
             try:
                 if image_hash:
-                    self.docker_context.remove_image(image_hash)
+                    log.info("Removing intervened image\thash=%s", image_hash)
+                    conf.harpoon.docker_context.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
 
     @contextmanager
-    def intervention(self, conf):
+    def intervention(self, commit, conf):
         """Ask the user if they want to commit this container and run /bin/bash in it"""
         if not conf.harpoon.interactive or conf.harpoon.no_intervention:
             yield
@@ -335,7 +331,6 @@ class Runner(object):
             yield
             return
 
-        with self.commit_and_run(conf, command="/bin/bash"):
-            self.start_tty(conf, True)
+        with self.commit_and_run(commit, conf, command="/bin/bash"):
             yield
 

@@ -191,6 +191,7 @@ class Overview(object):
             base = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
             base.update(val)
             base["harpoon"] = configuration["harpoon"]
+            base["configuration"] = configuration
             return harpoon_spec.image_spec.normalise(meta, base)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])

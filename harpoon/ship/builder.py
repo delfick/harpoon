@@ -1,4 +1,5 @@
 from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit
+from input_algorithms.meta import Meta
 from harpoon.ship.runner import Runner
 from harpoon.layers import Layers
 
@@ -27,8 +28,7 @@ class Builder(object):
 
             buf = []
             cached = None
-            last_line = ""
-            current_hash = None
+            current_container = None
             try:
                 for line in conf.harpoon.docker_context.build(fileobj=context, custom_context=True, tag=conf.image_name, stream=True, rm=True):
                     line_detail = None
@@ -51,10 +51,8 @@ class Builder(object):
                             else:
                                 line = "\r{0}".format(line)
 
-                        if last_line.strip() == "---> Using cache":
-                            current_hash = line.split(" ", 1)[0].strip()
-                        elif line.strip().startswith("---> Running in"):
-                            current_hash = line[len("---> Running in "):].strip()
+                        if line.strip().startswith("---> Running in"):
+                            current_container = line[len("---> Running in "):].strip()
 
                     if line.strip().startswith("---> Running in"):
                         cached = False
@@ -62,7 +60,6 @@ class Builder(object):
                     elif line.strip().startswith("---> Using cache"):
                         cached = True
 
-                    last_line = line
                     if cached is None:
                         if "already being pulled by another client" in line or "Pulling repository" in line:
                             cached = False
@@ -92,20 +89,24 @@ class Builder(object):
                                 log.error("Failed to remove replaced image\thash=%s\terror=%s", image, error)
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
-                if current_hash:
-                    conf = type("Conf", (object, ), {"container_id": None, "container_name": current_hash, "harpoon": conf.harpoon})
-                    conf.clone = lambda s: conf
-                    with Runner().intervention(conf):
-                        log.info("Removing bad container\thash=%s", current_hash)
+
+                if current_container:
+                    from harpoon.option_spec.harpoon_specs import HarpoonSpec
+                    conf = conf.configuration.root().wrapped()
+                    conf.update({"_key_name_1": "{0}_intervention".format(current_container), "commands": []})
+                    conf = HarpoonSpec().image_spec.normalise(Meta(conf, []), conf)
+
+                    with Runner().intervention(current_container, conf):
+                        log.info("Removing bad container\thash=%s", current_container)
 
                         try:
-                            conf.harpoon.docker_context.kill(current_hash, signal=9)
+                            conf.harpoon.docker_context.kill(current_container, signal=9)
                         except Exception as error:
-                            log.error("Failed to kill dead container\thash=%s\terror=%s", current_hash, error)
+                            log.error("Failed to kill dead container\thash=%s\terror=%s", current_container, error)
                         try:
-                            conf.harpoon.docker_context.remove_container(current_hash)
+                            conf.harpoon.docker_context.remove_container(current_container)
                         except Exception as error:
-                            log.error("Failed to remove dead container\thash=%s\terror=%s", current_hash, error)
+                            log.error("Failed to remove dead container\thash=%s\terror=%s", current_container, error)
 
                 if isinstance(error, KeyboardInterrupt):
                     raise UserQuit()

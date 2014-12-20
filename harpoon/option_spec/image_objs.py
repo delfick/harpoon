@@ -27,7 +27,7 @@ class Image(dictobj):
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name", "harpoon"
-        , "bash", "command", "mtime"
+        , "bash", "command", "mtime", "configuration"
         ]
 
     @property
