@@ -164,17 +164,9 @@ class Overview(object):
 
         def convert_harpoon(path, val):
             log.info("Converting %s", path)
-            spec = harpoon_spec.harpoon_spec
             meta = Meta(path.configuration, [("harpoon", "")])
-            meta.result = {}
-            configuration.converters.done(path, meta.result)
-
-            for key, v in val.items(ignore_converters=True):
-                if isinstance(v, MergedOptions):
-                    v.ignore_converters = True
-                meta.result[key] = v
-
-            return spec.normalise(meta, meta.result)
+            configuration.converters.started(path)
+            return harpoon_spec.harpoon_spec.normalise(meta, val)
 
         harpoon_converter = Converter(convert=convert_harpoon, convert_path=["harpoon"])
         configuration.add_converter(harpoon_converter)
@@ -204,6 +196,7 @@ class Overview(object):
         def convert_tasks(path, val):
             spec = harpoon_spec.tasks_spec(available_tasks)
             meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
+            configuration.converters.started(path)
             return spec.normalise(meta, val)
 
         converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
