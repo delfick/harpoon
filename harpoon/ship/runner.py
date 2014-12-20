@@ -153,7 +153,7 @@ class Runner(object):
 
         if inspection and not no_intervention:
             if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                if self.harpoon.interactive and not self.harpoon.no_intervention:
+                if conf.harpoon.interactive:
                     self.start_intervention(conf)
                 raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
@@ -265,7 +265,7 @@ class Runner(object):
                 if not isinstance(inspection, dict) or "State" not in inspection:
                     raise BadResult("Expected inspect result to be a dictionary with 'State' in it", found=inspection)
                 elif not inspection["State"]["Running"]:
-                    break
+                    return inspection
             except Exception as error:
                 log.error("Failed to see if container exited normally or not\thash=%s\terror=%s", conf.container_id, error)
 
