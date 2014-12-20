@@ -95,6 +95,10 @@ class Overview(object):
         else:
             return os.path.getmtime(location)
 
+    def home_dir_configuration_location(self):
+        """Return the location of the configuration in the user's home directory"""
+        return os.path.expanduser("~/.harpoon.yml")
+
     def collect_configuration(self, configuration_file):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
@@ -121,7 +125,7 @@ class Overview(object):
         harpoon_spec = HarpoonSpec()
         configuration = MergedOptions(dont_prefix=[dictobj])
 
-        home_dir_configuration = os.path.expanduser("~/.harpoon.yml")
+        home_dir_configuration = self.home_dir_configuration_location()
         sources = [home_dir_configuration, configuration_file] + images_from
 
         def make_mtime_func(source):

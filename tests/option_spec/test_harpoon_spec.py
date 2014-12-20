@@ -22,13 +22,20 @@ describe HarpoonCase, "HarpoonSpec":
             raise NotImplementedError
 
         it "can't have whitespace":
+            regex = self.spec.validators[1].regexes[0][0]
             for value in (" adsf", "d  d", "\t", " ", "d "):
-                with self.fuzzyAssertRaisesError(BadSpecValue, "Expected no whitespace"):
+                errors = [
+                      BadSpecValue("Expected no whitespace", meta=self.meta, val=value)
+                    , BadSpecValue("Expected value to match regex, it didn't", meta=self.meta, val=value, spec=regex)
+                    ]
+                with self.fuzzyAssertRaisesError(BadSpecValue, "Failed to validate", _errors=errors):
                     self.spec.normalise(self.meta, value)
 
         it "can only have alphanumeric, dashes and underscores and start with a letter":
+            regex = self.spec.validators[1].regexes[0][0]
             for value in ("^dasdf", "kasd$", "*k", "[", "}", "<", "0", "0d"):
-                with self.fuzzyAssertRaisesError(BadSpecValue, "Expected value to match regex, it didn't"):
+                errors = [BadSpecValue("Expected value to match regex, it didn't", meta=self.meta, val=value, spec=regex)]
+                with self.fuzzyAssertRaisesError(BadSpecValue, "Failed to validate", _errors=errors):
                     self.spec.normalise(self.meta, value)
 
         it "allows values that are with alphanumeric, dashes and underscores":
@@ -47,6 +54,9 @@ describe HarpoonCase, "HarpoonSpec":
 
     describe "task spec":
         it "creates a Task object for each task":
+            meta_at = mock.Mock(name="meta_at", base={})
+            self.meta.at.return_value = meta_at
+
             tasks = HarpoonSpec().tasks_spec(["run"]).normalise(self.meta, {"one": {}})
             self.assertEqual(type(tasks), dict)
             self.assertEqual(list(tasks.keys()), ["one"])

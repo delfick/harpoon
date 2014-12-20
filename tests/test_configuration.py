@@ -1,6 +1,6 @@
 # coding: spec
 
-from harpoon.overview import Harpoon
+from harpoon.overview import Overview
 
 from tests.helpers import HarpoonCase
 
@@ -28,28 +28,28 @@ describe HarpoonCase, "Collecting configuration":
     @contextmanager
     def make_harpoon(self, config, home_dir_configuration=None, logging_handler=None):
         if home_dir_configuration is None:
-            home_dir_configuration = (None, None)
+            home_dir_configuration = None
 
-        home_dir_configuration_mock = mock.Mock(name="home_dir_configuration", spec=[])
-        home_dir_configuration_mock.return_value = home_dir_configuration
-        harpoon_kls = type("HarpoonSub", (Harpoon, ), {"home_dir_configuration": home_dir_configuration_mock})
-        yield harpoon_kls(config, self.docker_context, logging_handler=logging_handler)
+        home_dir_configuration_location = mock.Mock(name="home_dir_configuration_location", spec=[])
+        home_dir_configuration_location.return_value = home_dir_configuration
+        harpoon_kls = type("OverviewSub", (Overview, ), {"home_dir_configuration_location": home_dir_configuration_location})
+        yield harpoon_kls(config, logging_handler=logging_handler)
 
-    it "puts in __mtime__ and images":
-      config = self.make_config({})
-      mtime = os.path.getmtime(config)
-      with self.make_harpoon(config) as harpoon:
-          self.assertIs(type(harpoon.configuration), MergedOptions)
-          self.assertIs(type(harpoon.configuration["images"]), MergedOptions)
-          self.assertEqual(harpoon.configuration['__mtime__'], mtime)
-          self.assertEqual(dict(harpoon.configuration['images'].items()), {})
-          self.assertEqual(sorted(harpoon.configuration.keys()), sorted(["__mtime__", "images"]))
+    it "puts in mtime and images":
+        config = self.make_config({"images": { "blah": {"commands": ["FROM nowhere"]}}})
+        mtime = os.path.getmtime(config)
+        with self.make_harpoon(config) as harpoon:
+            self.assertIs(type(harpoon.configuration), MergedOptions)
+            self.assertIs(type(harpoon.configuration["images"]), MergedOptions)
+            self.assertEqual(harpoon.configuration['mtime'](), mtime)
+            self.assertEqual(dict(harpoon.configuration['images'].items()), {"blah": harpoon.configuration["images.blah"]})
+            self.assertEqual(sorted(harpoon.configuration.keys()), sorted(["mtime", "images"]))
 
     it "includes configuration from the home directory":
-        config = self.make_config({"a":1, "b":2})
+        config = self.make_config({"a":1, "b":2, "images": {"meh": {}}})
         home_config = self.make_config({"a":3, "c":4})
-        with self.make_harpoon(config, (home_config, yaml.load(open(home_config)))) as harpoon:
-            self.assertEqual(sorted(harpoon.configuration.keys()), sorted(['a', 'b', 'c', '__mtime__', 'images']))
+        with self.make_harpoon(config, home_config) as harpoon:
+            self.assertEqual(sorted(harpoon.configuration.keys()), sorted(['a', 'b', 'c', 'mtime', 'images']))
             self.assertEqual(harpoon.configuration['a'], 1)
             self.assertEqual(harpoon.configuration['b'], 2)
             self.assertEqual(harpoon.configuration['c'], 4)
