@@ -184,11 +184,11 @@ class Overview(object):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
             log.info("Converting %s", path)
-            everything = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
+            everything = path.configuration.root().wrapped()
             meta = Meta(everything, [("images", ""), (image, "")])
             configuration.converters.started(path)
 
-            base = MergedOptions.using(path.configuration.root(), converters=configuration.converters, dont_prefix=configuration.dont_prefix)
+            base = path.configuration.root().wrapped()
             base.update(val)
             base["harpoon"] = configuration["harpoon"]
             base["configuration"] = configuration
