@@ -45,11 +45,11 @@ class Task(dictobj):
             if not image:
                 info = {}
                 if available:
-                    info["available"] = available
+                    info["available"] = list(available)
                 raise BadOption("Please use --image to specify an image to run /bin/bash in", **info)
 
             if image not in images:
-                raise BadOption("No such image", wanted=image, available=images.keys())
+                raise BadOption("No such image", wanted=image, available=list(images.keys()))
 
         return images
 
