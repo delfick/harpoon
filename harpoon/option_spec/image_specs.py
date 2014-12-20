@@ -4,6 +4,8 @@ from harpoon.formatter import MergedOptionStringFormatter
 
 from input_algorithms.spec_base import string_spec, integer_spec, required, Spec, NotSpecified, string_or_int_as_string_spec
 
+import six
+
 class command_spec(Spec):
     def normalise(self, meta, command):
         return Command(meta, command)
@@ -45,13 +47,13 @@ class link_spec(many_item_formatted_spec):
         if container_alias is not NotSpecified:
             return container_alias
 
-        if not isinstance(container_name, basestring):
+        if not isinstance(container_name, six.string_types):
             container_name = container_name.container_name
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
     def alter_1(self, container_name, meta, val):
         meta.container = None
-        if not isinstance(container_name, basestring):
+        if not isinstance(container_name, six.string_types):
             meta.container = container_name
             container_name = container_name.container_name
         return container_name

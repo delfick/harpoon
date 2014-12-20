@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from harpoon.errors import BadOption, BadDockerConnection
 from harpoon.overview import Overview
 
@@ -234,10 +236,10 @@ def main(argv=None):
 
         Overview(configuration_file=args.harpoon_config.name, logging_handler=handler).start(cli_args)
     except DelfickError as error:
-        print ""
-        print "!" * 80
-        print "Something went wrong! -- {0}".format(error.__class__.__name__)
-        print "\t{0}".format(error)
+        print("")
+        print("!" * 80)
+        print("Something went wrong! -- {0}".format(error.__class__.__name__))
+        print("\t{0}".format(error))
         if args.debug:
             raise
         sys.exit(1)

@@ -1,9 +1,8 @@
 from harpoon.errors import BadOptionFormat
-
-from option_merge.joiner import dot_joiner
-from option_merge import MergedOptions
 from input_algorithms.meta import Meta
+
 import string
+import six
 
 class NotSpecified(object):
     """Tell the difference between not specified and None"""
@@ -27,7 +26,7 @@ class MergedOptionStringFormatter(string.Formatter):
         val = self.value
         if self.value is NotSpecified:
             val = self.get_string(self.option_path)
-        if not isinstance(val, basestring):
+        if not isinstance(val, six.string_types):
             return val
         return super(MergedOptionStringFormatter, self).format(val)
 

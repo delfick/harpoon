@@ -6,6 +6,7 @@ from harpoon.layers import Layers
 import humanize
 import logging
 import json
+import six
 import sys
 import os
 
@@ -111,7 +112,7 @@ class Builder(object):
                 if isinstance(error, KeyboardInterrupt):
                     raise UserQuit()
                 else:
-                    raise exc_info[1], None, exc_info[2]
+                    six.reraise(*exc_info)
 
     def make_image(self, conf, images, chain=None, made=None, ignore_deps=False):
         """Make us an image"""

@@ -15,8 +15,10 @@ setup(
       , "docker-py==0.5.3"
       , "dockerpty==0.3.2"
 
-      , "humanize"
+      , "six"
       , "glob2"
+      , "humanize"
+
       , "pyYaml==3.10"
       , "rainbow_logging_handler==2.2.2"
       ]

@@ -14,6 +14,8 @@ from harpoon.helpers import memoized_property
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
+import six
+
 class Harpoon(dictobj):
     fields = [
           "config", "chosen_image", "chosen_task", "flat", "silent_build"
@@ -153,7 +155,7 @@ class HarpoonSpec(object):
     @memoized_property
     def harpoon_spec(self):
         """Spec for harpoon options"""
-        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=basestring)
+        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=six.string_types)
         formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
 
         return create_spec(Harpoon

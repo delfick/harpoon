@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import tempfile
 import shutil
+import six
 import os
 
 class FilesAssertionsMixin:
@@ -91,7 +92,7 @@ class FilesAssertionsMixin:
                         fle.write("")
 
         for file_spec in files_list:
-            if isinstance(file_spec, basestring):
+            if isinstance(file_spec, six.string_types):
                 create(os.path.join(root, file_spec), None)
 
             else:

@@ -1,4 +1,4 @@
-from harpoon.errors import DeprecatedFeature, HarpoonError
+from harpoon.errors import DeprecatedFeature, HarpoonError, BadImage
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
@@ -16,6 +16,7 @@ import tarfile
 import hashlib
 import glob2
 import uuid
+import six
 import os
 
 log = logging.getLogger("harpoon.option_spec.image_objs")
@@ -104,7 +105,7 @@ class Image(dictobj):
         detach = dict((candidate, not options.attached) for candidate, options in self.dependency_options.items())
 
         if not ignore_parent:
-            if not isinstance(self.commands.parent_image, basestring):
+            if not isinstance(self.commands.parent_image, six.string_types):
                 candidates.append(self.commands.parent_image.name)
 
         for link in self.links:
@@ -112,7 +113,7 @@ class Image(dictobj):
                 candidates.append(link.container.name)
 
         for container in self.volumes.share_with:
-            if not isinstance(container, basestring):
+            if not isinstance(container, six.string_types):
                 candidates.append(container.name)
 
         done = []
@@ -201,7 +202,7 @@ class Command(dictobj):
     def parent_image_name(self):
         """Return the image name of the parent"""
         parent = self.parent_image
-        if isinstance(parent, basestring):
+        if isinstance(parent, six.string_types):
             return parent
         else:
             return parent.image_name
@@ -209,7 +210,7 @@ class Command(dictobj):
     def docker_file(self):
         res = []
         for name, value in self.commands:
-            if name == "FROM" and not isinstance(value, basestring):
+            if name == "FROM" and not isinstance(value, six.string_types):
                 value = value.image_name
             res.append("{0} {1}".format(name, value))
 
@@ -236,15 +237,15 @@ class Command(dictobj):
             errors.append(BadCommand("Command spec as a list can only be two items", found_length=len(command), found=command))
 
         name, value = command
-        if not isinstance(name, basestring):
+        if not isinstance(name, six.string_types):
             errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
-        elif isinstance(value, basestring):
+        elif isinstance(value, six.string_types):
             if name == "FROM" and value.endswith(".image_name}"):
                 raise DeprecatedFeature("Just specify the image in the FROM, not it's image_name", value=value, meta=meta)
 
             value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
             if name == "FROM":
-                if not isinstance(value, basestring):
+                if not isinstance(value, six.string_types):
                     yield name, value[0]
                     return
 
@@ -280,7 +281,7 @@ class Command(dictobj):
                     raise BadOption("Command spec didn't contain 'get' option", command=[name, value], image=self.name)
 
                 get = value["get"]
-                if isinstance(get, basestring):
+                if isinstance(get, six.string_types):
                     get = [get]
                 elif not isinstance(get, list):
                     raise BadOption("Command spec value for 'get' should be string or a list", command=[name, value], image=self.name)
@@ -418,7 +419,7 @@ class Volumes(dictobj):
     @property
     def share_with_names(self):
         for container in self.share_with:
-            if isinstance(container, basestring):
+            if isinstance(container, six.string_types):
                 yield container
             else:
                 yield container.container_name
@@ -438,7 +439,7 @@ class Mount(dictobj):
 
     @property
     def pair(self):
-        if permissions == 'rw':
+        if self.permissions == 'rw':
             return (self.local_path, {"bind": self.container_path, 'ro': False})
         else:
             return (self.local_path, {"bind": self.container_path, 'ro': True})

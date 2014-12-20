@@ -3,6 +3,7 @@ from input_algorithms.spec_base import (
       NotSpecified, Spec
     , string_or_int_as_string_spec, formatted
     )
+import six
 
 class many_item_formatted_spec(Spec):
     """
@@ -38,7 +39,7 @@ class many_item_formatted_spec(Spec):
             vals = val
             dividers = [':']
 
-        elif isinstance(val, basestring):
+        elif isinstance(val, six.string_types):
             vals = []
             dividers = []
             while val and any(seperator in val for seperator in self.seperators):
