@@ -10,7 +10,7 @@ setup(
     , install_requires =
       [ "delfick_error==1.6.1"
       , "option_merge==0.9"
-      , "input_algorithms==0.4"
+      , "input_algorithms==0.4.1"
 
       , "docker-py==0.5.3"
       , "dockerpty==0.3.2"
