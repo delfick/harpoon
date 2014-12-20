@@ -111,7 +111,7 @@ class HarpoonSpec(object):
                     , enabled = defaulted(boolean(), True)
 
                     , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
-                    , use_gitignore = defaulted(boolean(), True)
+                    , use_gitignore = defaulted(boolean(), False)
                     , use_git_timestamps = defaulted(or_spec(boolean(), listof(string_spec())), False)
                     )
                 )
