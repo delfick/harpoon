@@ -103,7 +103,8 @@ def list_tasks(overview, configuration, **kwargs):
 @a_task()
 def delete_untagged(overview, configuration, **kwargs):
     """Find the untagged images and remove them"""
-    images = overview.docker_context.images()
+    docker_context = configuration["harpoon"].docker_context
+    images = docker_context.images()
     found = False
     for image in images:
         if image["RepoTags"] == ["<none>:<none>"]:
@@ -111,7 +112,7 @@ def delete_untagged(overview, configuration, **kwargs):
             image_id = image["Id"]
             log.info("Deleting untagged image\thash=%s", image_id)
             try:
-                overview.docker_context.remove_image(image["Id"])
+                docker_context.remove_image(image["Id"])
             except DockerAPIError as error:
                 log.error("Failed to delete image\thash=%s\terror=%s", image_id, error)
 
