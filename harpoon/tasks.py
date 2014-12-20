@@ -53,7 +53,7 @@ def pull_all(overview, configuration, images, **kwargs):
 @a_task(needs_image=True)
 def make(overview, configuration, images, image):
     """Just create an image"""
-    Builder().make_image(image)
+    Builder().make_image(image, images)
     print("Created image {0}".format(image.image_name))
 
 @a_task(needs_images=True)
