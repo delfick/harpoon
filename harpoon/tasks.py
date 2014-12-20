@@ -1,3 +1,10 @@
+"""
+The functionality itself for each task.
+
+Each task is specified with the ``a_task`` decorator and indicates whether it's
+necessary to provide the task with the object containing all the images and/or
+one specific image object.
+"""
 from harpoon.ship.builder import Builder
 from harpoon.ship.syncer import Syncer
 from harpoon.errors import BadOption
@@ -10,6 +17,7 @@ log = logging.getLogger("harpoon.tasks")
 
 available_tasks = {}
 class a_task(object):
+    """Records a task in the ``available_tasks`` dictionary"""
     def __init__(self, needs_image=False, needs_images=False):
         self.needs_image = needs_image
         self.needs_images = needs_image or needs_images

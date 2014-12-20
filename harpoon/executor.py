@@ -1,3 +1,8 @@
+"""
+This is where the mainline sits and is responsible for setting up the logging,
+the argument parsing and for starting up Harpoon.
+"""
+
 from __future__ import print_function
 
 from harpoon.errors import BadOption, BadDockerConnection

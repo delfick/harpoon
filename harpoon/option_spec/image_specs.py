@@ -1,3 +1,9 @@
+"""
+Custom specifications for the different types of image options.
+
+The idea is that these understand the conditions around representation of the
+options.
+"""
 from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Port, ContainerPort
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
@@ -7,6 +13,11 @@ from input_algorithms.spec_base import string_spec, integer_spec, required, Spec
 import six
 
 class command_spec(Spec):
+    """
+    The representation of commands is handled in the command object.
+
+    This may be moved back here at some point
+    """
     def normalise(self, meta, command):
         return Command(meta, command)
 
@@ -17,6 +28,7 @@ class mount_spec(many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def create_result(self, local_path, container_path, permissions, meta, val, dividers):
+        """Default permissions to rw"""
         if permissions is NotSpecified:
             permissions = 'rw'
         return Mount(local_path, container_path, permissions)
@@ -30,6 +42,7 @@ class env_spec(many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def create_result(self, env_name, other_val, meta, val, dividers):
+        """Set default_val and set_val depending on the seperator"""
         args = [env_name]
         if dividers[0] == ':':
             args.append(other_val)
@@ -44,6 +57,7 @@ class link_spec(many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def determine_2(self, container_name, container_alias, meta, val):
+        """"Default the alias to the name of the container"""
         if container_alias is not NotSpecified:
             return container_alias
 
@@ -52,6 +66,7 @@ class link_spec(many_item_formatted_spec):
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
     def alter_1(self, container_name, meta, val):
+        """Get the container_name of the container if a container is specified"""
         meta.container = None
         if not isinstance(container_name, six.string_types):
             meta.container = container_name
@@ -68,6 +83,11 @@ class port_spec(many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def create_result(self, ip, host_port, container_port, meta, val, dividers):
+        """
+        The format is the same as the default docker cli client::
+
+            ip:hostPort:containerPort | ip::containerPort | hostPort:containerPort | containerPort
+        """
         if host_port in ('', NotSpecified) and container_port in ('', NotSpecified):
             container_port = ip
             ip = NotSpecified

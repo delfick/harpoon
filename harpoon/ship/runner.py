@@ -1,3 +1,15 @@
+"""
+The runner knows about starting a container from a docker image.
+
+It is responsible for also starting any dependency containers that are included
+via ``volumes.share_with`` or ``link``.
+
+It will also ensure containers are killed and removed after use.
+
+Finally, the Runner is also responsible for starting and cleaning up intervention
+containers.
+"""
+
 from __future__ import print_function
 
 from harpoon.errors import BadOption, BadImage, BadResult
@@ -121,6 +133,7 @@ class Runner(object):
     ########################
 
     def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
+        """Start up a single container"""
         binds = conf.volumes.binds
         links = [link.pair for link in conf.links]
         ports = dict([port.pair for port in conf.ports])

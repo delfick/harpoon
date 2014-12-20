@@ -1,3 +1,19 @@
+"""
+We use this formatter to lookup options in the configuration from strings.
+
+So normally, strings are formatted as follows::
+
+    "blah {0}".format(1) == "blah 1"
+
+What we want is something like this::
+
+    configuration = {"folders": {"root": "/somewhere"}}
+    "blah {folders.root}".format() == "blah /somewhere"
+
+To do this we define the MergedOptionStringFormatter below that uses the magic
+of MergedOptions to do the lookup for us.
+"""
+
 from harpoon.errors import BadOptionFormat
 from input_algorithms.meta import Meta
 
@@ -8,7 +24,34 @@ class NotSpecified(object):
     """Tell the difference between not specified and None"""
 
 class MergedOptionStringFormatter(string.Formatter):
-    """Resolve format options into a MergedOptions dictionary"""
+    """
+    Resolve format options into a MergedOptions dictionary
+
+    Usage is like:
+
+        configuration = MergedOptions.using({"numbers": "1 two {three}", "three": 3})
+        formatter = MergedOptionStringFormatter(configuration, ["numbers"])
+        val = formatter.format()
+        # val == "1 two 3"
+
+    Or we can provide a value outside the configuration::
+
+        configuration = MergedOptions.using({"one": 1, "two": 2, "three": 3})
+        formatter = MergedOptionStringFormatter(configuration, ['numbers'], value="{one} {two} {three}")
+        val = formatter.format()
+        # val == "1 2 3"
+
+    The formatter also has a special feature where it returns the object it finds
+    if the string to be formatted is that one object::
+
+        class dictsubclass(dict): pass
+        configuration = MergedOptions.using({"some_object": dictsubclass({1:2, 3:4})}, dont_prefix=[dictsubclass])
+        formatter = MergedOptionStringFormatter(configuration, [], value="{some_object}")
+        val = formatter.format()
+        # val == {1:2, 3:4}
+
+    For this to work, the object must be a subclass of dict and in the dont_prefix option of the configuration.
+    """
     def __init__(self, all_options, option_path, chain=None, value=NotSpecified):
         if chain is None:
             if isinstance(option_path, list):

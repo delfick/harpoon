@@ -1,3 +1,11 @@
+"""
+The Builder is responsible for finding and building docker images in
+the correct order
+
+Building an image requires building all dependent images, creating the necessary
+context, and actually building the current image.
+"""
+
 from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit
 from input_algorithms.meta import Meta
 from harpoon.ship.runner import Runner

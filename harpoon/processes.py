@@ -1,3 +1,7 @@
+"""
+Some helper functions for running subprocesses and ensuring they don't hang or
+stick around.
+"""
 from harpoon.errors import CouldntKill
 
 import subprocess

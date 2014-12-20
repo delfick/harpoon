@@ -1,3 +1,10 @@
+"""
+This is the entry point of Harpoon itself.
+
+The overview object is responsible for collecting configuration, knowing default
+tasks, and for starting the chosen task.
+"""
+
 from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
@@ -52,7 +59,12 @@ class Overview(object):
     ########################
 
     def setup_logging_theme(self):
-        """Setup a logging theme"""
+        """
+        Setup a logging theme
+
+        Currently there is only ``light`` and ``dark`` which consists of a difference
+        in color for INFO level messages.
+        """
         if "term_colors" not in self.configuration:
             return
 
@@ -79,7 +91,7 @@ class Overview(object):
     ########################
 
     def read_yaml(self, filepath):
-        """Read in a yaml file"""
+        """Read in a yaml file and return as a python object"""
         try:
             if os.stat(filepath).st_size == 0:
                 return {}
@@ -129,6 +141,7 @@ class Overview(object):
         sources = [home_dir_configuration, configuration_file] + images_from
 
         def make_mtime_func(source):
+            """Lazily calculate the mtime to avoid wasted computation"""
             return lambda: self.get_committime_or_mtime(source)
 
         for source in sources:
@@ -234,7 +247,7 @@ class Overview(object):
             ])
 
     def find_tasks(self, configuration=None):
-        """Find some tasks"""
+        """Find the custom tasks and record the associated image with each task"""
         if configuration is None:
             configuration = self.configuration
 

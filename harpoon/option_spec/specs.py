@@ -1,3 +1,7 @@
+"""
+We define a custom spec type here for interpreting list specifications.
+"""
+
 from input_algorithms.errors import BadSpecValue
 from input_algorithms.spec_base import (
       NotSpecified, Spec

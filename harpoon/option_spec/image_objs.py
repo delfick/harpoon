@@ -1,3 +1,10 @@
+"""
+This module contains object representing the different options in an image.
+
+These objects are responsible for understanding different conditions around the
+use of these options.
+"""
+
 from harpoon.errors import DeprecatedFeature, HarpoonError, BadImage
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.ship.builder import Builder
@@ -33,6 +40,10 @@ class Image(dictobj):
 
     @property
     def image_name(self):
+        """
+        The image_name of a container is the concatenation of the ``image_index``,
+        ``name_prefix``, and ``name`` of the image.
+        """
         if getattr(self, "_image_name", NotSpecified) is NotSpecified:
             if self.name_prefix:
                 self._image_name = "{0}-{1}".format(self.name_prefix, self.name)
@@ -49,13 +60,23 @@ class Image(dictobj):
 
     @property
     def container_name(self):
+        """
+        The container_name is the concatenation of ``image_name`` and a uuid1 string
+
+        We also remove the url portion of the ``image_name`` before using it.
+        """
         if getattr(self, "_container_name", NotSpecified) is NotSpecified:
             self.container_name = "{0}-{1}".format(self.image_name.replace("/", "--"), str(uuid.uuid1()).lower())
         return self._container_name
 
     @property
     def container_id(self):
-        """Find a container id"""
+        """
+        Find a container id
+
+        If one isn't already set, we ask docker for the container whose name is
+        the same as the recorded container_name
+        """
         if getattr(self, "_container_id", None):
             return self._container_id
 
@@ -79,6 +100,10 @@ class Image(dictobj):
 
     @property
     def formatted_command(self):
+        """
+        If we have ``bash``, then the command is ``/bin/bash -c <bash>``, whereas
+        if the ``command`` is set, then we just return that.
+        """
         if self.bash is not NotSpecified:
             return "/bin/bash -c '{0}'".format(self.bash)
         elif self.command is not NotSpecified:
@@ -142,6 +167,7 @@ class Image(dictobj):
 
     @property
     def mtime(self):
+        """Mtime is set as a function to make it lazily computed via this property"""
         if callable(self._mtime):
             self._mtime = self._mtime()
 
@@ -164,6 +190,7 @@ class Image(dictobj):
             raise BadImage("Failed to start the container", error=error)
 
 class Command(dictobj):
+    """This holds the list of commands that make up the docker file for this image"""
     fields = ['meta', 'orig_command']
 
     def __init__(self, *args, **kwargs):
@@ -172,6 +199,7 @@ class Command(dictobj):
 
     @property
     def commands(self):
+        """Yield the expanded commands"""
         if not getattr(self, "_commands", None):
             self._commands = []
             for command in self.orig_command:
@@ -181,6 +209,7 @@ class Command(dictobj):
 
     @property
     def parent_image(self):
+        """Determine the parent_image from the FROM command"""
         if hasattr(self, "_commands"):
             for name, command in self._commands:
                 if name == "FROM":
@@ -208,6 +237,7 @@ class Command(dictobj):
             return parent.image_name
 
     def docker_file(self):
+        """Return the commands as a newline seperated list of strings"""
         res = []
         for name, value in self.commands:
             if name == "FROM" and not isinstance(value, six.string_types):
@@ -216,8 +246,8 @@ class Command(dictobj):
 
         return '\n'.join(res)
 
-
     def determine_commands(self, meta, command):
+        """Expand a single command"""
         errors = []
         if not command:
             return
@@ -292,6 +322,7 @@ class Command(dictobj):
             raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
 class Link(dictobj):
+    """Holds specification for containers that are to be linked at runtime"""
     fields = ["container", "container_name", "link_name"]
 
     @property
@@ -299,6 +330,7 @@ class Link(dictobj):
         return (self.container_name, self.link_name)
 
 class Context(dictobj):
+    """Understand how to build the context for a container"""
     fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
 
     @contextmanager
@@ -414,10 +446,12 @@ class Context(dictobj):
             yield tmpfile
 
 class Volumes(dictobj):
+    """Holds specification of what volumes to mount/share with a container"""
     fields = ["mount", "share_with"]
 
     @property
     def share_with_names(self):
+        """The names of the containers that we share with the running container"""
         for container in self.share_with:
             if isinstance(container, six.string_types):
                 yield container
@@ -435,6 +469,7 @@ class Volumes(dictobj):
         return dict(mount.pair for mount in self.mount)
 
 class Mount(dictobj):
+    """A single mount location for a running container"""
     fields = ["local_path", "container_path", "permissions"]
 
     @property
@@ -445,6 +480,7 @@ class Mount(dictobj):
             return (self.local_path, {"bind": self.container_path, 'ro': True})
 
 class Environment(dictobj):
+    """A single environment variable, and it's default or set value"""
     fields = ["env_name", ("default_val", None), ("set_val", None)]
 
     @property
@@ -458,6 +494,7 @@ class Environment(dictobj):
             return self.env_name, os.environ[self.env_name]
 
 class Port(dictobj):
+    """A port binding specification"""
     fields = ["ip", "host_port", "container_port"]
 
     @property
@@ -473,10 +510,12 @@ class Port(dictobj):
         return self.container_port.port_str, second
 
 class ContainerPort(dictobj):
+    """The port and transport specification for a port in a running container"""
     fields = ["port", ("transport", NotSpecified)]
 
     @property
     def port_pair(self):
+        """The port and it's transport as a pair"""
         if self.transport is NotSpecified:
             return self.port
         else:
@@ -484,14 +523,17 @@ class ContainerPort(dictobj):
 
     @property
     def port_str(self):
+        """The port and it's transport as a single string"""
         if self.transport is NotSpecified:
             return str(self.port)
         else:
             return "{0}/{1}".format(self.port, self.transport)
 
 class Network(dictobj):
+    """Network options"""
     fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"]
 
 class DependencyOptions(dictobj):
+    """Options for dependency containers"""
     fields = [("attached", False)]
 

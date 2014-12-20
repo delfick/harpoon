@@ -1,3 +1,11 @@
+"""
+We have here the object representing a task.
+
+Tasks contain a reference to the functionality it provides (in ``harpoon.tasks``)
+as well as options that are used to override those in the image it's attached
+to.
+"""
+
 from harpoon.tasks import available_tasks
 from harpoon.errors import BadOption
 
@@ -5,6 +13,14 @@ from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
 
 class Task(dictobj):
+    """
+    Used to add extra options associated with the task and to start the action
+    from ``harpoon.tasks``.
+
+    Also responsible for complaining if the specified action doesn't exist.
+
+    Will also ask the image to complain about any missing environment variables.
+    """
     fields = [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")]
 
     def run(self, overview, cli_args, image):

@@ -1,3 +1,7 @@
+"""
+The Syncer is responsible for pushing and pulling docker images
+"""
+
 from __future__ import print_function
 
 from harpoon.errors import BadImage, ProgrammerError, FailedImage

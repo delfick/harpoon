@@ -1,3 +1,10 @@
+"""
+Here we define the yaml specification for Harpoon options, task options and image
+options.
+
+The specifications are responsible for sanitation, validation and normalisation.
+"""
+
 from input_algorithms.spec_base import (
       create_spec, defaulted, string_choice_spec
     , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
