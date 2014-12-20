@@ -1,5 +1,3 @@
-Harpoon
-=======
 
 An opinionated wrapper around the docker-py API to docker that knows how to read
 yaml files and make things happen.
@@ -27,7 +25,7 @@ You may invoke these tasks with the ``task`` option.
 The default tasks are as follows:
 
 ssh
-  Takes in an --image option and make the specified image and run /bin/bash
+  Takes in an --image option, makes the specified image and runs /bin/bash
   with it
 
 run
@@ -93,10 +91,9 @@ prevented with the ``--keep-replaced`` option.
 Simpler Usage
 -------------
 
-I found out after a while that, in my usage atleast, ``--task`` and ``--image``
-are specified a lot and are annoying to type so if the first positional argument
-doesn't start with a ``-`` it is taken as the ``task`` and if the seecond
-positional argument doesn't start with a ``-`` it is taken as the image.
+To save typing ``--task`` and ``--image`` too much, the first positional argument
+is treated as ``task`` (unless it is prefixed with a ``-``) and the second
+positional argument (if also not prefixed with a ``-``) is taken as the ``image``.
 
 So::
 
@@ -111,36 +108,26 @@ Logging colors
 
 If you find the logging output doesn't look great on your terminal, you can
 try setting the ``term_colors`` option in ``harpoon.yml`` to either ``light`` or
-``dark``. Note that not much effort has been put into this and the only difference
-is the color of the ``INFO`` level logging messages.
+``dark``.
 
 Failed build intervention
 -------------------------
 
-I noticed when you're trying to work out what commands to put in your Dockerfile
-it helps to docker commit the last image that was created and run /bin/bash in
-the resulting image.
+Harpoon has the ability to commit failed images during build and run ``/bin/bash``
+against this image. This behaviour is known as ``intervention``.
 
-The problem with this is you have to remember to keep clearing away these
-images and containers otherwise you'll run out of disk space after a while.
-
-So I've added behaviour to harpoon such that when it fails a build it will ask
-if you want to make an "intervention image" and follow this pattern.
-
-It will also cleanup everything after you're done.
-
-This behaviour is disabled if harpoon is run with --non-interactive or
---no-intervention.
+Intervention images are cleaned up after they are exited from and are disabled
+if harpoon is run with either ``--non-interactive`` or with ``--no-intervention``.
 
 The yaml configuration
 ----------------------
 
 Harpoon reads everything from a yaml configuration. By default this is a
 ``harpoon.yml`` file in the current directory, but may be changed with the
---harpoon-config option.
+``--harpoon-config`` option or ``HARPOON_CONFIG`` environment variable.
 
-It will also read from ~/.harpoon.yml and will be overridden by anything in the
-configuration file you've specified.
+It will also read from ``~/.harpoon.yml`` and will be overridden by anything in
+the configuration file you've specified.
 
 This yaml file looks like the following::
 
@@ -167,19 +154,16 @@ An example may look like the following::
 And then we can do things like::
 
   # Run the default command in the image
-  $ harpoon --task run --image myapp
+  $ harpoon run myapp
 
   # Make the image and start an interactive bash shell in it
-  $ harpoon --task ssh --image myapp
+  $ harpoon ssh myapp
 
 And harpoon will make sure things are cleaned up and no longer on your system
 when you quit the process.
 
-The minimum you need in the options is the commands to be run in a Dockerfile.
-
-If you supply a string, that string will be placed as is in the Dockerfile that
-we end up creating the image from. See https://docs.docker.com/reference/builder/
-for what commands are available in docker files.
+The only required option for an image is ``commands`` which is a list of commands
+as what you would have in a Dockerfile.
 
 Modified file times
 -------------------
@@ -190,7 +174,7 @@ times of all the files to the time at which you do the git clone.
 This means that even though the file contents are the same, docker will invalidate
 the cache when it adds these files.
 
-Harpoon provides an option ``use_git_timestamps`` which when set true will use
+Harpoon provides an option ``context.use_git_timestamps`` which when set true will use
 git to determine the commit date for each file and when it creates the context to
 send to docker it will use the git date.
 
@@ -198,7 +182,8 @@ for example::
 
   ---
 
-  use_git_timestamps: true
+  context:
+    use_git_timestamps: true
 
   images:
     blah:
@@ -220,10 +205,11 @@ For example::
 
   ---
 
-  use_git_timestamps:
-    - gradle*
-    - settings.gradle
-    - buildSrc/**
+  context:
+    use_git_timestamps:
+      - gradle*
+      - settings.gradle
+      - buildSrc/**
 
   images:
     blah:
@@ -234,7 +220,9 @@ Controlling the context
 -----------------------
 
 Docker is a server-client architecture, where the server is essentially a web
-server that speaks HTTP. When you build an image with a docker client (for example
+server that speaks HTTP.
+
+When you build an image with a docker client (for example
 the official docker cli tool), the client must first send a ``context`` to the
 server. This context is then used to locate files that are added to the image
 via `ADD <https://docs.docker.com/reference/builder/#add>`_ commands.
@@ -247,16 +235,16 @@ These options may be specified either at the root of the configuration or within
 the options for the image itself. Any option in the image options overrides the
 root option.
 
-respect_gitignore
+use_gitignore
   Ignore anything gitignore would when creating the context.
 
-context_exclude
+exclude
   A list of globs that are used to exclude files from the context
 
-  Note: Only works when respect_gitignore has been specified
+  Note: Only works when use_gitignore has been specified
 
-no_host_context
-  Only include the Dockerfile and any inline ADD files.
+enabled
+  Don't include any context from the local system if this is set to false.
 
 parent_dir
   The parent directory to get the context from. This defaults to the folder the
@@ -277,17 +265,19 @@ may look something like::
 
   ---
 
-  respect_gitignore: true
+  context:
+    use_gitignore: true
 
   folders:
     - project_dir: "{config_root}/.."
 
   images:
     myapp:
-      parent_dir: "{folders.project_dir}"
-      context_exclude:
-        - large_folder/**
-        - docker/**
+      context:
+        parent_dir: "{folders.project_dir}"
+        exclude:
+          - large_folder/**
+          - docker/**
 
       commands:
         - FROM ubuntu
@@ -314,13 +304,13 @@ For example, let's say you want to link one image into another::
           - <commands here>
       app:
         link:
-          - "{images.db.container_name}:dbhost"
+          - ["{images.db}", "dbhost"]
 
         commands:
           - <commands here>
 
-The formatting works by looking for "{name}" and will look for ``name`` in the
-options. So in this case it looks for 'options["images"]["db"]["container_name"]'
+The formatting works such that looking for "{name}" will look for ``name`` in the
+options. In this case it looks for 'options["images"]["db"]["container_name"]'
 
 Note that images have some generated values:
 
@@ -372,12 +362,9 @@ For example::
 Then this will run the container with the docker-cli equivalent of "--env THINGS"
 and run the command "/bin/bash -c 'echo ${THINGS} > /tmp'".
 
-This is a thing I've implemented because yaml doesn't seem to like
-escaped brackets.
-
 You can also specify environment variables via the --env switch.
 
-Also, you can specify "harpoon.env", "images.<image>.harpoon.env" or
+Also, you can specify "env", "images.<image>.env" or
 "images.<image>.tasks.<task>.env" as a list of environment variables you want
 in your image.
 
@@ -418,7 +405,8 @@ Where instruction may be::
 
 [<string>, <string>]
 
-  Translates into [<string>, [<string>]]
+  The first string is used as is, the second string is formatted and the two
+  results are joined together to form the command.
 
   So let's say you have::
 
@@ -432,10 +420,10 @@ Where instruction may be::
           <commands here>
       app:
         commands:
-          - [FROM, "{images.base.image_name}"]
+          - [FROM, "{images.base}"]
 
-  Then the first instruction for the ``app`` Dockerfile will be
-  "FROM amazing-project-base"
+  Then the first instruction for the ``app`` Dockerfile will be a FROM command
+  that uses the ``base`` image.
 
 [<string>, [<string>, <string>, ...]]
   A list of a string and a list will use the first string as the command
@@ -552,7 +540,8 @@ Then your harpoon.yml may look like::
 
   images:
     bundled:
-      parent_dir: "{folders.api_dir}"
+      context:
+        parent_dir: "{folders.api_dir}"
 
       commands:
         - FROM some_image_with_ruby_installed
@@ -567,10 +556,11 @@ Then your harpoon.yml may look like::
         - RUN bundle config --delete path && bundle config --delete without && bundle install
 
     mysql:
-      parent_dir: "{folders.api_dir}"
+      context:
+        parent_dir: "{folders.api_dir}"
 
       commands:
-        - [FROM, "{images.bundled.image_name}"]
+        - [FROM, "{images.bundled}"]
         - VOLUME shared
 
         <install mysql>
@@ -583,21 +573,21 @@ Then your harpoon.yml may look like::
         ## Run the migrations
         - RUN (mysqld &) && rake db:create db:migrate
 
-        ## It would appear docker cp does not work on macs :(
-        ## Hence we copy the schema.rb into /shared for distribution via that
         - CMD cp /app/db/schema.rb /shared && mysqld
 
     unit_tests:
-      parent_dir: "{folders.api_dir}"
+      context:
+        parent_dir: "{folders.api_dir}"
 
       link:
-        - "{images.mysql.container_name}:dbhost"
+        - ["{images.mysql}", "dbhost"]
 
-      volumes_from:
-        - "{images.mysql.container_name}"
+      volumes:
+        share_with:
+          - "{images.mysql}"
 
       commands:
-        - [FROM, "{images.bundled.image_name}"]
+        - [FROM, "{images.bundled}"]
         - ADD . /app/
 
         - CMD cp /shared/schema.rb /app/db && rake
@@ -634,7 +624,7 @@ For example::
             bash: cd /app && rake tests
 
 Each task has no required options but can be configured with ``action``, ``options``
-, ``description`` and ``label``.
+, ``overrides``, ``description`` and ``label``.
 
 If ``action`` or ``options`` are not specified then the task will just create the
 image it's defined under and run the default command.
@@ -691,7 +681,7 @@ link
           ...
       app:
         link:
-          - "{images.db.container_name}:dbhost"
+          - ["{images.db.container_name}", "dbhost"]
         commands:
           ...
 
@@ -699,7 +689,7 @@ link
   image in a detached state and there will be an entry in the ``/etc/hosts`` of
   the ``app`` container that points ``dbhost`` to this ``db`` container.
 
-volumes_from
+volumes.share_with
   This behaves like ``link`` in that you specify strings similar to what you
   would do for the docker cli (https://docs.docker.com/userguide/dockervolumes/#creating-and-mounting-a-data-volume-container)
 
@@ -713,14 +703,15 @@ volumes_from
           - FROM ubuntu
           - VOLUME /shared
       app:
-        volumes_from:
-          - "{images.db.container_name}"
+        voluems:
+          share_with:
+            - "{images.db}"
         commands:
           ...
 
   Then the ``app`` container will share the volumes from the ``db`` container.
 
-volumes
+volumes.mount
   This is also specified as string similar to what you do for the docker cli
   (https://docs.docker.com/userguide/dockervolumes/#data-volumes)
 
@@ -734,7 +725,8 @@ volumes
     images:
       app:
         volumes:
-          - "{app_dir}/coverage:/project/app/coverage:rw"
+          mount:
+            - "{app_dir}/coverage:/project/app/coverage:rw"
 
   Will mount the ``coverage`` directory from the host into /project/app/coverage
   on the image.
@@ -753,7 +745,7 @@ may specify ``dependency_options``::
 
     uitest:
       link:
-        - "{images.runner.container_name}:running"
+        - ["{images.runner}", "running"]
 
       dependency_options:
         runner:
@@ -764,31 +756,6 @@ may specify ``dependency_options``::
         ...
         - CMD ./do_a_uitest.sh running:9000
 
-Roadmap
--------
-
-There are two immediate things on the roadmap:
-
-* Clean up imager.py
-* Write automated tests
-
-The second task is self describing.
-
-The first task is because imager.py handles too much. It does:
-
-* Configuration collection, interpretation and validation
-* Ordering of dependency containers
-* Knows how to use dockerpy
-* Knows how to interpret dockerpy output
-
-Additionally to that, the configuration has multiple sources (cli, task definiton,
-root of the config, image config) and it arbitrarily gets certain values from
-certain combinations of that.
-
-The next evolution of imager.py will split out these different concerns, as well
-as use `OptionMerge <https://github.com/delfick/option_merge>`_ a bit better
-so when I get options for the image, these different sources are already merged.
-
 Tests
 -----
 
@@ -797,6 +764,4 @@ Install testing deps and run the helpful script::
   pip install -e .
   pip install -e ".[tests]"
   ./test.sh
-
-Note that I essentially have no automated tests.
 
