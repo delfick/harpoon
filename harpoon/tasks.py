@@ -26,7 +26,7 @@ def push(overview, configuration, images, image):
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
     Builder().make_image(image, images)
-    pushable[image].push()
+    Syncer().push(image)
 
 @a_task(needs_images=True)
 def push_all(overview, configuration, **kwargs):
@@ -65,8 +65,8 @@ def make_all(overview, configuration, images, **kwargs):
         only_pushable = True
 
     for layer in Builder().layered(images, only_pushable=only_pushable):
-        for image_name, image in layer:
-            Builder().make_image(image_name, ignore_deps=True)
+        for _, image in layer:
+            Builder().make_image(image, images, ignore_deps=True)
             print("Created image {0}".format(image.image_name))
             if push and image.image_index:
                 Syncer().push(image)
