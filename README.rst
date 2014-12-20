@@ -148,7 +148,7 @@ An example may look like the following::
   myapp:
     commands:
       - FROM ubuntu
-      - RUN sudo apt-get -y install caca-utils
+      - RUN apt-get update && apt-get -y install caca-utils
       - CMD cacafire
 
 And then we can do things like::
