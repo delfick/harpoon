@@ -97,7 +97,7 @@ class Overview(object):
                 return {}
             return yaml.load(open(filepath))
         except yaml.parser.ParserError as error:
-            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error=error.problem)
+            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error="{0}{1}".format(error.problem, error.problem_mark))
 
     def get_committime_or_mtime(self, location):
         """Get the commit time of some file or the modified time of of it if can't get from git"""
