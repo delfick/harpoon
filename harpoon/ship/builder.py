@@ -122,10 +122,13 @@ class Builder(object):
                 else:
                     six.reraise(*exc_info)
 
-    def make_image(self, conf, images, chain=None, made=None, ignore_deps=False):
+    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False):
         """Make us an image"""
         if chain is None:
             chain = []
+
+        if parent_chain is None:
+            parent_chain = []
 
         if made is None:
             made = {}
@@ -133,15 +136,23 @@ class Builder(object):
         if conf.name in made:
             return
 
-        if conf.name in chain:
-            raise BadCommand("Recursive FROM statements", chain=chain + [conf.name])
+        if conf.name in chain and not ignore_deps:
+            raise BadCommand("Recursive dependency images", chain=chain + [conf.name])
+
+        if conf.name in parent_chain and not ignore_parent:
+            raise BadCommand("Recursive FROM statements", chain=parent_chain + [conf.name])
 
         if conf.name not in images:
             raise NoSuchImage(looking_for=conf.name, available=images.keys())
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made)
+                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True)
+
+        if not ignore_parent:
+            parent_image = conf.commands.parent_image
+            if not isinstance(parent_image, six.string_types):
+                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True)
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)

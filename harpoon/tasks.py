@@ -74,7 +74,7 @@ def make_all(overview, configuration, images, **kwargs):
 
     for layer in Builder().layered(images, only_pushable=only_pushable):
         for _, image in layer:
-            Builder().make_image(image, images, ignore_deps=True)
+            Builder().make_image(image, images, ignore_deps=True, ignore_parent=True)
             print("Created image {0}".format(image.image_name))
             if push and image.image_index:
                 Syncer().push(image)

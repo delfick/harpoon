@@ -56,7 +56,7 @@ class Runner(object):
 
     def run_deps(self, conf, images):
         """Start containers for all our dependencies"""
-        for dependency_name, detached in conf.dependency_images(ignore_parent=True):
+        for dependency_name, detached in conf.dependency_images():
             try:
                 self.run_container(images[dependency_name], images, detach=detached, dependency=True)
             except Exception as error:
@@ -64,7 +64,7 @@ class Runner(object):
 
     def stop_deps(self, conf, images):
         """Stop the containers for all our dependencies"""
-        for dependency, _ in conf.dependency_images(ignore_parent=True):
+        for dependency, _ in conf.dependency_images():
             try:
                 self.stop_container(images[dependency], fail_on_bad_exit=True, fail_reason="Failed to run dependency container")
             except BadImage:

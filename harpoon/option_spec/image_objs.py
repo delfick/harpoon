@@ -117,10 +117,13 @@ class Image(dictobj):
 
     def dependencies(self, images):
         """Yield just the dependency images"""
-        for image, _ in self.dependency_images(images):
+        if not isinstance(self.commands.parent_image, six.string_types):
+            yield self.commands.parent_image.name
+
+        for image, _ in self.dependency_images():
             yield image
 
-    def dependency_images(self, ignore_parent=False):
+    def dependency_images(self):
         """
         What images does this one require
 
@@ -128,10 +131,6 @@ class Image(dictobj):
         """
         candidates = []
         detach = dict((candidate, not options.attached) for candidate, options in self.dependency_options.items())
-
-        if not ignore_parent:
-            if not isinstance(self.commands.parent_image, six.string_types):
-                candidates.append(self.commands.parent_image.name)
 
         for link in self.links:
             if link.container:
