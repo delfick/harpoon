@@ -194,6 +194,27 @@ class CliParser(object):
 
         return parser
 
+    def interpret_args(self, argv, no_docker=False):
+        """Parse argv, do some transformation and return cli_args suitable for Overview"""
+        args, extra = CliParser().parse_args(argv)
+
+        cli_args = {"harpoon": {}}
+        for key, val in sorted(vars(args).items()):
+            if key.startswith("harpoon_"):
+                cli_args["harpoon"][key[8:]] = val
+            else:
+                cli_args[key] = val
+        cli_args["harpoon"]["extra"] = extra
+
+        if not no_docker:
+            cli_args["harpoon"]["docker_context"] = docker_context()
+
+        for key in ('bash', 'command'):
+            if cli_args[key] is None:
+                cli_args[key] = NotSpecified
+
+        return args, cli_args
+
 def docker_context():
     """Make a docker context"""
     host = os.environ.get('DOCKER_HOST')
@@ -223,22 +244,8 @@ def docker_context():
 
 def main(argv=None):
     try:
-        args, extra = CliParser().parse_args(argv)
+        args, cli_args = CliParser().interpret_args(argv)
         handler = setup_logging(verbose=args.verbose, silent=args.silent, debug=args.debug)
-
-        cli_args = {"harpoon": {}}
-        for key, val in sorted(vars(args).items()):
-            if key.startswith("harpoon_"):
-                cli_args["harpoon"][key[8:]] = val
-            else:
-                cli_args[key] = val
-        cli_args["harpoon"]["extra"] = extra
-        cli_args["harpoon"]["docker_context"] = docker_context()
-
-        for key in ('bash', 'command'):
-            if cli_args[key] is None:
-                cli_args[key] = NotSpecified
-
         Overview(configuration_file=args.harpoon_config.name, logging_handler=handler).start(cli_args)
     except DelfickError as error:
         print("")
