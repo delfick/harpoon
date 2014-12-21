@@ -23,8 +23,8 @@ class command_spec(Spec):
 
 class mount_spec(many_item_formatted_spec):
     value_name = "Volume mounting"
-    specs = [string_spec, string_spec]
-    optional_specs = [string_spec]
+    specs = [string_spec(), string_spec()]
+    optional_specs = [string_spec()]
     formatter = MergedOptionStringFormatter
 
     def create_result(self, local_path, container_path, permissions, meta, val, dividers):
@@ -52,8 +52,8 @@ class env_spec(many_item_formatted_spec):
 
 class link_spec(many_item_formatted_spec):
     value_name = "Container link"
-    specs = [string_spec]
-    optional_specs = [string_spec]
+    specs = [string_spec()]
+    optional_specs = [string_spec()]
     formatter = MergedOptionStringFormatter
 
     def determine_2(self, container_name, container_alias, meta, val):
@@ -75,8 +75,8 @@ class link_spec(many_item_formatted_spec):
 
 class port_spec(many_item_formatted_spec):
     value_name = "Ports"
-    specs = [string_spec]
-    optional_specs = [string_spec, string_spec]
+    specs = [string_or_int_as_string_spec()]
+    optional_specs = [string_or_int_as_string_spec(), string_or_int_as_string_spec()]
     formatter = MergedOptionStringFormatter
 
     def create_result(self, ip, host_port, container_port, meta, val, dividers):
@@ -109,8 +109,8 @@ class port_spec(many_item_formatted_spec):
 
 class container_port_spec(many_item_formatted_spec):
     value_name = "Container port"
-    specs = [integer_spec]
-    optional_specs = [string_spec]
+    specs = [integer_spec()]
+    optional_specs = [string_spec()]
     formatter = MergedOptionStringFormatter
     seperators = ['/']
 
