@@ -37,7 +37,12 @@ class Task(dictobj):
         configuration.update(cli_args, source="<cli>")
 
         if self.overrides:
-            configuration.update(self.overrides)
+            overrides = {}
+            for key, val in self.overrides.items():
+                overrides[key] = val
+                if isinstance(val, MergedOptions):
+                    overrides[key] = dict(val.items())
+            overview.configuration.update(overrides)
 
         images = None
         if task_func.needs_images:
