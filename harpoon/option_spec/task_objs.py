@@ -24,6 +24,8 @@ class Task(dictobj):
 
     def run(self, overview, cli_args, image, available_tasks=None):
         """Run this task"""
+        if available_tasks is None:
+            from harpoon.tasks import available_tasks
         task_func = available_tasks[self.action]
         configuration = MergedOptions.using(overview.configuration, dont_prefix=overview.configuration.dont_prefix, converters=overview.configuration.converters)
 
@@ -52,9 +54,7 @@ class Task(dictobj):
         if image:
             image.find_missing_env()
 
-        if available_tasks is None:
-            from harpoon.tasks import available_tasks
-        return available_tasks[self.action](overview, configuration, images=images, image=image)
+        return task_func(overview, configuration, images=images, image=image)
 
     def determine_image(self, image, overview, configuration, needs_image=True):
         """Complain if we don't have an image"""
