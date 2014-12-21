@@ -93,6 +93,9 @@ class HarpoonSpec(object):
             # Changed how volumes_from works
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
 
+            # Deprecated link
+            , validators.deprecated_key("link", "Use ``links``")
+
             # Harpoon options
             , harpoon = any_spec()
 
