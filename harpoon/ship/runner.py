@@ -166,8 +166,7 @@ class Runner(object):
 
         if inspection and not no_intervention:
             if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                if conf.harpoon.interactive:
-                    self.start_intervention(conf)
+                self.start_intervention(conf)
                 raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
     def start_tty(self, conf, interactive):
@@ -288,6 +287,9 @@ class Runner(object):
 
     def start_intervention(self, conf):
         """Start an intervention!"""
+        if not conf.harpoon.interactive or conf.harpoon.no_intervention:
+            return
+
         print("!!!!")
         print("Failed to run the container!")
         print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
