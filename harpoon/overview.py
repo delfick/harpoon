@@ -31,7 +31,7 @@ class Overview(object):
         self.configuration_folder = os.path.dirname(os.path.abspath(configuration_file))
         self.setup_logging_theme()
 
-    def start(self, cli_args):
+    def start(self, cli_args, available_tasks=None):
         """Do the harpooning"""
         if "images" not in self.configuration:
             raise BadConfiguration("Didn't find any images in the configuration")
@@ -52,7 +52,7 @@ class Overview(object):
             raise BadTask("Unknown task", task=task, available=tasks.keys())
         image = getattr(tasks[task], "image", harpoon["chosen_image"])
 
-        tasks[task].run(self, cli_args, image)
+        tasks[task].run(self, cli_args, image, available_tasks=available_tasks)
 
     ########################
     ###   THEME
