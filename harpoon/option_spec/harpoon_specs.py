@@ -11,6 +11,7 @@ from input_algorithms.spec_base import (
     , listof, optional_spec, or_spec, any_spec
     , directory_spec, filename_spec, file_spec
     , boolean, required, formatted, overridden
+    , integer_spec
     )
 
 from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
@@ -107,6 +108,7 @@ class HarpoonSpec(object):
             , name_prefix = defaulted(string_spec(), "")
             , container_name = optional_spec(string_spec())
 
+            , user = defaulted(string_spec(), None)
             , mtime = any_spec()
             , configuration = any_spec()
 
@@ -151,12 +153,20 @@ class HarpoonSpec(object):
                 )
 
             , network = create_spec(image_objs.Network
-                , dns = optional_spec(listof(string_spec()))
+                , dns = defaulted(listof(string_spec()), None)
                 , mode = optional_spec(string_spec())
-                , hostname = optional_spec(string_spec())
+                , hostname = defaulted(string_spec(), None)
+                , domainname = defaulted(string_spec(), None)
                 , disabled = defaulted(boolean(), False)
                 , dns_search = optional_spec(listof(string_spec()))
                 , publish_all_ports = optional_spec(boolean())
+                )
+
+            , cpu = create_spec(image_objs.Cpu
+                , cpuset = defaulted(listof(string_spec()), None)
+                , mem_limit = defaulted(integer_spec(), 0)
+                , cpu_shares = defaulted(integer_spec(), None)
+                , memswap_limit = defaulted(integer_spec(), 0)
                 )
 
             , privileged = defaulted(boolean(), False)

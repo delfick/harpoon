@@ -116,8 +116,20 @@ class Runner(object):
             , environment=env
 
             , tty = tty
+            , user = conf.user
             , ports = ports
             , stdin_open = tty
+
+            , dns = conf.network.dns
+            , hostname = conf.network.hostname
+            , domainname = conf.network.domainname
+            , network_disabled = conf.network.disabled
+
+            , cpuset = conf.cpu.cpuset
+            , mem_limit = conf.cpu.mem_limit
+            , cpu_shares = conf.cpu.cpu_shares
+            , memswap_limit = conf.cpu.memswap_limit
+
             , **conf.other_options.create
             )
 

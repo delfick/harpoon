@@ -34,8 +34,8 @@ class Image(dictobj):
         , "lxc_conf", "volumes", "env", "ports"
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
-        , "container_name", "name", "key_name", "harpoon"
-        , "bash", "command", "mtime", "configuration"
+        , "container_name", "name", "key_name", "harpoon", "cpu"
+        , "bash", "command", "mtime", "configuration", "user"
         ]
 
     @property
@@ -530,9 +530,13 @@ class ContainerPort(dictobj):
 
 class Network(dictobj):
     """Network options"""
-    fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports"]
+    fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports", "domainname"]
 
 class DependencyOptions(dictobj):
     """Options for dependency containers"""
     fields = [("attached", False)]
+
+class Cpu(dictobj):
+    """Cpu options"""
+    fields = ["cpuset", "mem_limit", "cpu_shares", "memswap_limit"]
 
