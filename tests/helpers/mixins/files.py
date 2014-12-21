@@ -1,10 +1,15 @@
 from contextlib import contextmanager
 import tempfile
 import shutil
+import uuid
 import six
 import os
 
 class FilesAssertionsMixin:
+
+    def unique_val(self):
+        """Return a uuid1 value"""
+        return str(uuid.uuid1())
 
     def make_temp_dir(self):
         """
