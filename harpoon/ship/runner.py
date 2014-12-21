@@ -166,6 +166,21 @@ class Runner(object):
             , binds = binds
             , port_bindings = ports
             , volumes_from = volumes_from
+
+            , devices = conf.devices
+            , lxc_conf = conf.lxc_conf
+            , privileged = conf.privileged
+            , restart_policy = conf.restart_policy
+
+            , dns = conf.network.dns
+            , dns_search = conf.network.dns_search
+            , extra_hosts = conf.network.extra_hosts
+            , network_mode = conf.network.mode
+            , publish_all_ports = conf.network.publish_all_ports
+
+            , cap_add = conf.cpu.cap_add
+            , cap_drop = conf.cpu.cap_drop
+
             , **conf.other_options.run
             )
 

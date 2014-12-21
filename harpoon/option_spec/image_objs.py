@@ -30,8 +30,8 @@ log = logging.getLogger("harpoon.option_spec.image_objs")
 
 class Image(dictobj):
     fields = [
-          "commands", "links", "context"
-        , "lxc_conf", "volumes", "env", "ports"
+          "commands", "links", "context", "devices"
+        , "lxc_conf", "volumes", "env", "ports", "restart_policy"
         , "other_options", "network", "privileged", "name_prefix"
         , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name", "harpoon", "cpu"
@@ -530,7 +530,7 @@ class ContainerPort(dictobj):
 
 class Network(dictobj):
     """Network options"""
-    fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports", "domainname"]
+    fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports", "domainname", "extra_hosts"]
 
 class DependencyOptions(dictobj):
     """Options for dependency containers"""
@@ -538,5 +538,5 @@ class DependencyOptions(dictobj):
 
 class Cpu(dictobj):
     """Cpu options"""
-    fields = ["cpuset", "mem_limit", "cpu_shares", "memswap_limit"]
+    fields = ["cpuset", "mem_limit", "cpu_shares", "memswap_limit", "cap_add", "cap_drop"]
 

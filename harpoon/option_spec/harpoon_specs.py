@@ -130,7 +130,7 @@ class HarpoonSpec(object):
                     )
                 )
 
-            , lxc_conf = optional_spec(filename_spec())
+            , lxc_conf = defaulted(filename_spec(), None)
 
             , volumes = create_spec(image_objs.Volumes
                 , mount = listof(mount_spec(), expect=image_objs.Mount)
@@ -154,22 +154,27 @@ class HarpoonSpec(object):
 
             , network = create_spec(image_objs.Network
                 , dns = defaulted(listof(string_spec()), None)
-                , mode = optional_spec(string_spec())
+                , mode = defaulted(string_spec(), None)
                 , hostname = defaulted(string_spec(), None)
                 , domainname = defaulted(string_spec(), None)
                 , disabled = defaulted(boolean(), False)
-                , dns_search = optional_spec(listof(string_spec()))
-                , publish_all_ports = optional_spec(boolean())
+                , dns_search = defaulted(listof(string_spec()), None)
+                , extra_hosts = optional_spec(listof(string_spec(), None))
+                , publish_all_ports = defaulted(boolean(), False)
                 )
 
             , cpu = create_spec(image_objs.Cpu
+                , cap_add = defaulted(boolean(), None)
                 , cpuset = defaulted(listof(string_spec()), None)
+                , cap_drop = defaulted(boolean(), None)
                 , mem_limit = defaulted(integer_spec(), 0)
                 , cpu_shares = defaulted(integer_spec(), None)
                 , memswap_limit = defaulted(integer_spec(), 0)
                 )
 
+            , devices = defaulted(listof(string_spec()), None)
             , privileged = defaulted(boolean(), False)
+            , restart_policy = defaulted(string_spec(), None)
             )
 
     @memoized_property
