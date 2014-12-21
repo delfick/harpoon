@@ -59,3 +59,6 @@ class BadDirectory(BadSpecValue):
 class BadFilename(BadSpecValue):
     desc = "Expected a path to a filename"
 
+class DeprecatedFeature(BadSpecValue):
+    desc = "Feature is deprecated"
+

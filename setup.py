@@ -8,16 +8,17 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_error==1.6"
-      , "option_merge==0.8.3.1"
-      , "input_algorithms==0.3.5"
+      [ "delfick_error==1.6.1"
+      , "option_merge==0.9"
+      , "input_algorithms==0.4.1"
 
-      , "docker-py==0.5.3"
+      , "docker-py==0.7.0"
       , "dockerpty==0.3.2"
 
-      , "humanize"
+      , "six"
       , "glob2"
-      , "namedlist"
+      , "humanize"
+
       , "pyYaml==3.10"
       , "rainbow_logging_handler==2.2.2"
       ]

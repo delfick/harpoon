@@ -1,21 +1,30 @@
+"""
+This is the entry point of Harpoon itself.
+
+The overview object is responsible for collecting configuration, knowing default
+tasks, and for starting the chosen task.
+"""
+
 from harpoon.errors import BadConfiguration, BadTask, BadYaml
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.option_spec.task_objs import Task
 from harpoon.processes import command_output
 from harpoon.tasks import available_tasks
-from harpoon.option_spec.objs import Task
 
+from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
+from option_merge import Converter
+from itertools import chain
 import logging
 import yaml
 import os
 
 log = logging.getLogger("harpoon.executor")
 
-class Harpoon(object):
-    def __init__(self, configuration_file, docker_context, logging_handler=None):
-        self.docker_context = docker_context
+class Overview(object):
+    def __init__(self, configuration_file, logging_handler=None):
         self.logging_handler = logging_handler
 
         self.configuration = self.collect_configuration(configuration_file)
@@ -24,28 +33,38 @@ class Harpoon(object):
 
     def start(self, cli_args):
         """Do the harpooning"""
-        if not self.configuration.get("images"):
+        if "images" not in self.configuration:
             raise BadConfiguration("Didn't find any images in the configuration")
 
+        harpoon = cli_args.pop("harpoon")
         self.configuration.update(
-            { "$@": cli_args["harpoon"].get("extra", "")
+            { "$@": harpoon.get("extra", "")
+            , "harpoon": harpoon
             , "config_root" : self.configuration_folder
             }
+        , source = "<cli>"
         )
 
+        self.configuration.converters.activate()
         tasks = self.find_tasks()
-        task = cli_args["harpoon"]["chosen_task"]
+        task = harpoon["chosen_task"]
         if task not in tasks:
             raise BadTask("Unknown task", task=task, available=tasks.keys())
+        image = getattr(tasks[task], "image", harpoon["chosen_image"])
 
-        tasks[task].run(self, cli_args)
+        tasks[task].run(self, cli_args, image)
 
     ########################
     ###   THEME
     ########################
 
     def setup_logging_theme(self):
-        """Setup a logging theme"""
+        """
+        Setup a logging theme
+
+        Currently there is only ``light`` and ``dark`` which consists of a difference
+        in color for INFO level messages.
+        """
         if "term_colors" not in self.configuration:
             return
 
@@ -71,29 +90,14 @@ class Harpoon(object):
     ###   CONFIG
     ########################
 
-    def home_dir_configuration(self):
-        """Return a dictionary from ~/.harpoon.yml"""
-        location = os.path.expanduser("~/.harpoon.yml")
-        if not os.path.exists(location):
-            return None, {}
-
-        result = self.read_yaml(location)
-        if not result:
-            result = {}
-        if not isinstance(result, dict):
-            raise BadYaml("Expected yaml file to declare a dictionary", location=location, got=type(result))
-
-        result["__mtime__"] = self.get_committime_or_mtime(location)
-        return location, result
-
     def read_yaml(self, filepath):
-        """Read in a yaml file"""
+        """Read in a yaml file and return as a python object"""
         try:
             if os.stat(filepath).st_size == 0:
                 return {}
             return yaml.load(open(filepath))
         except yaml.parser.ParserError as error:
-            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error=error.problem)
+            raise BadYaml("Failed to read yaml", location=filepath, error_type=error.__class__.__name__, error="{0}{1}".format(error.problem, error.problem_mark))
 
     def get_committime_or_mtime(self, location):
         """Get the commit time of some file or the modified time of of it if can't get from git"""
@@ -103,45 +107,113 @@ class Harpoon(object):
         else:
             return os.path.getmtime(location)
 
+    def home_dir_configuration_location(self):
+        """Return the location of the configuration in the user's home directory"""
+        return os.path.expanduser("~/.harpoon.yml")
+
     def collect_configuration(self, configuration_file):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
-        result = self.read_yaml(configuration_file)
-        result["__mtime__"] = self.get_committime_or_mtime(configuration_file)
 
-        configuration = MergedOptions.using(result, source=configuration_file)
+        result = self.read_yaml(configuration_file)
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
 
-        source, conf = self.home_dir_configuration()
-        if conf:
-            configuration.update(conf, source=source)
+        images_from = []
+        images_from_path = None
+        if "images" in result and "__images_from__" in result["images"]:
+            images_from_path = result["images"]["__images_from__"]
 
-        if "images.__images_from__" in configuration:
-            images_from = MergedOptionStringFormatter(configuration, "images.__images_from__").format()
-            del configuration["images.__images_from__"]
+            if not images_from_path.startswith("/"):
+                images_from_path = os.path.join(configuration_dir, images_from_path)
 
-            if not images_from.startswith("/"):
-                images_from = os.path.join(configuration_dir, images_from)
+            if not os.path.exists(images_from_path) or not os.path.isdir(images_from_path):
+                raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from_path)
 
-            if not os.path.exists(images_from) or not os.path.isdir(images_from):
-                raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from)
+            images_from = sorted(chain.from_iterable([
+                  [os.path.join(root, fle) for fle in files if fle.endswith(".yml") or fle.endswith(".yaml")]
+                  for root, dirs, files in os.walk(images_from_path)
+                ]))
 
-            for root, dirs, files in os.walk(images_from):
-                for fle in files:
-                    if fle.endswith(".yml") or fle.endswith(".yaml"):
-                        location = os.path.join(root, fle)
-                        try:
-                            name = os.path.splitext(fle)[0]
-                            result = self.read_yaml(location)
-                            result["__mtime__"] = self.get_committime_or_mtime(location)
-                            configuration.update({"images": {name: result}}, source=location)
-                        except BadYaml as error:
-                            errors.append(error)
+        harpoon_spec = HarpoonSpec()
+        configuration = MergedOptions(dont_prefix=[dictobj])
+
+        home_dir_configuration = self.home_dir_configuration_location()
+        sources = [home_dir_configuration, configuration_file] + images_from
+
+        def make_mtime_func(source):
+            """Lazily calculate the mtime to avoid wasted computation"""
+            return lambda: self.get_committime_or_mtime(source)
+
+        for source in sources:
+            if source is None or not os.path.exists(source):
+                continue
+
+            try:
+                result = self.read_yaml(source)
+            except BadYaml as error:
+                errors.append(error)
+                continue
+
+            if "images" in result and "__images_from__" in result["images"]:
+                del result["images"]["__images_from__"]
+
+            if source in images_from:
+                result = {"images": {os.path.splitext(os.path.basename(source))[0]: result}}
+
+            result["mtime"] = make_mtime_func(source)
+
+            if "images" in result:
+                images = result.pop("images")
+                images = dict(
+                      (image, MergedOptions.using(configuration.root(), val, converters=configuration.converters, source=source))
+                      for image, val in images.items()
+                    )
+                result["images"] = images
+
+            configuration.update(result, dont_prefix=[dictobj], source=source)
+
+            for image in result.get('images', {}).keys():
+                self.make_image_converters(image, configuration, harpoon_spec)
+
+        def convert_harpoon(path, val):
+            log.info("Converting %s", path)
+            meta = Meta(path.configuration, [("harpoon", "")])
+            configuration.converters.started(path)
+            return harpoon_spec.harpoon_spec.normalise(meta, val)
+
+        harpoon_converter = Converter(convert=convert_harpoon, convert_path=["harpoon"])
+        configuration.add_converter(harpoon_converter)
 
         if errors:
             raise BadConfiguration("Some of the configuration was broken", _errors=errors)
 
         return configuration
+
+    def make_image_converters(self, image, configuration, harpoon_spec):
+        """Make converters for this image and add them to the configuration"""
+        def convert_image(path, val):
+            log.info("Converting %s", path)
+            everything = path.configuration.root().wrapped()
+            meta = Meta(everything, [("images", ""), (image, "")])
+            configuration.converters.started(path)
+
+            base = path.configuration.root().wrapped()
+            base.update(val)
+            base["harpoon"] = configuration["harpoon"]
+            base["configuration"] = configuration
+            return harpoon_spec.image_spec.normalise(meta, base)
+
+        converter = Converter(convert=convert_image, convert_path=["images", image])
+        configuration.add_converter(converter)
+
+        def convert_tasks(path, val):
+            spec = harpoon_spec.tasks_spec(available_tasks)
+            meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
+            configuration.converters.started(path)
+            return spec.normalise(meta, val)
+
+        converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
+        configuration.add_converter(converter)
 
     ########################
     ###   TASKS
@@ -174,31 +246,15 @@ class Harpoon(object):
             , t("delete_untagged", "Delete untagged images")
             ])
 
-    def interpret_tasks(self, configuration, path):
-        """Find the tasks in the specified key"""
-        if path not in configuration:
-            return {}
-
-        found = configuration.get(path)
-        tasks = HarpoonSpec().tasks_spec(available_tasks).normalise(Meta(configuration, path), found)
-
-        for key, task in tasks.items():
-            if task.options:
-                task_path = "{0}.{1}".format(path, key)
-                formatter = lambda s: MergedOptionStringFormatter(self.configuration, task_path, value=s).format()
-                task.options = dict((k, formatter(v)) for k, v in task.options.items())
-
-        return tasks
-
     def find_tasks(self, configuration=None):
-        """Find some tasks"""
+        """Find the custom tasks and record the associated image with each task"""
         if configuration is None:
             configuration = self.configuration
 
         tasks = self.default_tasks()
-        tasks.update(self.interpret_tasks(configuration, "tasks"))
         for image in list(configuration["images"]):
-            nxt = self.interpret_tasks(configuration, ["images", image, "tasks"])
+            path = configuration.path(["images", image, "tasks"], joined="images.{0}.tasks".format(image))
+            nxt = configuration.get(path, {})
             for task in nxt.values():
                 task.specify_image(image)
             tasks.update(nxt)

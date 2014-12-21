@@ -1,13 +1,57 @@
-from harpoon.errors import BadOptionFormat
+"""
+We use this formatter to lookup options in the configuration from strings.
 
-from option_merge import MergedOptions
+So normally, strings are formatted as follows::
+
+    "blah {0}".format(1) == "blah 1"
+
+What we want is something like this::
+
+    configuration = {"folders": {"root": "/somewhere"}}
+    "blah {folders.root}".format() == "blah /somewhere"
+
+To do this we define the MergedOptionStringFormatter below that uses the magic
+of MergedOptions to do the lookup for us.
+"""
+
+from harpoon.errors import BadOptionFormat
+from input_algorithms.meta import Meta
+
 import string
+import six
 
 class NotSpecified(object):
     """Tell the difference between not specified and None"""
 
 class MergedOptionStringFormatter(string.Formatter):
-    """Resolve format options into a MergedOptions dictionary"""
+    """
+    Resolve format options into a MergedOptions dictionary
+
+    Usage is like:
+
+        configuration = MergedOptions.using({"numbers": "1 two {three}", "three": 3})
+        formatter = MergedOptionStringFormatter(configuration, ["numbers"])
+        val = formatter.format()
+        # val == "1 two 3"
+
+    Or we can provide a value outside the configuration::
+
+        configuration = MergedOptions.using({"one": 1, "two": 2, "three": 3})
+        formatter = MergedOptionStringFormatter(configuration, ['numbers'], value="{one} {two} {three}")
+        val = formatter.format()
+        # val == "1 2 3"
+
+    The formatter also has a special feature where it returns the object it finds
+    if the string to be formatted is that one object::
+
+        class dictsubclass(dict): pass
+        configuration = MergedOptions.using({"some_object": dictsubclass({1:2, 3:4})}, dont_prefix=[dictsubclass])
+        formatter = MergedOptionStringFormatter(configuration, [], value="{some_object}")
+        val = formatter.format()
+        # val == {1:2, 3:4}
+
+    For this to work, the object must be a subclass of dict and in the dont_prefix option of the configuration.
+    """
     def __init__(self, all_options, option_path, chain=None, value=NotSpecified):
         if chain is None:
             if isinstance(option_path, list):
@@ -25,19 +69,19 @@ class MergedOptionStringFormatter(string.Formatter):
         val = self.value
         if self.value is NotSpecified:
             val = self.get_string(self.option_path)
-        if not isinstance(val, basestring):
+        if not isinstance(val, six.string_types):
             return val
         return super(MergedOptionStringFormatter, self).format(val)
 
     def get_string(self, key):
         """Get a string from all_options"""
         if key not in self.all_options:
-            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain[:-1], source=self.all_options.source_for(self.chain[:-1]))
+            kwargs = {}
+            if len(self.chain) > 1:
+                kwargs['source'] = Meta(self.all_options, self.chain[-2]).source
+            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain, **kwargs)
 
         val = self.all_options[key]
-        if isinstance(val, dict) or isinstance(val, MergedOptions):
-            raise BadOptionFormat("Shouldn't format in a dictionary", key=key, val=type(val), chain=self.chain)
-
         return val
 
     def _vformat(self, format_string, args, kwargs, used_args, recursion_depth):
@@ -46,6 +90,7 @@ class MergedOptionStringFormatter(string.Formatter):
             raise ValueError('Max string recursion exceeded')
 
         result = []
+
         for literal_text, field_name, format_spec, conversion in self.parse(format_string):
 
             # output the literal text
@@ -73,28 +118,26 @@ class MergedOptionStringFormatter(string.Formatter):
                 # format the object and append to the result
                 result.append(self.format_field(obj, format_spec))
 
-        return ''.join(result)
+        if len(result) == 1:
+            return result[0]
+        return ''.join(str(obj) for obj in result)
 
     def get_field(self, value, args, kwargs, format_spec=None):
         """Also take the spec into account"""
         if format_spec in ("env", ):
             return value, ()
 
-        if self.option_path is None:
-            this = self.all_options
-        else:
-            this = self.all_options.get(self.option_path)
-        options = MergedOptions.using(self.all_options, {"this": this})
-
         if value in self.chain:
             raise BadOptionFormat("Recursive option", chain=self.chain + [value])
 
-        return MergedOptionStringFormatter(options, value, chain=self.chain + [value]).format(), ()
+        return MergedOptionStringFormatter(self.all_options, value, chain=self.chain + [value]).format(), ()
 
     def format_field(self, obj, format_spec):
         """Know about any special formats"""
         if format_spec == "env":
             return "${{{0}}}".format(obj)
+        if isinstance(obj, dict):
+            return obj
         else:
             return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)
 
