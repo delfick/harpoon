@@ -46,7 +46,9 @@ class env_spec(many_item_formatted_spec):
         args = [env_name]
         if other_val is NotSpecified:
             other_val = None
-        if dividers[0] == ':':
+        if not dividers:
+            args.extend([None, None])
+        elif dividers[0] == ':':
             args.extend([other_val, None])
         elif dividers[0] == '=':
             args.extend([None, other_val])

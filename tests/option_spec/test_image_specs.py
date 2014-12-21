@@ -67,6 +67,7 @@ describe HarpoonCase, "Env spec":
             self.assertIs(made.set_val, None)
 
     it "takes in env as a list with 1 to 2 items":
+        self.do_check(self.env_name, has_default=False, has_set=False)
         self.do_check([self.env_name], has_default=False, has_set=False)
         self.do_check([self.env_name, self.default_val], has_default=True, has_set=False)
 
