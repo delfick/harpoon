@@ -53,7 +53,7 @@ class many_item_formatted_spec(Spec):
                         vals.append(nxt)
                         dividers.append(seperator)
                         break
-                vals.append(val)
+            vals.append(val)
 
             if not vals:
                 vals = [val]
