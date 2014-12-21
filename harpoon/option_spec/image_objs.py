@@ -251,7 +251,7 @@ class Command(dictobj):
         if not command:
             return
 
-        elif isinstance(command, (str, unicode)):
+        elif isinstance(command, six.string_types):
             yield command.split(" ", 1)
             return
 
