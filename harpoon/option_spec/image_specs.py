@@ -60,9 +60,6 @@ class link_spec(many_item_formatted_spec):
         """"Default the alias to the name of the container"""
         if container_alias is not NotSpecified:
             return container_alias
-
-        if not isinstance(container_name, six.string_types):
-            container_name = container_name.container_name
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
     def alter_1(self, container_name, meta, val):
