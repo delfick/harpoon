@@ -18,7 +18,7 @@ from harpoon.helpers import until
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
-import dockerpty
+from harpoon import dockerpty
 import logging
 import socket
 import uuid
@@ -199,7 +199,9 @@ class Runner(object):
     def start_tty(self, conf, interactive):
         """Startup a tty"""
         try:
-            dockerpty.start(conf.harpoon.docker_context, conf.container_id, interactive=interactive)
+            ctxt = conf.harpoon.docker_context
+            container_id = conf.container_id
+            dockerpty.start(ctxt, container_id, interactive=interactive)
         except KeyboardInterrupt:
             pass
 
