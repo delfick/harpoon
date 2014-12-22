@@ -150,7 +150,7 @@ class Image(dictobj):
         """Find any missing environment variables"""
         missing = []
         for e in self.env:
-            if not e.default_val and not e.set_val:
+            if e.default_val is None and e.set_val is None:
                 if e.env_name not in os.environ:
                     missing.append(e.env_name)
 
@@ -485,9 +485,9 @@ class Environment(dictobj):
     @property
     def pair(self):
         """Get the name and value for this environment variable"""
-        if self.set_val:
+        if self.set_val is not None:
             return self.env_name, self.set_val
-        elif self.default_val:
+        elif self.default_val is not None:
             return self.env_name, os.environ.get(self.env_name, self.default_val)
         else:
             return self.env_name, os.environ[self.env_name]
