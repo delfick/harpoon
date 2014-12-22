@@ -238,7 +238,7 @@ def docker_context():
     try:
         info = client.info()
         log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
-    except requests.exceptions.ConnectionError as error:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
         raise BadDockerConnection(base_url=options['base_url'], error=error)
     return client
 
@@ -252,7 +252,7 @@ def main(argv=None):
         print("!" * 80)
         print("Something went wrong! -- {0}".format(error.__class__.__name__))
         print("\t{0}".format(error))
-        if args.debug:
+        if CliParser().parse_args(argv)[0].debug:
             raise
         sys.exit(1)
 
