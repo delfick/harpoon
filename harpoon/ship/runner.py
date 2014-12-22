@@ -40,7 +40,7 @@ class Runner(object):
 
         try:
             self.run_deps(conf, images)
-            tty = not detach and conf.harpoon.interactive
+            tty = not detach and (dependency or conf.harpoon.interactive)
             container_id = self.create_container(conf, detach, tty)
 
             conf.container_id = container_id
