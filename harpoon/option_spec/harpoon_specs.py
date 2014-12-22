@@ -105,8 +105,8 @@ class HarpoonSpec(object):
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , image_name = optional_spec(string_spec())
             , image_index = defaulted(string_spec(), "")
-            , name_prefix = defaulted(string_spec(), "")
             , container_name = optional_spec(string_spec())
+            , image_name_prefix = defaulted(string_spec(), "")
 
             , user = defaulted(string_spec(), None)
             , mtime = any_spec()

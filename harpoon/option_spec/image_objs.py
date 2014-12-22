@@ -32,7 +32,7 @@ class Image(dictobj):
     fields = [
           "commands", "links", "context", "devices"
         , "lxc_conf", "volumes", "env", "ports", "restart_policy"
-        , "other_options", "network", "privileged", "name_prefix"
+        , "other_options", "network", "privileged", "image_name_prefix"
         , "image_name", "image_index", "dependency_options"
         , "container_name", "name", "key_name", "harpoon", "cpu"
         , "bash", "command", "mtime", "configuration", "user"
@@ -42,11 +42,11 @@ class Image(dictobj):
     def image_name(self):
         """
         The image_name of a container is the concatenation of the ``image_index``,
-        ``name_prefix``, and ``name`` of the image.
+        ``image_name_prefix``, and ``name`` of the image.
         """
         if getattr(self, "_image_name", NotSpecified) is NotSpecified:
-            if self.name_prefix:
-                self._image_name = "{0}-{1}".format(self.name_prefix, self.name)
+            if self.image_name_prefix:
+                self._image_name = "{0}-{1}".format(self.image_name_prefix, self.name)
             else:
                 self._image_name = self.name
 
