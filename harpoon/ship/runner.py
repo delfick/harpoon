@@ -44,7 +44,7 @@ class Runner(object):
             container_id = self.create_container(conf, detach, tty)
 
             conf.container_id = container_id
-            self.start_container(conf, container_id, detach, dependency)
+            self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
         finally:
             if not detach and not dependency:
                 self.stop_deps(conf, images)
