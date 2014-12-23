@@ -207,6 +207,8 @@ class Demuxer(object):
                 while True:
                     try:
                         nxt = self.stream.read(size - len(data))
+                        if nxt is None:
+                            continue
                         break
                     except ssl.SSLError as e:
                         if e.errno != 2:
@@ -238,6 +240,8 @@ class Demuxer(object):
                 while True:
                     try:
                         nxt = self.stream.read(8 - len(data))
+                        if nxt is None:
+                            continue
                         break
                     except ssl.SSLError as e:
                         if e.errno != 2:
