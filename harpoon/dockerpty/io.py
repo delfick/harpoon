@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import ssl
 import fcntl
 import errno
 import struct
@@ -203,7 +204,13 @@ class Demuxer(object):
         else:
             data = ''
             while len(data) < size:
-                nxt = self.stream.read(size - len(data))
+                while True:
+                    try:
+                        nxt = self.stream.read(size - len(data))
+                        break
+                    except ssl.SSLError as e:
+                        if e.errno != 2:
+                            raise
                 if not nxt:
                     # the stream has closed, return what data we got
                     return data
@@ -228,7 +235,13 @@ class Demuxer(object):
         else:
             data = ''
             while len(data) < 8:
-                nxt = self.stream.read(8 - len(data))
+                while True:
+                    try:
+                        nxt = self.stream.read(8 - len(data))
+                        break
+                    except ssl.SSLError as e:
+                        if e.errno != 2:
+                            raise
                 if not nxt:
                     # The stream has closed, there's nothing more to read
                     return 0
