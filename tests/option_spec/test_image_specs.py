@@ -26,72 +26,100 @@ describe HarpoonCase, "Mount spec":
         self.meta = mock.Mock(name="meta", spec=Meta)
         self.local_path = self.unique_val()
         self.container_path = self.unique_val()
+        self.array_format = [self.local_path, self.container_path]
+        self.string_format = "{0}:{1}".format(*self.array_format)
 
-    def do_check(self, value, permissions):
+    def check_paths(self, value):
         made = specs.mount_spec().normalise(self.meta, value)
         self.assertEqual(made.local_path, self.local_path)
         self.assertEqual(made.container_path, self.container_path)
-        self.assertEqual(made.permissions, permissions)
+
+    def check_permissions(self, value, expected):
+        made = specs.mount_spec().normalise(self.meta, value)
+        self.assertEqual(made.permissions, expected)
 
     it "takes as [local_path, container_path]":
-        self.do_check([self.local_path, self.container_path], "rw")
+        self.check_paths(self.array_format)
+        self.check_permissions(self.array_format, expected="rw")
 
     it "takes as [local_path, container_path, permissions]":
-        self.do_check([self.local_path, self.container_path, "ro"], "ro")
+        self.check_paths(self.array_format + ["ro"])
+        self.check_permissions(self.array_format + ["ro"], expected="ro")
 
     it "takes as local_path:container_path":
-        self.do_check("{0}:{1}".format(self.local_path, self.container_path), "rw")
+        self.check_paths(self.string_format)
+        self.check_permissions(self.string_format, expected="rw")
 
     it "takes as local_path:container_path:permissions":
-        self.do_check("{0}:{1}:ro".format(self.local_path, self.container_path, "ro"), "ro")
+        self.check_paths(self.string_format + ":ro")
+        self.check_permissions(self.string_format + ":ro", expected="ro")
 
 describe HarpoonCase, "Env spec":
     before_each:
         self.meta = mock.Mock(name="meta", spec=Meta)
-        self.set_val = self.unique_val()
         self.env_name = self.unique_val()
-        self.default_val = self.unique_val()
+        self.fallback_val = self.unique_val()
 
-    def do_check(self, value, has_default, has_set, empty_default=False, empty_set=False):
-        made = specs.env_spec().normalise(self.meta, value)
+    it "takes in just the env_name":
+        assert ":" not in self.env_name
+        assert "=" not in self.env_name
+
+        made = specs.env_spec().normalise(self.meta, self.env_name)
         self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, None)
+        self.assertEqual(made.default_val, None)
 
-        if has_default:
-            self.assertEqual(made.default_val, "" if empty_default else self.default_val)
-        else:
-            self.assertIs(made.default_val, None)
+    it "takes in env as a list with 1 item":
+        assert ":" not in self.env_name
+        assert "=" not in self.env_name
 
-        if has_set:
-            self.assertEqual(made.set_val, "" if empty_set else self.set_val)
-        else:
-            self.assertIs(made.set_val, None)
+        made = specs.env_spec().normalise(self.meta, [self.env_name])
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, None)
+        self.assertEqual(made.default_val, None)
 
-    it "takes in env as a list with 1 to 2 items":
-        self.do_check(self.env_name, has_default=False, has_set=False)
-        self.do_check([self.env_name], has_default=False, has_set=False)
-        self.do_check([self.env_name, self.default_val], has_default=True, has_set=False)
+    it "takes in env as a list with 2 items":
+        assert ":" not in self.env_name
+        assert "=" not in self.env_name
+
+        made = specs.env_spec().normalise(self.meta, [self.env_name, self.fallback_val])
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, None)
+        self.assertEqual(made.default_val, self.fallback_val)
 
     it "takes in env with blank default if suffixed with a colon":
-        self.do_check("{0}:".format(self.env_name), has_default=True, has_set=False, empty_default=True)
+        made = specs.env_spec().normalise(self.meta, self.env_name + ":")
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, None)
+        self.assertEqual(made.default_val, "")
 
     it "takes in env with blank set if suffixed with an equals sign":
-        self.do_check("{0}=".format(self.env_name), has_default=False, has_set=True, empty_set=True)
+        made = specs.env_spec().normalise(self.meta, self.env_name + "=")
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, "")
+        self.assertEqual(made.default_val, None)
 
     it "takes in default value if seperated by a colon":
-        self.do_check("{0}:{1}".format(self.env_name, self.default_val), has_default=True, has_set=False)
+        made = specs.env_spec().normalise(self.meta, self.env_name + ":" + self.fallback_val)
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, None)
+        self.assertEqual(made.default_val, self.fallback_val)
 
     it "takes in set value if seperated by an equals sign":
-        self.do_check("{0}={1}".format(self.env_name, self.set_val), has_default=False, has_set=True)
+        made = specs.env_spec().normalise(self.meta, self.env_name + "=" + self.fallback_val)
+        self.assertEqual(made.env_name, self.env_name)
+        self.assertEqual(made.set_val, self.fallback_val)
+        self.assertEqual(made.default_val, None)
 
 describe HarpoonCase, "Link spec":
     before_each:
 
-        class container(dictobj):
+        class container_kls(dictobj):
             fields = ['container_name']
 
         self.meta = mock.Mock(name="meta", spec=Meta)
         self.container_alias = self.unique_val()
-        self.container = container("somewhere.com/{0}".format(self.container_alias))
+        self.container = container_kls("somewhere.com/{0}".format(self.container_alias))
         self.converted_container_name = "somewhere.com-{0}".format(self.container_alias)
         self.meta.everything = MergedOptions.using({"container": self.container}, dont_prefix=[dictobj])
 
