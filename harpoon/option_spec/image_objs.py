@@ -320,14 +320,6 @@ class Command(dictobj):
         else:
             raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
-class Link(dictobj):
-    """Holds specification for containers that are to be linked at runtime"""
-    fields = ["container", "container_name", "link_name"]
-
-    @property
-    def pair(self):
-        return (self.container_name, self.link_name)
-
 class Context(dictobj):
     """Understand how to build the context for a container"""
     fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
@@ -444,6 +436,14 @@ class Context(dictobj):
             tmpfile.seek(0)
             yield tmpfile
 
+class Link(dictobj):
+    """Holds specification for containers that are to be linked at runtime"""
+    fields = ["container", "container_name", "link_name"]
+
+    @property
+    def pair(self):
+        return (self.container_name, self.link_name)
+
 class Volumes(dictobj):
     """Holds specification of what volumes to mount/share with a container"""
     fields = ["mount", "share_with"]
@@ -510,7 +510,7 @@ class Port(dictobj):
 
 class ContainerPort(dictobj):
     """The port and transport specification for a port in a running container"""
-    fields = ["port", ("transport", NotSpecified)]
+    fields = ["port", ("transport", lambda: NotSpecified)]
 
     @property
     def port_pair(self):
