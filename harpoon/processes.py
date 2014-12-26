@@ -29,12 +29,6 @@ def read_non_blocking(stream):
             else:
                 break
 
-def run_command(command):
-    """Just run a command"""
-    process = subprocess.Popen(shlex.split(command))
-    process.wait()
-    return process.poll()
-
 def command_output(command, *command_extras, **kwargs):
     """Get the output from a command"""
     output = []
