@@ -1,6 +1,7 @@
 # coding: spec
 
 from harpoon.option_spec import image_objs as objs
+from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
@@ -8,6 +9,77 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp, noy_sup_tearDown
 from input_algorithms.spec_base import NotSpecified
 import mock
 import os
+
+describe HarpoonCase, "Context object":
+    before_each:
+        self.include = [self.unique_val()]
+        self.exclude = [self.unique_val()]
+        self.enabled = mock.Mock(name="enabled")
+        self.parent_dir = self.unique_val()
+
+    it "defaults use_gitignore and _use_git_timestamps to NotSpecified an include and exclude to None":
+        ctxt = objs.Context(self.enabled, self.parent_dir)
+        self.assertIs(ctxt.enabled, self.enabled)
+        self.assertEqual(ctxt.parent_dir, os.path.abspath(self.parent_dir))
+        self.assertIs(ctxt.include, None)
+        self.assertIs(ctxt.exclude, None)
+        self.assertIs(ctxt.use_gitignore, NotSpecified)
+        self.assertIs(ctxt._use_git_timestamps, NotSpecified)
+
+    describe "use_git":
+        it "returns false if neither git options are specified":
+            ctxt = objs.Context(self.enabled, self.parent_dir)
+            self.assertIs(ctxt.use_git, False)
+
+        it "returns false if either git options are specified but neither are True":
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_gitignore=False).use_git, False)
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_git_timestamps=False).use_git, False)
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_gitignore=False, use_git_timestamps=False).use_git, False)
+
+        it "returns true if either git option is specified and neither are False":
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_gitignore=True).use_git, True)
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_git_timestamps=True).use_git, True)
+            self.assertIs(objs.Context(self.enabled, self.parent_dir, use_gitignore=True, use_git_timestamps=True).use_git, True)
+
+    describe "use_git_timestamps":
+        it "returns value of use_git if not specified":
+            use_git = mock.Mock(name="use_git")
+            ctxt = objs.Context(self.enabled, self.parent_dir)
+            with mock.patch.object(objs.Context, "use_git", use_git):
+                self.assertIs(ctxt.use_git_timestamps, use_git)
+
+        it "returns the value of use_git_timestamps if it is set":
+            use_git = mock.Mock(name="use_git")
+            use_git_timestamps = mock.Mock(name="use_git_timestamps")
+            ctxt = objs.Context(self.enabled, self.parent_dir, use_git_timestamps=use_git_timestamps)
+            with mock.patch.object(objs.Context, "use_git", use_git):
+                self.assertIs(ctxt.use_git_timestamps, use_git_timestamps)
+
+    describe "parent_dir":
+        it "gets set as the abspath of the value":
+            parent_dir = mock.Mock(name="parent_dir")
+            abs_parent_dir = mock.Mock(name="abs_parent_dir")
+            with mock.patch("os.path.abspath") as fake_abspath:
+                fake_abspath.return_value = abs_parent_dir
+                self.assertIs(objs.Context(self.enabled, parent_dir).parent_dir, abs_parent_dir)
+                fake_abspath.assert_called_once_with(parent_dir)
+
+    describe "git_root":
+        it "goes up directories till it finds the .git folder":
+            with self.a_temp_dir() as directory:
+                parent_dir = os.path.join(directory, "blah", ".git", "meh", "stuff")
+                os.makedirs(parent_dir)
+                self.assertEqual(objs.Context(self.enabled, parent_dir).git_root, os.path.abspath(os.path.join(directory, "blah")))
+
+        it "complains if it can't find a .git folder":
+            with self.a_temp_dir() as directory:
+                nxt = directory
+                while nxt != '/' and not os.path.exists(os.path.join(nxt, '.git')):
+                    nxt = os.path.dirname(nxt)
+                assert not os.path.exists(os.path.join(nxt, '.git'))
+
+                with self.fuzzyAssertRaisesError(HarpoonError, "Couldn't find a .git folder", start_at=directory):
+                    objs.Context(self.enabled, directory).git_root
 
 describe HarpoonCase, "Link object":
     it "Has a pair property returning container_name and link_name":

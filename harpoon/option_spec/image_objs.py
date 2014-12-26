@@ -5,8 +5,9 @@ These objects are responsible for understanding different conditions around the
 use of these options.
 """
 
-from harpoon.errors import DeprecatedFeature, HarpoonError, BadImage
+from harpoon.errors import DeprecatedFeature, BadImage, HarpoonError
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.ship.context import ContextBuilder
 from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
 
@@ -14,14 +15,9 @@ from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
-from harpoon.processes import command_output
-from harpoon.helpers import a_temp_file
 from contextlib import contextmanager
 import logging
-import fnmatch
-import tarfile
 import hashlib
-import glob2
 import uuid
 import six
 import os
@@ -188,6 +184,13 @@ class Image(dictobj):
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
+    @contextmanager
+    def make_context(self):
+        docker_file = DockerFile(self.commands.docker_lines, self.mtime)
+        kwargs = {"silent_build": self.harpoon.silent_build, "extra_context": self.commands.extra_context}
+        with ContextBuilder().make_context(self.context, docker_file, **kwargs) as ctxt:
+            yield ctxt
+
 class Command(dictobj):
     """This holds the list of commands that make up the docker file for this image"""
     fields = ['meta', 'orig_command']
@@ -235,7 +238,8 @@ class Command(dictobj):
         else:
             return parent.image_name
 
-    def docker_file(self):
+    @property
+    def docker_lines(self):
         """Return the commands as a newline seperated list of strings"""
         res = []
         for name, value in self.commands:
@@ -320,121 +324,52 @@ class Command(dictobj):
         else:
             raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
+class DockerFile(dictobj):
+    """Understand about the dockerfile"""
+    fields = ["docker_lines", "mtime"]
+
 class Context(dictobj):
     """Understand how to build the context for a container"""
-    fields = ["include", "exclude", "enabled", "parent_dir", "use_gitignore", "use_git_timestamps"]
+    fields = ["enabled", "parent_dir", ("include", None), ("exclude", None), ("use_gitignore", lambda: NotSpecified), ("use_git_timestamps", lambda: NotSpecified)]
 
-    @contextmanager
-    def make_context(self, parent_dir, docker_lines, mtime, silent_build=False, extra_context=None):
-        """Context manager for creating the context of the image"""
+    @property
+    def parent_dir(self):
+        return self._parent_dir
+
+    @parent_dir.setter
+    def parent_dir(self, val):
+        self._parent_dir = os.path.abspath(val)
+
+    @property
+    def use_git(self):
         use_git = False
         if self.use_gitignore is not NotSpecified and self.use_gitignore:
             use_git = True
-        if self.use_git_timestamps is not NotSpecified and self.use_git_timestamps:
+        if self._use_git_timestamps is not NotSpecified and self._use_git_timestamps:
             use_git = True
+        return use_git
 
-        files = []
-        git_files = set()
-        changed_files = set()
-        use_git_timestamps = use_git if self.use_git_timestamps is NotSpecified else self.use_git_timestamps
+    @property
+    def use_git_timestamps(self):
+        return self.use_git if self._use_git_timestamps is NotSpecified else self._use_git_timestamps
 
-        if self.enabled:
-            if use_git:
-                output, status = command_output("git rev-parse --show-toplevel", cwd=parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to find top level directory of git repository", directory=parent_dir, output=output)
-                top_level = ''.join(output).strip()
-                if use_git_timestamps and os.path.exists(os.path.join(top_level, ".git", "shallow")):
-                    raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
+    @use_git_timestamps.setter
+    def use_git_timestamps(self, val):
+        self._use_git_timestamps = val
 
-                output, status = command_output("git diff --name-only", cwd=parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to determine what files have changed", directory=parent_dir, output=output)
-                changed_files = set(output)
-
-                if not silent_build: log.info("Determining context from git ls-files")
-                options = ""
-                if self.exclude:
-                    for excluder in self.exclude:
-                        options = "{0} --exclude={1}".format(options, excluder)
-
-                # Unfortunately --exclude doesn't work on committed/staged files, only on untracked things :(
-                output, status = command_output("git ls-files --exclude-standard", cwd=parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to do a git ls-files", directory=parent_dir, output=output)
-
-                others, status = command_output("git ls-files --exclude-standard --others {0}".format(options), cwd=parent_dir)
-                if status != 0:
-                    raise HarpoonError("Failed to do a git ls-files to get untracked files", directory=parent_dir, output=others)
-
-                if not (output or others) or any(out and out[0].startswith("fatal: Not a git repository") for out in (output, others)):
-                    raise HarpoonError("Told to use git features, but git ls-files says no", directory=parent_dir, output=output, others=others)
-
-                combined = set(output + others)
-                git_files = set(output)
-            else:
-                combined = set()
-                if self.exclude:
-                    combined = set([os.path.relpath(location, parent_dir) for location in glob2.glob("{0}/**".format(parent_dir))])
-                else:
-                    combined = set([parent_dir])
-
-            if self.exclude:
-                if not silent_build: log.info("Filtering %s items\texcluding=%s", len(combined), self.exclude)
-                excluded = set()
-                for filename in combined:
-                    for excluder in self.exclude:
-                        if fnmatch.fnmatch(filename, excluder):
-                            excluded.add(filename)
-                            break
-                combined = combined - excluded
-
-            files = sorted(os.path.join(parent_dir, filename) for filename in combined)
-            if self.exclude and not silent_build: log.info("Adding %s things from %s to the context", len(files), parent_dir)
-
-        def matches_glob(string, globs):
-            """Returns whether this string matches any of the globs"""
-            if isinstance(globs, bool):
-                return globs
-            return any(fnmatch.fnmatch(string, glob) for glob in globs)
-
-        with a_temp_file() as tmpfile:
-            t = tarfile.open(mode='w:gz', fileobj=tmpfile)
-            for thing in files:
-                if os.path.exists(thing):
-                    relname = os.path.relpath(thing, parent_dir)
-                    arcname = "./{0}".format(relname)
-                    if use_git_timestamps and (relname in git_files and relname not in changed_files and matches_glob(relname, use_git_timestamps)):
-                        # Set the modified date from git
-                        date, status = command_output("git show -s --format=%at -n1 --", relname, cwd=parent_dir)
-                        if status != 0 or not date or not date[0].isdigit():
-                            log.error("Couldn't determine git date for a file\tdirectory=%s\trelname=%s", parent_dir, relname)
-
-                        if date:
-                            date = int(date[0])
-                            os.utime(thing, (date, date))
-                    t.add(thing, arcname=arcname)
-
-            if extra_context:
-                for content, arcname in extra_context:
-                    with a_temp_file() as fle:
-                        fle.write(content)
-                        fle.seek(0)
-                        if mtime:
-                            os.utime(fle.name, (mtime, mtime))
-                        t.add(fle.name, arcname=arcname)
-
-            # And add our docker file
-            with a_temp_file() as dockerfile:
-                dockerfile.write(docker_lines)
-                dockerfile.seek(0)
-                if mtime:
-                    os.utime(dockerfile.name, (mtime, mtime))
-                t.add(dockerfile.name, arcname="./Dockerfile")
-
-            t.close()
-            tmpfile.seek(0)
-            yield tmpfile
+    @property
+    def git_root(self):
+        """
+        Find the root git folder
+        """
+        if not getattr(self, "_git_folder", None):
+            root_folder = os.path.abspath(self.parent_dir)
+            while not os.path.exists(os.path.join(root_folder, '.git')):
+                if root_folder == '/':
+                    raise HarpoonError("Couldn't find a .git folder", start_at=self.parent_dir)
+                root_folder = os.path.dirname(root_folder)
+            self._git_folder = root_folder
+        return self._git_folder
 
 class Link(dictobj):
     """Holds specification for containers that are to be linked at runtime"""

@@ -25,8 +25,7 @@ class Builder(object):
 
     def build_image(self, conf):
         """Build this image"""
-        docker_lines = conf.commands.docker_file()
-        with conf.context.make_context(conf.context.parent_dir, docker_lines, conf.mtime, silent_build=conf.harpoon.silent_build, extra_context=conf.commands.extra_context) as context:
+        with conf.make_context() as context:
             context_size = humanize.naturalsize(os.stat(context.name).st_size)
             log.info("Building '%s' in '%s' with %s of context", conf.name, conf.context.parent_dir, context_size)
 

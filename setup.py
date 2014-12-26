@@ -17,6 +17,7 @@ setup(
 
       , "six"
       , "glob2"
+      , "dulwich"
       , "humanize"
 
       , "pyYaml==3.10"
