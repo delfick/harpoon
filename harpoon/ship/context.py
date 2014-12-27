@@ -171,17 +171,18 @@ class ContextBuilder(object):
         all_files = set(git.open_index())
 
         use_files = set()
-        context_prefix = os.path.relpath(context.parent_dir, root_folder)
         for filename in all_files:
+            relpath = os.path.relpath(os.path.join(root_folder, filename), context.parent_dir)
+
             # Only include files under the parent_dir
-            if os.path.relpath(filename, context_prefix).startswith("../"):
+            if relpath.startswith("../"):
                 continue
 
             # Ignore files that we don't want git_timestamps from
             if context.use_git_timestamps and type(context.use_git_timestamps) is not bool:
                 match = False
                 for line in context.use_git_timestamps:
-                    if fnmatch.fnmatch(filename, line):
+                    if fnmatch.fnmatch(relpath, line):
                         match = True
                         break
                 if not match:
@@ -193,15 +194,17 @@ class ContextBuilder(object):
             matched = context.exclude or not any([context.exclude, context.include])
 
             # Anything not matching exclude gets included
-            for line in context.exclude:
-                if fnmatch.fnmatch(filename, line):
-                    matched = False
+            if context.exclude:
+                for line in context.exclude:
+                    if fnmatch.fnmatch(relpath, line):
+                        matched = False
 
             # Anything matching include gets included
-            for line in context.include:
-                if fnmatch.fnmatch(filename, line):
-                    matched = True
-                    break
+            if context.include:
+                for line in context.include:
+                    if fnmatch.fnmatch(relpath, line):
+                        matched = True
+                        break
 
             # Either didn't match any exclude or matched an include
             if matched:

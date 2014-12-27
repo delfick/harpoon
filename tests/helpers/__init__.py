@@ -34,8 +34,9 @@ def harpoon_init(self, methodName='runTest'):
     """
     self._teardowns = []
     for attr in dir(self):
-        if getattr(attr, "_harpoon_case_teardown", None):
-            self._teardowns.append(getattr(self, attr))
+        thing = getattr(self, attr)
+        if hasattr(thing, "_harpoon_case_teardown"):
+            self._teardowns.append(thing)
 
     if methodName == 'runTest':
         methodName = 'empty'
