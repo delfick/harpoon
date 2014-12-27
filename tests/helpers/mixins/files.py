@@ -11,9 +11,21 @@ class FilesAssertionsMixin:
         """Return a uuid1 value"""
         return str(uuid.uuid1())
 
+    def make_temp_file(self):
+        """
+        Make a temp file.
+        Record it so it can be cleaned up later
+        """
+        if not hasattr(self, "_temp_files"):
+            self._temp_files = []
+
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        self._temp_files.append(tmp)
+        return tmp
+
     def make_temp_dir(self):
         """
-        Make a temp directory and remove it.
+        Make a temp directory.
         Record it so it can be cleaned up later
         """
         if not hasattr(self, "_temp_dirs"):
@@ -27,8 +39,8 @@ class FilesAssertionsMixin:
         """
         Clean up any temporary things that were made during this test
         """
-        if hasattr(self, "_temp_dirs"):
-            for tmp in self._temp_dirs:
+        for key in ("_temp_dirs", "_temp_files"):
+            for tmp in getattr(self, key, []):
                 if os.path.exists(tmp):
                     shutil.rmtree(tmp)
     cleanup_temp_things._harpoon_case_teardown = True
