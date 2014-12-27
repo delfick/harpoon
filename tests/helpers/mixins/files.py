@@ -3,6 +3,7 @@ import tempfile
 import tarfile
 import shutil
 import uuid
+import sys
 import six
 import os
 
@@ -150,7 +151,7 @@ class FilesAssertionsMixin:
             record = {'/folder/': root}
 
         if type(heirarchy) in (list, tuple):
-            heirarchy = {k:None for k in heirarchy}
+            heirarchy = dict((k, None) for k in heirarchy)
 
         for key, val in heirarchy.items():
             path = os.path.join(root, key)
@@ -179,6 +180,8 @@ class FilesAssertionsMixin:
         """Make sure content of a tarfile matches what we expect"""
         found = set()
         for identity, data, tarinfo in self.extract_tar(location):
+            if six.PY2 and sys.version_info[1] == 6:
+                identity = "./{0}".format(identity)
             found.add(identity)
             mtime = None
             contents = expected[identity]
@@ -197,11 +200,16 @@ class FilesAssertionsMixin:
     def extract_tar(self, location):
         """Yield (identity, data, tarinfo) for everything in archive at provided location"""
         assert os.path.exists(location)
-        with tarfile.open(location) as trf:
+        trf = None
+        try:
+            trf = tarfile.open(location)
             for tarinfo in trf:
                 data = None
                 if tarinfo.isfile():
                     data = trf.extractfile(tarinfo.name).read()
 
                 yield tarinfo.name, data, tarinfo
+        finally:
+            if trf:
+                trf.close()
 
