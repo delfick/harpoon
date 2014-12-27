@@ -2,6 +2,7 @@ from harpoon.processes import command_output
 from harpoon.errors import HarpoonError
 
 from contextlib import contextmanager
+from textwrap import dedent
 import shutil
 import os
 
@@ -38,4 +39,10 @@ class Repo_exampleAssertionsMixin:
                     yield directory2
             else:
                 yield directory
+
+    def assertExampleRepoStatus(self, root_folder, expected):
+        output, status = command_output("git status -s", cwd=root_folder)
+        if status != 0:
+            raise HarpoonError("Failed to run git status", output='\n'.join(output))
+        self.assertEqual('\n'.join(sorted(output)).strip(), dedent('\n'.join(sorted(expected.split('\n')))).strip())
 

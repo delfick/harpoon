@@ -246,7 +246,7 @@ class ContextBuilder(object):
         # Dulwich doesn't include gitignore functionality and so has to be implemented here
         # I don't feel confident in my ability to implement that detail, so we just ask git for that information
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
-        mtime_ignoreable = set(changed_files + list(git("ls-files --exclude-standard", "Failed to find untracked files")))
+        mtime_ignoreable = set(changed_files + list(git("ls-files --others --exclude-standard", "Failed to find untracked files")))
 
         if context.use_gitignore:
             others = set(git("ls-files --others", "Failed to find ignored files")) - mtime_ignoreable
