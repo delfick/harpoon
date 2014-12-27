@@ -343,7 +343,7 @@ class Context(dictobj):
     @property
     def use_git(self):
         use_git = False
-        if self.use_gitignore is not NotSpecified and self.use_gitignore:
+        if self._use_gitignore is not NotSpecified and self._use_gitignore:
             use_git = True
         if self._use_git_timestamps is not NotSpecified and self._use_git_timestamps:
             use_git = True
@@ -356,6 +356,14 @@ class Context(dictobj):
     @use_git_timestamps.setter
     def use_git_timestamps(self, val):
         self._use_git_timestamps = val
+
+    @property
+    def use_gitignore(self):
+        return False if self._use_gitignore is NotSpecified else self._use_gitignore
+
+    @use_gitignore.setter
+    def use_gitignore(self, val):
+        self._use_gitignore = val
 
     @property
     def git_root(self):

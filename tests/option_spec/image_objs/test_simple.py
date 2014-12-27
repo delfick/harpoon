@@ -23,7 +23,7 @@ describe HarpoonCase, "Context object":
         self.assertEqual(ctxt.parent_dir, os.path.abspath(self.parent_dir))
         self.assertIs(ctxt.include, None)
         self.assertIs(ctxt.exclude, None)
-        self.assertIs(ctxt.use_gitignore, NotSpecified)
+        self.assertIs(ctxt._use_gitignore, NotSpecified)
         self.assertIs(ctxt._use_git_timestamps, NotSpecified)
 
     describe "use_git":
