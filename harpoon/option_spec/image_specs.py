@@ -8,11 +8,12 @@ from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Po
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
-from input_algorithms.spec_base import string_spec, integer_spec, required, Spec, NotSpecified, string_or_int_as_string_spec
+from input_algorithms.spec_base import NotSpecified
+from input_algorithms import spec_base as sb
 
 import six
 
-class command_spec(Spec):
+class command_spec(sb.Spec):
     """
     The representation of commands is handled in the command object.
 
@@ -23,8 +24,8 @@ class command_spec(Spec):
 
 class mount_spec(many_item_formatted_spec):
     value_name = "Volume mounting"
-    specs = [string_spec(), string_spec()]
-    optional_specs = [string_spec()]
+    specs = [sb.string_spec(), sb.string_spec()]
+    optional_specs = [sb.string_spec()]
     formatter = MergedOptionStringFormatter
 
     def create_result(self, local_path, container_path, permissions, meta, val, dividers):
@@ -37,8 +38,8 @@ class env_spec(many_item_formatted_spec):
     value_name = "Environment Variable"
     seperators = [':', '=']
 
-    specs = [string_spec()]
-    optional_specs = [string_or_int_as_string_spec()]
+    specs = [sb.string_spec()]
+    optional_specs = [sb.string_or_int_as_string_spec()]
     formatter = MergedOptionStringFormatter
 
     def create_result(self, env_name, other_val, meta, val, dividers):
@@ -56,8 +57,8 @@ class env_spec(many_item_formatted_spec):
 
 class link_spec(many_item_formatted_spec):
     value_name = "Container link"
-    specs = [string_spec()]
-    optional_specs = [string_spec()]
+    specs = [sb.string_spec()]
+    optional_specs = [sb.string_spec()]
     formatter = MergedOptionStringFormatter
 
     def determine_2(self, container_name, container_alias, meta, val):
@@ -79,8 +80,8 @@ class link_spec(many_item_formatted_spec):
 
 class port_spec(many_item_formatted_spec):
     value_name = "Ports"
-    specs = [string_or_int_as_string_spec()]
-    optional_specs = [string_or_int_as_string_spec(), string_or_int_as_string_spec()]
+    specs = [sb.string_or_int_as_string_spec()]
+    optional_specs = [sb.string_or_int_as_string_spec(), sb.string_or_int_as_string_spec()]
     formatter = MergedOptionStringFormatter
 
     def create_result(self, ip, host_port, container_port, meta, val, dividers):
@@ -106,15 +107,15 @@ class port_spec(many_item_formatted_spec):
             container_port = NotSpecified
 
         if host_port is not NotSpecified:
-            host_port = integer_spec().normalise(meta.indexed_at('host_port'), host_port)
-        container_port = required(container_port_spec()).normalise(meta.indexed_at('container_port'), container_port)
+            host_port = sb.integer_spec().normalise(meta.indexed_at('host_port'), host_port)
+        container_port = sb.required(container_port_spec()).normalise(meta.indexed_at('container_port'), container_port)
 
         return Port(ip, host_port, container_port)
 
 class container_port_spec(many_item_formatted_spec):
     value_name = "Container port"
-    specs = [integer_spec()]
-    optional_specs = [string_spec()]
+    specs = [sb.integer_spec()]
+    optional_specs = [sb.string_spec()]
     formatter = MergedOptionStringFormatter
     seperators = ['/']
 
