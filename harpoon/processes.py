@@ -33,10 +33,11 @@ def command_output(command, *command_extras, **kwargs):
     """Get the output from a command"""
     output = []
     cwd = kwargs.get("cwd", None)
-    args = shlex.split(command)
+    args = shlex.split(' '.join([command] + list(command_extras)))
     timeout = kwargs.get("timeout", 10)
 
-    process = subprocess.Popen(args + list(command_extras), stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
+    log.debug("Running command\targs=%s", args)
+    process = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
     fcntl.fcntl(process.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -54,7 +55,7 @@ def command_output(command, *command_extras, **kwargs):
     attempted_sigkill = False
     if process.poll() is None:
         start = time.time()
-        log.error("Command taking longer than timeout (%s). Terminating now\tcommand=%s", timeout, command)
+        log.error("Command taking longer than timeout (%s). Terminating now\tcommand=%s", timeout, args)
         process.terminate()
 
         while True:
@@ -75,7 +76,10 @@ def command_output(command, *command_extras, **kwargs):
         output.append(nxt.decode("utf8").strip())
 
     if process.poll() is not 0 and attempted_sigkill:
-        raise CouldntKill("Failed to sigkill hanging process", pid=process.pid, command=command, output="\n".join(output))
+        raise CouldntKill("Failed to sigkill hanging process", pid=process.pid, command=args, output="\n".join(output))
+
+    if process.poll() != 0:
+        log.error("Failed to run command\tcommand=%s", args)
 
     return output, process.poll()
 
