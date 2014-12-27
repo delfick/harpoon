@@ -7,16 +7,16 @@ The specifications are responsible for sanitation, validation and normalisation.
 
 from input_algorithms.spec_base import (
       create_spec, defaulted, string_choice_spec
-    , dictionary_spec, string_spec, valid_string_spec, dictof, set_options, dict_from_bool_spec
+    , dictionary_spec, string_spec, valid_string_spec
     , listof, optional_spec, or_spec, any_spec
     , directory_spec, filename_spec, file_spec
     , boolean, required, formatted, overridden
-    , integer_spec
+    , integer_spec, dictof, dict_from_bool_spec
     )
 
-from harpoon.option_spec.image_specs import command_spec, link_spec, mount_spec, env_spec, port_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec import task_objs, image_objs
+from harpoon.option_spec import image_specs as specs
 from harpoon.helpers import memoized_property
 
 from input_algorithms.dictobj import dictobj
@@ -115,8 +115,8 @@ class HarpoonSpec(object):
             # The spec itself
             , bash = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , command = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-            , commands = required(command_spec())
-            , links = listof(link_spec(), expect=image_objs.Link)
+            , commands = required(specs.command_spec())
+            , links = listof(specs.link_spec(), expect=image_objs.Link)
 
             , context = dict_from_bool_spec(lambda meta, val: {"enabled": val}
                 , create_spec(image_objs.Context
@@ -133,7 +133,7 @@ class HarpoonSpec(object):
             , lxc_conf = defaulted(filename_spec(), None)
 
             , volumes = create_spec(image_objs.Volumes
-                , mount = listof(mount_spec(), expect=image_objs.Mount)
+                , mount = listof(specs.mount_spec(), expect=image_objs.Mount)
                 , share_with = listof(formatted(string_spec(), MergedOptionStringFormatter, expected_type=image_objs.Image))
                 )
 
@@ -143,8 +143,8 @@ class HarpoonSpec(object):
                   )
                 )
 
-            , env = listof(env_spec(), expect=image_objs.Environment)
-            , ports = listof(port_spec(), expect=image_objs.Port)
+            , env = listof(specs.env_spec(), expect=image_objs.Environment)
+            , ports = listof(specs.port_spec(), expect=image_objs.Port)
 
             , other_options = create_spec(other_options
                 , run = dictionary_spec()
