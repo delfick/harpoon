@@ -60,7 +60,7 @@ class ContextBuilder(object):
             if extra_context:
                 for content, arcname in extra_context:
                     with a_temp_file() as fle:
-                        fle.write(content)
+                        fle.write(content.encode('utf-8'))
                         fle.seek(0)
                         if mtime:
                             os.utime(fle.name, (mtime, mtime))
@@ -68,7 +68,7 @@ class ContextBuilder(object):
 
             # And add our docker file
             with a_temp_file() as dockerfile:
-                dockerfile.write(docker_file.docker_lines)
+                dockerfile.write(docker_file.docker_lines.encode('utf-8'))
                 dockerfile.seek(0)
                 if mtime:
                     os.utime(dockerfile.name, (mtime, mtime))
@@ -115,7 +115,7 @@ class ContextBuilder(object):
         mtime_ignoreable = set()
 
         if context.use_git:
-            if context.parent_dir == context.git_root:
+            if context.use_gitignore and context.parent_dir == context.git_root:
                 all_files = set([path for path in all_files if not path.startswith(".git")])
 
             combined = set(all_files)
@@ -138,14 +138,14 @@ class ContextBuilder(object):
             combined -= excluded
 
         if context.include:
-            extra_included = set()
+            extra_included = []
             for filename in all_files:
                 for includer in context.include:
                     if fnmatch.fnmatch(filename, includer):
-                        extra_included.add(filename)
+                        extra_included.append(filename)
                         break
             if not silent_build: log.info("Adding back %s items\tincluding=%s", len(extra_included), context.include)
-            combined += extra_included
+            combined = set(list(combined) + extra_included)
 
         files = sorted(os.path.join(context.parent_dir, filename) for filename in combined)
         if not silent_build: log.info("Adding %s things from %s to the context", len(files), context.parent_dir)
@@ -244,7 +244,11 @@ class ContextBuilder(object):
         # I don't feel confident in my ability to implement that detail, so we just ask git for that information
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
         mtime_ignoreable = set(changed_files + list(git("ls-files --exclude-standard", "Failed to find untracked files")))
-        others = set(git("ls-files --others", "Failed to find ignored files")) - mtime_ignoreable
+
+        if context.use_gitignore:
+            others = set(git("ls-files --others", "Failed to find ignored files")) - mtime_ignoreable
+        else:
+            others = set()
 
         return mtime_ignoreable, others
 
