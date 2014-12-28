@@ -11,16 +11,6 @@ from input_algorithms.meta import Meta
 from option_merge import MergedOptions
 import mock
 
-describe HarpoonCase, "Command spec":
-    before_each:
-        self.meta = mock.Mock(name="meta", spec=Meta)
-
-    it "returns a command object":
-        command = mock.Mock(name="command")
-        command_object = specs.command_spec().normalise(self.meta, command)
-        self.assertIs(command_object.meta, self.meta)
-        self.assertIs(command_object.orig_command, command)
-
 describe HarpoonCase, "Mount spec":
     before_each:
         self.meta = mock.Mock(name="meta", spec=Meta)

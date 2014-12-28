@@ -4,7 +4,8 @@ Custom specifications for the different types of image options.
 The idea is that these understand the conditions around representation of the
 options.
 """
-from harpoon.option_spec.image_objs import Link, Command, Mount, Environment, Port, ContainerPort
+
+from harpoon.option_spec.image_objs import Link, Mount, Environment, Port, ContainerPort
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
@@ -12,15 +13,6 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
 
 import six
-
-class command_spec(sb.Spec):
-    """
-    The representation of commands is handled in the command object.
-
-    This may be moved back here at some point
-    """
-    def normalise(self, meta, command):
-        return Command(meta, command)
 
 class mount_spec(many_item_formatted_spec):
     value_name = "Volume mounting"

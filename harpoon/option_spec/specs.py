@@ -2,6 +2,8 @@
 We define a custom spec type here for interpreting list specifications.
 """
 
+from input_algorithms import spec_base as sb
+
 from input_algorithms.spec_base import NotSpecified, Spec, formatted
 from input_algorithms.errors import BadSpecValue
 import six
@@ -90,9 +92,13 @@ class many_item_formatted_spec(Spec):
             if len(vals) < index:
                 vals.append(val)
             val = getattr(self, "determine_{0}".format(index), lambda *args: val)(*list(vals) + [meta, val])
+            spec = getattr(self, "spec_wrapper_{0}".format(index), lambda spec, *args: spec)(spec, *list(vals) + [meta, val, dividers])
 
-            if val is not NotSpecified and (expected_type is NotSpecified or not isinstance(val, expected_type)):
-                val = formatted(spec, formatter=self.formatter).normalise(meta, val)
+            if (index-1 < len(self.specs) or val is not NotSpecified) and (expected_type is NotSpecified or not isinstance(val, expected_type)):
+                if getattr(self, "formatter", None):
+                    val = formatted(spec, formatter=self.formatter).normalise(meta, val)
+                else:
+                    val = spec.normalise(meta, val)
 
             func = getattr(self, "alter_{0}".format(index), lambda *args: val)
             altered = func(*(formatted_vals[:index] + [val, meta, original_val]))

@@ -5,19 +5,17 @@ These objects are responsible for understanding different conditions around the
 use of these options.
 """
 
-from harpoon.errors import DeprecatedFeature, BadImage, HarpoonError
-from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.errors import BadImage, HarpoonError
 from harpoon.ship.context import ContextBuilder
 from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
+from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
-from harpoon.errors import BadCommand, BadOption
 from input_algorithms.dictobj import dictobj
 from contextlib import contextmanager
 import logging
-import hashlib
 import uuid
 import six
 import os
@@ -33,6 +31,12 @@ class Image(dictobj):
         , "container_name", "name", "key_name", "harpoon", "cpu"
         , "bash", "command", "mtime", "configuration", "user"
         ]
+
+    def __repr__(self):
+        return "<Image {0}>".format(self.image_name)
+
+    def __str__(self):
+        return "{IMAGE:{0}}".format(self.image_name)
 
     @property
     def image_name(self):
@@ -190,139 +194,6 @@ class Image(dictobj):
         kwargs = {"silent_build": self.harpoon.silent_build, "extra_context": self.commands.extra_context}
         with ContextBuilder().make_context(self.context, docker_file, **kwargs) as ctxt:
             yield ctxt
-
-class Command(dictobj):
-    """This holds the list of commands that make up the docker file for this image"""
-    fields = ['meta', 'orig_command']
-
-    def __init__(self, *args, **kwargs):
-        super(Command, self).__init__(*args, **kwargs)
-        self.extra_context = []
-
-    @property
-    def commands(self):
-        """Yield the expanded commands"""
-        if not getattr(self, "_commands", None):
-            self._commands = []
-            for command in self.orig_command:
-                for cmd in self.determine_commands(self.meta, command):
-                    self._commands.append(cmd)
-        return self._commands
-
-    @property
-    def parent_image(self):
-        """Determine the parent_image from the FROM command"""
-        if hasattr(self, "_commands"):
-            for name, command in self._commands:
-                if name == "FROM":
-                    return command
-
-        for command in self.orig_command:
-            cmd = command
-            if isinstance(command, dict):
-                cmd = command.items()[0]
-
-            if isinstance(command, list):
-                cmd, _ = command
-
-            if cmd.startswith("FROM"):
-                val = list(self.determine_commands(self.meta, command))[0][1]
-                return val
-
-    @property
-    def parent_image_name(self):
-        """Return the image name of the parent"""
-        parent = self.parent_image
-        if isinstance(parent, six.string_types):
-            return parent
-        else:
-            return parent.image_name
-
-    @property
-    def docker_lines(self):
-        """Return the commands as a newline seperated list of strings"""
-        res = []
-        for name, value in self.commands:
-            if name == "FROM" and not isinstance(value, six.string_types):
-                value = value.image_name
-            res.append("{0} {1}".format(name, value))
-
-        return '\n'.join(res)
-
-    def determine_commands(self, meta, command):
-        """Expand a single command"""
-        errors = []
-        if not command:
-            return
-
-        elif isinstance(command, six.string_types):
-            yield command.split(" ", 1)
-            return
-
-        if isinstance(command, dict):
-            command = command.items()
-            if len(command) > 1:
-                errors.append(BadCommand("Command spec as a dictionary can only be one {key: val}", found_length=len(command)))
-
-            command = command[0]
-
-        if len(command) != 2:
-            errors.append(BadCommand("Command spec as a list can only be two items", found_length=len(command), found=command))
-
-        name, value = command
-        if not isinstance(name, six.string_types):
-            errors.append(BadCommand("Command spec must have a string value as the first option", found=command))
-        elif isinstance(value, six.string_types):
-            if name == "FROM" and value.endswith(".image_name}"):
-                raise DeprecatedFeature("Just specify the image in the FROM, not it's image_name", value=value, meta=meta)
-
-            value = [MergedOptionStringFormatter(meta.everything, "commands", value=value).format()]
-            if name == "FROM":
-                if not isinstance(value, six.string_types):
-                    yield name, value[0]
-                    return
-
-        if isinstance(value, dict):
-            try:
-                for part in self.complex_spec(name, value):
-                    yield part
-            except BadCommand as error:
-                errors.append(error)
-        else:
-            for part in value:
-                yield name, part
-
-            if not value:
-                errors.append(BadCommand("Command spec must be a string or a list", found=command))
-
-        if errors:
-            raise BadCommand("Command spec had errors", path=meta.path, source=meta.source, _errors=errors)
-
-    def complex_spec(self, name, value):
-        """Turn a complex command spec into a list of "KEY VALUE" strings"""
-        if name == "ADD":
-            if "content" in value:
-                if "dest" not in value:
-                    raise BadOption("When doing an ADD with content, must specify dest", image=self.name, command=[name, value])
-                dest = value.get("dest")
-                context_name = "{0}-{1}".format(hashlib.md5(value.get('content')).hexdigest(), dest.replace("/", "-").replace(" ", "--"))
-                self.extra_context.append((value.get("content"), context_name))
-                yield "ADD", "{0} {1}".format(context_name, dest)
-            else:
-                prefix = value.get("prefix", "/")
-                if "get" not in value:
-                    raise BadOption("Command spec didn't contain 'get' option", command=[name, value], image=self.name)
-
-                get = value["get"]
-                if isinstance(get, six.string_types):
-                    get = [get]
-                elif not isinstance(get, list):
-                    raise BadOption("Command spec value for 'get' should be string or a list", command=[name, value], image=self.name)
-
-                for val in get:
-                    yield "ADD", "{0} {1}/{2}".format(val, prefix, val)
-        else:
-            raise BadOption("Don't understand dictionary value for spec", command=[name, value], image=self.name)
 
 class DockerFile(dictobj):
     """Understand about the dockerfile"""

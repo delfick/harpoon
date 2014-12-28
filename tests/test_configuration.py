@@ -1,7 +1,7 @@
 # coding: spec
 
+from harpoon.option_spec.image_objs import Image, Command
 from harpoon.option_spec.harpoon_specs import Harpoon
-from harpoon.option_spec.image_objs import Image
 from harpoon.option_spec.task_objs import Task
 from harpoon.executor import CliParser
 from harpoon.overview import Overview
@@ -92,8 +92,8 @@ describe HarpoonCase, "Collecting configuration":
                 self.assertIs(type(overview.configuration["images.one"]), Image)
                 self.assertIs(type(overview.configuration["images.two"]), Image)
 
-                self.assertEqual(overview.configuration["images.one"].commands.commands, [["FROM", "somewhere"]])
-                self.assertEqual(overview.configuration["images.two"].commands.commands, [["FROM", "somewhere_else"]])
+                self.assertEqual(overview.configuration["images.one"].commands.docker_lines, "FROM somewhere")
+                self.assertEqual(overview.configuration["images.two"].commands.docker_lines, "FROM somewhere_else")
 
         it "merges options from the root into each image":
             config = {
@@ -157,6 +157,6 @@ describe HarpoonCase, "Collecting configuration":
 
             with self.a_fake_action(config, ["a_task"]) as (overview, conf, images, image):
                 self.assertIs(image, overview.configuration["images.two"])
-                self.assertEqual(images["one"].commands.commands, [("FROM", "1")])
-                self.assertEqual(images["two"].commands.commands, [("FROM", "1")])
+                self.assertEqual(images["one"].commands.docker_lines, "FROM 1")
+                self.assertEqual(images["two"].commands.docker_lines, "FROM 1")
 

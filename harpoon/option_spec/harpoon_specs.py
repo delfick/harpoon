@@ -12,9 +12,12 @@ from input_algorithms.spec_base import (
     , directory_spec, filename_spec, file_spec
     , boolean, required, formatted, overridden
     , integer_spec, dictof, dict_from_bool_spec
+    , container_spec
     )
 
+from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.option_spec.command_objs import Commands
 from harpoon.option_spec import task_objs, image_objs
 from harpoon.option_spec import image_specs as specs
 from harpoon.helpers import memoized_property
@@ -115,7 +118,7 @@ class HarpoonSpec(object):
             # The spec itself
             , bash = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , command = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-            , commands = required(specs.command_spec())
+            , commands = required(container_spec(Commands, listof(command_spec())))
             , links = listof(specs.link_spec(), expect=image_objs.Link)
 
             , context = dict_from_bool_spec(lambda meta, val: {"enabled": val}
