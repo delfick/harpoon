@@ -1,7 +1,8 @@
 # coding: spec
 
-from harpoon.option_spec.image_objs import Image, Command
 from harpoon.option_spec.harpoon_specs import Harpoon
+from harpoon.option_spec.command_objs import Command
+from harpoon.option_spec.image_objs import Image
 from harpoon.option_spec.task_objs import Task
 from harpoon.executor import CliParser
 from harpoon.overview import Overview
