@@ -108,9 +108,11 @@ class ContextBuilder(object):
         """
         Find the set of files from our parent_dir that we care about
         """
-        all_files = set(os.path.relpath(location, context.parent_dir) for location in glob2.glob("{0}/**".format(context.parent_dir)) if not os.path.isdir(location))
-        for path in [os.path.relpath(location, context.parent_dir) for location in glob2.glob("{0}/.*/**".format(context.parent_dir))]:
-            all_files.add(path)
+        first_layer = ["'{0}'".format(thing) for thing in os.listdir(context.parent_dir)]
+        output, status = command_output("find {0} -type f -print".format(' '.join(first_layer)), cwd=context.parent_dir)
+        if status != 0:
+            raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
+        all_files = set(output)
         combined = set(all_files)
         mtime_ignoreable = set()
 

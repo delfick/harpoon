@@ -168,9 +168,7 @@ describe HarpoonCase, "Context builder":
 
             assert not self.context.use_git
             expected_files = sorted([
-                  files[".git"]["info"]["/folder/"]
-                , files[".git"]["info"]["exclude"]["/file/"], files[".git"]["objects"]["/folder/"]
-                , files[".git"]["objects"]["ref"]["/folder/"], files[".git"]["objects"]["ref"]["blah"]["/file/"]
+                  files[".git"]["info"]["exclude"]["/file/"], files[".git"]["objects"]["ref"]["blah"]["/file/"]
                 , files["one"]["/file/"], files["two"]["/file/"], files["three"]["four"]["/file/"]
                 ])
 
@@ -224,9 +222,8 @@ describe HarpoonCase, "Context builder":
             assert self.context.use_git
             assert not self.context.use_gitignore
             expected_files = sorted([
-                  files[".git"]["info"]["/folder/"]
-                , files[".git"]["info"]["exclude"]["/file/"], files[".git"]["objects"]["/folder/"]
-                , files[".git"]["objects"]["ref"]["/folder/"], files[".git"]["objects"]["ref"]["blah"]["/file/"]
+                  files[".git"]["info"]["exclude"]["/file/"]
+                , files[".git"]["objects"]["ref"]["blah"]["/file/"]
                 , files["one"]["/file/"], files["two"]["/file/"], files["three"]["four"]["/file/"]
                 ])
 
@@ -261,9 +258,8 @@ describe HarpoonCase, "Context builder":
 
             assert not self.context.use_git
             expected_files = sorted([
-                  files[".git"]["info"]["/folder/"]
-                , files[".git"]["info"]["exclude"]["/file/"], files[".git"]["objects"]["/folder/"]
-                , files[".git"]["objects"]["ref"]["/folder/"], files[".git"]["objects"]["ref"]["blah"]["/file/"]
+                  files[".git"]["info"]["exclude"]["/file/"]
+                , files[".git"]["objects"]["ref"]["blah"]["/file/"]
                 , files["one"]["/file/"], files["two"]["/file/"]
                 ])
 
@@ -315,26 +311,26 @@ describe HarpoonCase, "Context builder":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**"])
                 mp = self.repo_example_map()
-                expected_map = {"three/five": mp["three/five"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**"])
                 mp = self.repo_example_map()
-                expected_map = {"three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], ".hidden": mp[".hidden"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
         it "includes files in context.include after context.exclude":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**"], include=["four/seven"])
                 mp = self.repo_example_map()
-                expected_map = {"three/five": mp["three/five"], "three/four/seven": mp["three/four/seven"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "three/four/seven": mp["three/four/seven"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**"], include=["three/four/seven"])
                 mp = self.repo_example_map()
-                expected_map = {"three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], "three/four/seven": mp["three/four/seven"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], "three/four/seven": mp["three/four/seven"], ".hidden": mp[".hidden"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
     describe "find_ignored_git_files":
