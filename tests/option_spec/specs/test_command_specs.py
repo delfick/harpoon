@@ -58,7 +58,7 @@ describe CommandCase, "Complex ADD spec":
 
             result = self.spec.normalise(self.meta, command)
             self.assertEqual(result.action, "ADD")
-            md5 = hashlib.md5(content).hexdigest()
+            md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
             self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun".format(md5)))
 
         it "sets command as adding in context dest to actual dest":
@@ -204,7 +204,7 @@ describe CommandCase, "command_spec":
     it "works":
         content = self.unique_val()
         blah_image = self.unique_val()
-        md5 = hashlib.md5(content).hexdigest()
+        md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
 
         everything = MergedOptions.using({"one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
         meta = Meta(everything, [('test', "")])

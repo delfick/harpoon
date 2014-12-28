@@ -14,7 +14,7 @@ class complex_ADD_spec(sb.Spec):
         if "content" in val:
             spec = sb.set_options(dest=sb.required(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)), content=sb.string_spec())
             result = spec.normalise(meta, val)
-            context_name = "{0}-{1}".format(hashlib.md5(result['content']).hexdigest(), result["dest"].replace("/", "-").replace(" ", "--"))
+            context_name = "{0}-{1}".format(hashlib.md5(result['content'].encode('utf-8')).hexdigest(), result["dest"].replace("/", "-").replace(" ", "--"))
             return Command(("ADD", "{0} {1}".format(context_name, result["dest"])), (result["content"], context_name))
         else:
             spec = sb.set_options(
