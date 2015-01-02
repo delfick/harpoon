@@ -25,6 +25,7 @@ from harpoon.helpers import memoized_property
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
+import time
 import six
 
 class Harpoon(dictobj):
@@ -112,7 +113,7 @@ class HarpoonSpec(object):
             , image_name_prefix = defaulted(string_spec(), "")
 
             , user = defaulted(string_spec(), None)
-            , mtime = any_spec()
+            , mtime = defaulted(any_spec(), time.time())
             , configuration = any_spec()
 
             # The spec itself

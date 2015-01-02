@@ -7,11 +7,25 @@ from harpoon.option_spec.task_objs import Task
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
+from input_algorithms.meta import Meta
+from option_merge import MergedOptions
 import mock
 
 describe HarpoonCase, "HarpoonSpec":
     before_each:
         self.meta = mock.Mock(name="meta")
+
+    it "can get a fake Image":
+        with self.a_temp_dir() as directory:
+            everything = MergedOptions.using({"config_root": directory, "_key_name_1": "blah"})
+            meta = Meta(everything, [])
+            fake = HarpoonSpec().image_spec.fake_filled(meta, with_non_defaulted=True)
+            self.assertEqual(fake.context.parent_dir, directory)
+            self.assertEqual(fake.name, "blah")
+
+        as_dict = fake.as_dict()
+        self.assertEqual(type(as_dict["context"]), dict)
+        self.assertEqual(sorted(as_dict["context"].keys()), sorted(["enabled", "use_git_timestamps", "use_gitignore", "exclude", "include", "parent_dir"]))
 
     describe "name_spec":
         # Shared tests for image_name_spec and task_name_spec
