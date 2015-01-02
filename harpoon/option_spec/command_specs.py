@@ -51,10 +51,14 @@ class array_command_spec(many_item_formatted_spec):
 
         result = []
         for cmd in command:
-            if isinstance(cmd, Command):
-                result.append(cmd)
-            else:
-                result.append(Command((action, cmd)))
+            if not isinstance(cmd, list):
+                cmd = [cmd]
+
+            for c in cmd:
+                if isinstance(c, Command):
+                    result.append(c)
+                else:
+                    result.append(Command((action, c)))
         return result
 
 class convert_dict_command_spec(sb.Spec):

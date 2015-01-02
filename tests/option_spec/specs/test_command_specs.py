@@ -109,9 +109,9 @@ describe CommandCase, "array_command_spec":
         command = [self.unique_val(), second_val]
         with mock.patch.object(cs.complex_ADD_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
+        self.meta.indexed_at.assert_called_once_with(0)
+        normalise.assert_called_once_with(self.meta.indexed_at(0), second_val)
         self.assertEqual(result, normalised)
-
-        normalise.assert_called_once_with(self.meta, second_val)
 
 describe CommandCase, "convert_dict_command_spec":
     it "returns the flattened values from normalising it's spec":
