@@ -6,7 +6,7 @@ options.
 """
 
 from harpoon.option_spec.image_objs import Link, Mount, Environment, Port, ContainerPort
-from harpoon.option_spec.specs import many_item_formatted_spec
+from harpoon.option_spec.many_item_spec import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
 from input_algorithms.spec_base import NotSpecified
