@@ -101,25 +101,6 @@ describe CommandCase, "array_command_spec":
         command = ["ENV", ["ONE {one}", "TWO {two}"]]
         self.assertDockerLines(command, ["ENV ONE 1", "ENV TWO 2"])
 
-    it "returns command as a function if the action is FROM":
-        thing = self.unique_val()
-        everything = MergedOptions.using({"thing": thing})
-        self.meta.indexed_at(0).everything = everything
-        command = ["FROM", "{thing}"]
-        result = self.spec.normalise(self.meta, command)
-
-        self.assertEqual(len(result), 1)
-        result = result[0]
-
-        self.assertEqual(result.action, "FROM")
-        assert callable(result._command)
-
-        # It's a function, so it hasn't been evaluated yet
-        # We can swap in a value into meta.everything to prove this
-        thing2 = self.unique_val()
-        everything["thing"] = thing2
-        self.assertEqual(result.command, thing2)
-
     it "uses complex_ADD_spec if the second value is a dictionary":
         second_val = {self.unique_val(): self.unique_val()}
         normalised = [Command((self.unique_val(), "one")), Command((self.unique_val(), "two")), Command((self.unique_val(), "three"))]
@@ -173,7 +154,7 @@ describe CommandCase, "string_command_spec":
         val = "FROM {thing}"
         result = cs.string_command_spec().normalise(self.meta, val)
         self.assertEqual(result.action, "FROM")
-        self.assertEqual(result._command, "{thing}")
+        self.assertEqual(result.command, "{thing}")
         self.assertDockerLines(val, ["FROM {thing}"])
 
 describe CommandCase, "dictionary_command_spec":

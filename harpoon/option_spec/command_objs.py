@@ -6,17 +6,12 @@ class Command(dictobj):
     """Holds a single command"""
     fields = ['instruction', ('extra_context', lambda: NotSpecified)]
 
+    def __repr__(self):
+        return "<Command({0})>".format(self.instruction)
+
     @property
     def action(self):
         return self._action
-
-    @property
-    def command(self):
-        if not hasattr(self, "_did_command"):
-            self._did_command = self._command
-            if callable(self._did_command):
-                self._did_command = self._did_command()
-        return self._did_command
 
     @property
     def instruction(self):
@@ -27,9 +22,9 @@ class Command(dictobj):
         """Set the action and command from an instruction"""
         self._instruction = val
         if isinstance(val, tuple):
-            self._action, self._command = val
+            self._action, self.command = val
         else:
-            self._action, self._command = val.split(" ", 1)
+            self._action, self.command = val.split(" ", 1)
 
     @property
     def as_string(self):

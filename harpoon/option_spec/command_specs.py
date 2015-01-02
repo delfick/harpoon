@@ -1,3 +1,7 @@
+"""
+It's recommended you read this file from the bottom up.
+"""
+
 from harpoon.option_spec.specs import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Command
@@ -30,15 +34,16 @@ class complex_ADD_spec(sb.Spec):
 
 class array_command_spec(many_item_formatted_spec):
     value_name = "Command"
-    as_list = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
-    specs = [sb.string_spec(), sb.match_spec((six.string_types + (list, ), as_list), (dict, complex_ADD_spec()))]
+    specs = [
+          # First item is just a string
+          sb.string_spec()
 
-    def spec_wrapper_2(self, spec, action, command, meta, val, dividers):
-        if action == "FROM":
-            spec = sb.listof(sb.delayed(spec))
-        elif type(command) is not dict:
-            spec = sb.listof(spec)
-        return sb.required(spec)
+          # Second item is a required list of either dicts or strings
+        , sb.required( sb.listof( sb.match_spec(
+              (dict, complex_ADD_spec())
+            , (six.string_types + (list, ), sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
+            )))
+        ]
 
     def create_result(self, action, command, meta, val, dividers):
         if callable(command) or isinstance(command, six.string_types):
@@ -72,6 +77,17 @@ class has_a_space(validators.Validator):
         return val
 
 string_command_spec = lambda: sb.container_spec(Command, sb.valid_string_spec(has_a_space()))
-dictionary_command_spec = lambda: convert_dict_command_spec(sb.dictof(sb.valid_string_spec(validators.choice("ADD")), complex_ADD_spec()))
-command_spec = lambda: sb.match_spec((six.string_types, string_command_spec()), (list, array_command_spec()), (dict, dictionary_command_spec()), (Command, sb.any_spec()))
+
+# Only support ADD commands for the dictionary representation atm
+dict_key = sb.valid_string_spec(validators.choice("ADD"))
+dictionary_command_spec = lambda: convert_dict_command_spec(sb.dictof(dict_key, complex_ADD_spec()))
+
+# The main spec
+# We match against, strings, lists, dictionaries and Command objects with different specs
+command_spec = lambda: sb.match_spec(
+      (six.string_types, string_command_spec())
+    , (list, array_command_spec())
+    , (dict, dictionary_command_spec())
+    , (Command, sb.any_spec())
+    )
 

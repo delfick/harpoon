@@ -24,28 +24,6 @@ describe HarpoonCase, "Context object":
         self.assertEqual(command.action, action)
         self.assertEqual(command.command, cmd)
 
-    it "doesn't evaluate command if it's a function until the first use":
-        info = {}
-        cmd = lambda : info['cmd']
-        command = co.Command((self.unique_val(), cmd))
-        self.assertEqual(command._command, cmd)
-
-        a_val = self.unique_val()
-        info["cmd"] = a_val
-        self.assertEqual(command.command, a_val)
-
-    it "memoizes the result of calling command if it's a function":
-        ret = mock.Mock(name="ret")
-        cmd = mock.Mock(name='command')
-        cmd.return_value = ret
-        command = co.Command((self.unique_val(), cmd))
-        self.assertIs(command.command, ret)
-        self.assertIs(command.command, ret)
-        self.assertIs(command.command, ret)
-        self.assertIs(command.command, ret)
-
-        self.assertEqual(len(cmd.mock_calls), 1)
-
     describe "as_string":
         it "concatenates action and command":
             self.assertEqual(co.Command(("blah", "meh")).as_string, "blah meh")
