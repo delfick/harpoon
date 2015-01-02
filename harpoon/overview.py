@@ -198,7 +198,9 @@ class Overview(object):
             configuration.converters.started(path)
 
             base = path.configuration.root().wrapped()
-            base.update(val)
+            base.update(configuration.as_dict(ignore=["images"]))
+            base.update(val.as_dict(ignore=["images"]))
+
             base["harpoon"] = configuration["harpoon"]
             base["configuration"] = configuration
             return harpoon_spec.image_spec.normalise(meta, base)
