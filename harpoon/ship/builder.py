@@ -11,7 +11,6 @@ from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.ship.runner import Runner
 from harpoon.layers import Layers
 
-from input_algorithms.meta import Meta
 from contextlib import contextmanager
 import humanize
 import logging
@@ -107,12 +106,12 @@ class Builder(object):
         """Build this image"""
         with self.context(conf) as context:
             try:
-                stream = None
+                stream = BuildProgressStream(conf.harpoon.silent_build)
                 with self.remove_replaced_images(conf):
-                    stream = self.do_build(conf, context)
+                    self.do_build(conf, context, stream)
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
-                if stream:
+                if stream.current_container:
                     Runner().stage_build_intervention(conf, stream.current_container)
 
                 if isinstance(error, KeyboardInterrupt):
@@ -162,8 +161,7 @@ class Builder(object):
                     except Exception as error:
                         log.error("Failed to remove replaced image\thash=%s\terror=%s", image, error)
 
-    def do_build(self, conf, context):
-        stream = BuildProgressStream(conf.harpoon.silent_build)
+    def do_build(self, conf, context, stream):
         for line in conf.harpoon.docker_context.build(fileobj=context, custom_context=True, tag=conf.image_name, stream=True, rm=True):
             try:
                 stream.feed(line)
@@ -175,5 +173,4 @@ class Builder(object):
             for part in stream.printable():
                 sys.stdout.write(part.encode("utf-8", "replace"))
             sys.stdout.flush()
-        return stream
 

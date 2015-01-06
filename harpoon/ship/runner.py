@@ -18,6 +18,7 @@ from harpoon.helpers import until
 
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
+from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
 import logging
