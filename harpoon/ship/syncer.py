@@ -17,21 +17,38 @@ log = logging.getLogger("harpoon.ship.syncer")
 ###   PROGRESS STREAM
 ########################
 
-class BuildProgressStream(ProgressStream):
+class SyncProgressStream(ProgressStream):
+    def setup(self):
+        self.last_id = None
+        self.last_status = None
+
     def interpret_line(self, line_detail):
-        if "status" in line_detail:
-            line = line_detail["status"].strip()
+        if "status" not in line_detail:
+            self.add_line(str(line_detail) + '\n')
+            return
 
-        if "progressDetail" in line_detail:
-            line = "{0} {1}".format(line, line_detail["progressDetail"])
+        status = line_detail["status"]
+        if "progress" in line_detail or "progressDetail" in line_detail:
+            if 'id' in line_detail:
+                next_id = line_detail["id"]
 
-        if "progress" in line_detail:
-            line = "{0} {1}".format(line, line_detail["progress"])
+            progress_detail = ""
+            if line_detail.get('progress'):
+                progress_detail = ": {0}".format(line_detail["progress"])
 
-        if line_detail and ("progressDetail" in line_detail or "progress" in line_detail):
-            self.add_line("\r{0}".format(line))
+            line = "{0} - {1}{2}".format(status, next_id, progress_detail)
+            if next_id == self.last_id and status == self.last_status:
+                line = "\r{0}".format(line)
+            else:
+                line = "\n{0}".format(line)
+
+            self.last_id = next_id
         else:
-            self.add_line(line)
+            line = "\n{0}".format(status)
+            self.last_id = None
+
+        self.add_line(line)
+        self.last_status = status
 
 ########################
 ###   SYNCER
@@ -56,7 +73,7 @@ class Syncer(object):
         if not conf.image_index:
             raise BadImage("Can't push without an image_index configuration", image=conf.name)
 
-        sync_stream = SyncProgresStream()
+        sync_stream = SyncProgressStream()
         for line in getattr(conf.harpoon.docker_context, action)(conf.image_name, stream=True):
             try:
                 sync_stream.feed(line)
@@ -65,7 +82,7 @@ class Syncer(object):
                     log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
                     break
                 else:
-                    raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=msg)
+                    raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
             except Unknown as error:
                 log.warning("Unknown line\tline=%s", error)
 
