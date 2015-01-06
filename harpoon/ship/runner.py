@@ -12,6 +12,7 @@ containers.
 
 from __future__ import print_function
 
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.errors import BadOption, BadImage, BadResult
 from harpoon.helpers import until
 
@@ -193,7 +194,7 @@ class Runner(object):
 
         if inspection and not no_intervention:
             if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
-                self.start_intervention(conf)
+                self.stage_run_intervention(conf)
                 raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
     def start_tty(self, conf, interactive):
@@ -314,7 +315,7 @@ class Runner(object):
     ###   INTERVENTION
     ########################
 
-    def start_intervention(self, conf):
+    def stage_run_intervention(self, conf):
         """Start an intervention!"""
         if not conf.harpoon.interactive or conf.harpoon.no_intervention:
             return
@@ -326,6 +327,44 @@ class Runner(object):
         if not answer or answer.lower().startswith("y"):
             with self.commit_and_run(conf.container_id, conf, command="/bin/bash"):
                 pass
+
+    def stage_build_intervention(self, conf, container):
+        if not container:
+            return
+
+        conf = conf.configuration.root().wrapped()
+        conf.update({"_key_name_1": "{0}_intervention".format(container), "commands": []})
+        conf = HarpoonSpec().image_spec.normalise(Meta(conf, []), conf)
+
+        with self.intervention(container, conf):
+            log.info("Removing bad container\thash=%s", container)
+
+            try:
+                conf.harpoon.docker_context.kill(container, signal=9)
+            except Exception as error:
+                log.error("Failed to kill dead container\thash=%s\terror=%s", container, error)
+            try:
+                conf.harpoon.docker_context.remove_container(container)
+            except Exception as error:
+                log.error("Failed to remove dead container\thash=%s\terror=%s", container, error)
+
+    @contextmanager
+    def intervention(self, commit, conf):
+        """Ask the user if they want to commit this container and run /bin/bash in it"""
+        if not conf.harpoon.interactive or conf.harpoon.no_intervention:
+            yield
+            return
+
+        print("!!!!")
+        print("It would appear building the image failed")
+        print("Do you want to run /bin/bash where the build to help debug why it failed?")
+        answer = raw_input("[y]: ")
+        if answer and not answer.lower().startswith("y"):
+            yield
+            return
+
+        with self.commit_and_run(commit, conf, command="/bin/bash"):
+            yield
 
     @contextmanager
     def commit_and_run(self, commit, conf, command="/bin/bash"):
@@ -359,22 +398,4 @@ class Runner(object):
                     conf.harpoon.docker_context.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
-
-    @contextmanager
-    def intervention(self, commit, conf):
-        """Ask the user if they want to commit this container and run /bin/bash in it"""
-        if not conf.harpoon.interactive or conf.harpoon.no_intervention:
-            yield
-            return
-
-        print("!!!!")
-        print("It would appear building the image failed")
-        print("Do you want to run /bin/bash where the build to help debug why it failed?")
-        answer = raw_input("[y]: ")
-        if answer and not answer.lower().startswith("y"):
-            yield
-            return
-
-        with self.commit_and_run(commit, conf, command="/bin/bash"):
-            yield
 

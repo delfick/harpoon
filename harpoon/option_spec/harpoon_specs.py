@@ -18,9 +18,8 @@ from input_algorithms.spec_base import (
 from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Commands
-from harpoon.option_spec import task_objs, image_objs
-from harpoon.option_spec import image_specs as specs
 from harpoon.helpers import memoized_property
+from harpoon.option_spec import task_objs
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
@@ -88,6 +87,8 @@ class HarpoonSpec(object):
     @memoized_property
     def image_spec(self):
         """Spec for each image"""
+        from harpoon.option_spec import image_specs as specs
+        from harpoon.option_spec import image_objs
         return create_spec(image_objs.Image
             # Change the context options
             , validators.deprecated_key("exclude_context", "Use ``context.exclude``")
