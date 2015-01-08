@@ -113,6 +113,8 @@ class ContextBuilder(object):
         if status != 0:
             raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
         all_files = set(output)
+        total_files = set(output)
+
         combined = set(all_files)
         mtime_ignoreable = set()
 
@@ -141,7 +143,7 @@ class ContextBuilder(object):
 
         if context.include:
             extra_included = []
-            for filename in all_files:
+            for filename in total_files:
                 for includer in context.include:
                     if fnmatch.fnmatch(filename, includer):
                         extra_included.append(filename)
