@@ -222,8 +222,10 @@ class ContextBuilder(object):
                     changes = [changes]
                 for change in changes:
                     path = change.new.path
-                    if path in use_files and path not in mtimes:
-                        mtimes[path] = date
+                    if root_folder and change.new.path and context.parent_dir:
+                        new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path), context.parent_dir)
+                        if path in use_files and mtimes.get(new_relpath, 0) < date and not new_relpath.startswith("../"):
+                            mtimes[new_relpath] = date
 
             if len(use_files - set(mtimes)) == 0:
                 break

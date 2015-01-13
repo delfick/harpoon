@@ -291,14 +291,14 @@ describe HarpoonCase, "Context builder":
         it "only includes files under the parent_dir":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True)
-                expected_map = dict((key, val) for key, val in self.repo_example_map().items() if key.startswith("three"))
+                expected_map = dict((key[6:], val) for key, val in self.repo_example_map().items() if key.startswith("three"))
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
         it "only includes files specified by use_git_timestamps relative to parent_dir":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=["four/**"])
                 mp = self.repo_example_map()
-                expected_map = {"three/four/seven": mp["three/four/seven"], "three/four/six": mp["three/four/six"]}
+                expected_map = {"four/seven": mp["three/four/seven"], "four/six": mp["three/four/six"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
@@ -311,7 +311,7 @@ describe HarpoonCase, "Context builder":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**"])
                 mp = self.repo_example_map()
-                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"]}
+                expected_map = {".hidden2": mp["three/.hidden2"], "five": mp["three/five"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
@@ -324,7 +324,7 @@ describe HarpoonCase, "Context builder":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**"], include=["four/seven"])
                 mp = self.repo_example_map()
-                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "three/four/seven": mp["three/four/seven"]}
+                expected_map = {".hidden2": mp["three/.hidden2"], "five": mp["three/five"], "four/seven": mp["three/four/seven"]}
                 self.assertEqual(ContextBuilder().find_git_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
