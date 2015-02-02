@@ -703,7 +703,7 @@ volumes.share_with
           - FROM ubuntu
           - VOLUME /shared
       app:
-        voluems:
+        volumes:
           share_with:
             - "{images.db}"
         commands:
