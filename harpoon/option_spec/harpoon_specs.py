@@ -31,7 +31,7 @@ class Harpoon(dictobj):
     fields = [
           "config", "chosen_image", "chosen_task", "flat", "silent_build"
         , "extra", "no_intervention", "ignore_missing", "keep_replaced"
-        , "interactive", "do_push", "only_pushable", "docker_context"
+        , "interactive", "do_push", "only_pushable", "docker_context", "no_cleanup"
         ]
 
 class other_options(dictobj):
@@ -196,6 +196,7 @@ class HarpoonSpec(object):
             , chosen_image = defaulted(formatted_string, "")
 
             , flat = defaulted(formatted_boolean, False)
+            , no_cleanup = defaulted(formatted_boolean, False)
             , interactive = defaulted(formatted_boolean, True)
             , silent_build = defaulted(formatted_boolean, False)
             , keep_replaced = defaulted(formatted_boolean, False)

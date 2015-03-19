@@ -281,20 +281,21 @@ class Runner(object):
                     else:
                         break
 
-        log.info("Removing container %s:%s", container_name, container_id)
-        for _ in until(timeout=10, action="removing container\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id)):
-            try:
-                conf.harpoon.docker_context.remove_container(container_id)
-                break
-            except socket.timeout:
-                break
-            except ValueError:
-                log.warning("Failed to remove container\tcontainer_id=%s", container_id)
-            except DockerAPIError as error:
-                if error.response.status_code != 404:
-                    raise
-                else:
+        if not conf.harpoon.no_cleanup:
+            log.info("Removing container %s:%s", container_name, container_id)
+            for _ in until(timeout=10, action="removing container\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id)):
+                try:
+                    conf.harpoon.docker_context.remove_container(container_id)
                     break
+                except socket.timeout:
+                    break
+                except ValueError:
+                    log.warning("Failed to remove container\tcontainer_id=%s", container_id)
+                except DockerAPIError as error:
+                    if error.response.status_code != 404:
+                        raise
+                    else:
+                        break
 
     ########################
     ###   UTILITY

@@ -168,6 +168,12 @@ class CliParser(object):
             , action = "store_true"
             )
 
+        parser.add_argument("--no-cleanup"
+            , help = "Don't automatically cleanup after a run"
+            , dest = "harpoon_no_cleanup"
+            , action = "store_true"
+            )
+
         parser.add_argument("--env"
             , help = "Environment option to start the container with"
             , dest = "extra_env"
