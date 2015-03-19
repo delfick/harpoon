@@ -198,6 +198,9 @@ class Runner(object):
                 self.stage_run_intervention(conf)
                 raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
+        if not is_dependency and conf.harpoon.intervene_afterwards:
+            self.stage_run_intervention(conf)
+
     def start_tty(self, conf, interactive):
         """Startup a tty"""
         try:

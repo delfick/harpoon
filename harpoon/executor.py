@@ -168,6 +168,12 @@ class CliParser(object):
             , action = "store_true"
             )
 
+        parser.add_argument("--intervene-afterwards"
+            , help = "Create an intervention container once this container exits"
+            , dest = "harpoon_intervene_afterwards"
+            , action = "store_true"
+            )
+
         parser.add_argument("--no-cleanup"
             , help = "Don't automatically cleanup after a run"
             , dest = "harpoon_no_cleanup"
