@@ -198,8 +198,8 @@ class Runner(object):
                 self.stage_run_intervention(conf)
                 raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
 
-        if not is_dependency and conf.harpoon.intervene_afterwards:
-            self.stage_run_intervention(conf)
+        if not is_dependency and conf.harpoon.intervene_afterwards and not no_intervention:
+            self.stage_run_intervention(conf, just_do_it=True)
 
     def start_tty(self, conf, interactive):
         """Startup a tty"""
@@ -320,15 +320,18 @@ class Runner(object):
     ###   INTERVENTION
     ########################
 
-    def stage_run_intervention(self, conf):
+    def stage_run_intervention(self, conf, just_do_it=False):
         """Start an intervention!"""
         if not conf.harpoon.interactive or conf.harpoon.no_intervention:
             return
 
-        print("!!!!")
-        print("Failed to run the container!")
-        print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
-        answer = raw_input("[y]: ")
+        if just_do_it:
+            answer = 'y'
+        else:
+            print("!!!!")
+            print("Failed to run the container!")
+            print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
+            answer = raw_input("[y]: ")
         if not answer or answer.lower().startswith("y"):
             with self.commit_and_run(conf.container_id, conf, command="/bin/bash"):
                 pass
