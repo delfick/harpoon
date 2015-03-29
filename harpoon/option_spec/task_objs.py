@@ -20,7 +20,13 @@ class Task(dictobj):
 
     Will also ask the image to complain about any missing environment variables.
     """
-    fields = [("action", "run"), ("label", "Project"), ("options", None), ("overrides", None), ("description", "")]
+    fields = {
+          ("action", "run"): "The action to run with this image"
+        , ("options", None): "The options to merge with the image options"
+        , ("overrides", None): "The options to merge with the root configuration"
+        , ("description", ""): "The description of the task"
+        , ("label", "Project"): "The namespace when listing tasks"
+        }
 
     def run(self, overview, cli_args, image, available_tasks=None):
         """Run this task"""

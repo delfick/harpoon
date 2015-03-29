@@ -47,7 +47,11 @@ class Harpoon(dictobj):
         }
 
 class other_options(dictobj):
-    fields = ["run", "create", "build"]
+    fields = {
+          "run": "Extra options to pass into docker.run"
+        , "create": "Extra options to pass into docker.create"
+        , "build": "Extra options to pass into docker.build"
+        }
 
 class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""

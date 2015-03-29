@@ -226,7 +226,7 @@ class Overview(object):
         def t(name, description, action=None, **options):
             if not action:
                 action = name
-            return (name, Task(action, description=description, options=options, label="Harpoon"))
+            return (name, Task(action=action, description=description, options=options, label="Harpoon"))
         return dict([
               t("ssh", "Run bash in one of the containers", command="/bin/bash", action="run")
             , t("run", "Run a command in one of the containers")

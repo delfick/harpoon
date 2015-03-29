@@ -23,14 +23,34 @@ import os
 log = logging.getLogger("harpoon.option_spec.image_objs")
 
 class Image(dictobj):
-    fields = [
-          "commands", "links", "context", "devices"
-        , "lxc_conf", "volumes", "env", "ports", "restart_policy"
-        , "other_options", "network", "privileged", "image_name_prefix"
-        , "image_name", "image_index", "dependency_options"
-        , "container_name", "name", "key_name", "harpoon", "cpu"
-        , "bash", "command", "mtime", "configuration", "user"
-        ]
+    fields = {
+          "env": "Environment options"
+        , "cpu": "CPU options"
+        , "name": "The name of the image"
+        , "bash": "A command to run, will transform into ``bash -c '<bash>'``"
+        , "user": "The user to use inside the container"
+        , "ports": "The ports to expose"
+        , "mtime": "The mtime of the Dockerfile"
+        , "links": "The containers to link into this container"
+        , "context": "The context options for building the container"
+        , "devices": "Devices to add to the container"
+        , "volumes": "Extra volumes to mount in the container"
+        , "network": "Network options"
+        , "command": "The default command for the image"
+        , "harpoon": "The harpoon object"
+        , "commands": "The commands that make up the Dockerfile for this image"
+        , "lxc_conf": "The location to an lxc_conf file"
+        , "key_name": "The name of the key this image was defined with in the configuration"
+        , "image_name": "The name of the image that is to be built"
+        , "privileged": "Gives the container full access to the host"
+        , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
+        , "configuration": "The root configuration"
+        , "other_options": "Other options to use in docker commands"
+        , "restart_policy": "The behaviour to apply when the container exists"
+        , "container_name": "The name to give to the running container"
+        , "image_name_prefix": "The prefix given to the name of the image"
+        , "dependency_options": "Any options to apply to our dependency containers"
+        }
 
     def __repr__(self):
         return "<Image {0}>".format(self.image_name)
@@ -201,7 +221,14 @@ class DockerFile(dictobj):
 
 class Context(dictobj):
     """Understand how to build the context for a container"""
-    fields = ["enabled", "parent_dir", ("include", None), ("exclude", None), ("use_gitignore", lambda: NotSpecified), ("use_git_timestamps", lambda: NotSpecified)]
+    fields = {
+          "enabled": "Whether building a context is enabled or not"
+        , "parent_dir": "The parent directory to get the context from (this is an absolute path, use ``{config_root}`` to make it relative to the configuration)"
+        , ("include", None): "Globs of what to include in the context"
+        , ("exclude", None): "Globs of what to exclude from the context"
+        , ("use_gitignore", lambda: NotSpecified): "Whether we should pay attention to git ignore logic"
+        , ("use_git_timestamps", lambda: NotSpecified): "Whether we should find commit timestamps for the files in the context"
+        }
 
     @property
     def parent_dir(self):
@@ -260,7 +287,10 @@ class Link(dictobj):
 
 class Volumes(dictobj):
     """Holds specification of what volumes to mount/share with a container"""
-    fields = ["mount", "share_with"]
+    fields = {
+          "mount": "Volumes to mount into this container"
+        , "share_with": "Containers to share volumes with"
+        }
 
     @property
     def share_with_names(self):
@@ -344,13 +374,31 @@ class ContainerPort(dictobj):
 
 class Network(dictobj):
     """Network options"""
-    fields = ["dns", "mode", "hostname", "disabled", "dns_search", "publish_all_ports", "domainname", "extra_hosts"]
+    fields = {
+          "dns": "A list of dns servers for the container to use"
+        , "mode": "Sets the networking mode for the container"
+        , "hostname": "The desired hostname to use for the container"
+        , "disabled": "Whether the network is disabled"
+        , "dns_search": "A list of DNS search domains"
+        , "domainname": "The desired domain name to use for the containe"
+        , "extra_hosts": "A list of hostnames/IP mappings to be added to the container's /etc/hosts file"
+        , "publish_all_ports": "Allocates a random host port for all of a container's exposed ports"
+        }
 
 class DependencyOptions(dictobj):
     """Options for dependency containers"""
-    fields = [("attached", False)]
+    fields = {
+          ("attached", False): "Whether harpoon attaches to this container or not"
+        }
 
 class Cpu(dictobj):
     """Cpu options"""
-    fields = ["cpuset", "mem_limit", "cpu_shares", "memswap_limit", "cap_add", "cap_drop"]
+    fields = {
+          "cpuset": "cgroups Cpuset to use"
+        , "cap_add": "List of kernel capabilties to add to the container"
+        , "cap_drop": "List of kernel capabilties to drop from the container"
+        , "mem_limit": "Memory limit in bytes"
+        , "cpu_shares": "The CPU Shares for container (ie. the relative weight vs othercontainers)"
+        , "memswap_limit": "Total memory usage (memory + swap); set -1 to disable swap"
+        }
 
