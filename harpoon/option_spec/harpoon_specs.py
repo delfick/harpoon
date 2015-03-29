@@ -28,12 +28,23 @@ import time
 import six
 
 class Harpoon(dictobj):
-    fields = [
-          "config", "chosen_image", "chosen_task", "flat", "silent_build"
-        , "extra", "no_intervention", "ignore_missing", "keep_replaced"
-        , "interactive", "do_push", "only_pushable", "docker_context"
-        , "no_cleanup", "intervene_afterwards"
-        ]
+    fields = {
+          "flat": "Don't show images as layers when doing ``harpoon show``"
+        , "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline"
+        , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
+        , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
+        , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
+        , "chosen_task": "The task to run"
+        , "interactive": "Run the container with a tty"
+        , "chosen_image": "The image that we want to run"
+        , "silent_build": "Don't print out log information"
+        , "only_pushable": "Ignore images that don't have an ``image_index`` option"
+        , "keep_replaced": "Don't auto remove replaced images"
+        , "ignore_missing": "Don't raise errors if we try to pull an image that doesn't exist"
+        , "docker_context": "The docker context object (set internally)"
+        , "no_intervention": "Don't create intervention images when an image breaks"
+        , "intervene_afterwards": "Create an intervention image even if the image succeeds"
+        }
 
 class other_options(dictobj):
     fields = ["run", "create", "build"]
