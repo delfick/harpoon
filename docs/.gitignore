@@ -1,0 +1,3 @@
+*.pyc
+sphinx/_build
+sphinx/venv

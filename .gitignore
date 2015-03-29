@@ -4,4 +4,5 @@
 *.egg-info/
 dist/
 .tox/
-docs/_build/
+docs/sphinx/_build
+docs/sphinx/venv
