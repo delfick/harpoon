@@ -83,7 +83,7 @@ describe CommandCase, "array_command_spec":
 
     it "complains if it's a one item value":
         command = ["ENV 1"]
-        with self.fuzzyAssertRaisesError(BadSpecValue, "Expected a value but got none", meta=self.meta):
+        with self.fuzzyAssertRaisesError(BadSpecValue, "The value is a list with the wrong number of items", meta=self.meta):
             self.spec.normalise(self.meta, command)
 
     it "returns multiple commands if second value is an array":

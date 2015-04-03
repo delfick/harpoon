@@ -2,11 +2,11 @@
 It's recommended you read this file from the bottom up.
 """
 
-from harpoon.option_spec.many_item_spec import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Command
 from harpoon.errors import BadOption
 
+from input_algorithms.many_item_spec import many_item_formatted_spec
 from input_algorithms import spec_base as sb
 from input_algorithms import validators
 

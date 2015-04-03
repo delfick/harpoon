@@ -6,9 +6,9 @@ options.
 """
 
 from harpoon.option_spec.image_objs import Link, Mount, Environment, Port, ContainerPort
-from harpoon.option_spec.many_item_spec import many_item_formatted_spec
 from harpoon.formatter import MergedOptionStringFormatter
 
+from input_algorithms.many_item_spec import many_item_formatted_spec
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
 
@@ -59,7 +59,7 @@ class link_spec(many_item_formatted_spec):
             return container_alias
         return container_name[container_name.rfind(":")+1:].replace('/', '-')
 
-    def alter_1(self, container_name, meta, val):
+    def alter_1(self, given_container_name, container_name, meta, val):
         """Get the container_name of the container if a container is specified"""
         meta.container = None
         if not isinstance(container_name, six.string_types):
