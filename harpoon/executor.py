@@ -251,7 +251,7 @@ def docker_context():
         info = client.info()
         log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
-        raise BadDockerConnection(base_url=options['base_url'], error=error)
+        raise BadDockerConnection(base_url=options.get('base_url'), error=error)
     return client
 
 def main(argv=None):
