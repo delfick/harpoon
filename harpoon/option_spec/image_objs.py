@@ -10,6 +10,7 @@ from harpoon.ship.context import ContextBuilder
 from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
 from harpoon.errors import BadOption
+from harpoon import helpers as hp
 
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
@@ -41,6 +42,7 @@ class Image(dictobj):
         , "commands": "The commands that make up the Dockerfile for this image"
         , "lxc_conf": "The location to an lxc_conf file"
         , "key_name": "The name of the key this image was defined with in the configuration"
+        , "recursive": "Options to allow this container be built recursively on itself"
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
@@ -208,12 +210,74 @@ class Image(dictobj):
         except DockerAPIError as error:
             raise BadImage("Failed to start the container", error=error)
 
+    @property
+    def docker_file(self):
+        return DockerFile(self.commands.docker_lines_list, self.mtime)
+
+    def add_docker_file_to_tarfile(self, docker_file, tar):
+        """Add a Dockerfile to a tarfile"""
+        with hp.a_temp_file() as dockerfile:
+            dockerfile.write("\n".join(docker_file.docker_lines).encode('utf-8'))
+            dockerfile.seek(0)
+            os.utime(dockerfile.name, (docker_file.mtime, docker_file.mtime))
+            tar.add(dockerfile.name, arcname="./Dockerfile")
+
     @contextmanager
-    def make_context(self):
-        docker_file = DockerFile(self.commands.docker_lines, self.mtime)
-        kwargs = {"silent_build": self.harpoon.silent_build, "extra_context": self.commands.extra_context}
-        with ContextBuilder().make_context(self.context, docker_file, **kwargs) as ctxt:
+    def make_context(self, docker_file=None):
+        """Determine the docker lines for this image"""
+        kwargs = {"silent_build": self.harpoon.silent_build, "extra_context": self.commands.extra_context, "mtime": self.mtime}
+        if docker_file is None:
+            docker_file = self.docker_file
+        with ContextBuilder().make_context(self.context, **kwargs) as ctxt:
+            self.add_docker_file_to_tarfile(docker_file, ctxt.t)
             yield ctxt
+
+class Recursive(dictobj):
+    """Options to make an image be built recursively"""
+    fields = {
+          "action": "The action that we are repeating"
+        , "volumes": "The volume we are sharing"
+        }
+
+    def setup(self, *args, **kwargs):
+        super(Recursive, self).setup(*args, **kwargs)
+        # Excuse the $(echo $volume)) weirdness, it's necessary to avoid problems
+        self["shared_name"] = str(uuid.uuid1())
+        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar.gz | cut -f1))\"; tar xzPf "/{1}/$(echo $volume).tar.gz" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), self["shared_name"])
+        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar czPf "/{1}/$(echo $volume).tar.gz" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), self["shared_name"])
+        self["waiter_line"] = "echo \"$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__\"; export START=$(expr $(date +%s) - 5) && while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1; done".format(self["shared_name"])
+        self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
+
+    def make_first_dockerfile(self, docker_file):
+        docker_lines = docker_file.docker_lines + [
+              "RUN bash -c '{0}'".format(self.action)
+            , "VOLUME /{0}".format(self.shared_name)
+            , "CMD /bin/bash -c '{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done'".format(self.copy_to_shared_line, self.shared_name)
+            ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
+
+    def make_provider_dockerfile(self, docker_file, image_name):
+        docker_lines = [
+              "FROM {0}".format(image_name)
+            , "VOLUME /{0}".format(self.shared_name)
+            , "CMD /bin/bash -c '{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done'".format(self.copy_to_shared_line, self.shared_name)
+            ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
+
+    def make_changed_dockerfile(self, docker_file, image_name):
+        docker_lines = [
+              "FROM {0}".format(image_name)
+            ] + [line for line in docker_file.docker_lines if not line.startswith("FROM")] + [
+              "VOLUME /{0}".format(self.shared_name)
+            , "CMD /bin/bash -c '{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done'".format(self.copy_to_shared_line, self.shared_name)
+            ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
+
+    def make_builder_dockerfile(self, docker_file):
+        docker_lines = docker_file.docker_lines + [
+              "CMD /bin/bash -c '{0} && {1} && {2}'".format(self.waiter_line, self.copy_line, self.action)
+            ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
 class DockerFile(dictobj):
     """Understand about the dockerfile"""

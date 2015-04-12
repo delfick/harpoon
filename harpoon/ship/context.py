@@ -18,10 +18,40 @@ from dulwich.repo import Repo
 import fnmatch
 import logging
 import tarfile
-import glob2
 import os
 
 log = logging.getLogger("harpoon.ship.context")
+
+class ContextWrapper(object):
+    """Wraps a tarfile context, so we can continue changing it afterwards"""
+    def __init__(self, t, tmpfile):
+        self.t = t
+        self.tmpfile = tmpfile
+
+    def close(self):
+        self.t.close()
+        self.tmpfile.seek(0)
+
+    @property
+    def name(self):
+        return self.tmpfile.name
+
+    @contextmanager
+    def clone_with_new_dockerfile(self, conf, docker_file):
+        """Clone this tarfile and add in another filename before closing the new tar and returning"""
+        with open(self.tmpfile.name) as old_tmpfile:
+            old_t = None
+            if os.stat(old_tmpfile.name).st_size > 0:
+                old_t = tarfile.open(mode='r:gz', fileobj=open(old_tmpfile.name))
+
+            with a_temp_file() as tmpfile:
+                t = tarfile.open(mode='w:gz', fileobj=tmpfile)
+                if old_t:
+                    for member in old_t:
+                        t.addfile(member, old_t.extractfile(member.name))
+
+                conf.add_docker_file_to_tarfile(docker_file, t)
+                yield ContextWrapper(t, tmpfile)
 
 class ContextBuilder(object):
     """
@@ -30,7 +60,7 @@ class ContextBuilder(object):
     Can take into account git to determine what to include and exclude.
     """
     @contextmanager
-    def make_context(self, context, docker_file, silent_build=False, extra_context=None):
+    def make_context(self, context, silent_build=False, extra_context=None, mtime=None):
         """
         Context manager for creating the context of the image
 
@@ -56,7 +86,6 @@ class ContextBuilder(object):
                     os.utime(thing, (mtime, mtime))
                 t.add(thing, arcname=arcname)
 
-            mtime = docker_file.mtime
             if extra_context:
                 for content, arcname in extra_context:
                     with a_temp_file() as fle:
@@ -66,17 +95,7 @@ class ContextBuilder(object):
                             os.utime(fle.name, (mtime, mtime))
                         t.add(fle.name, arcname=arcname)
 
-            # And add our docker file
-            with a_temp_file() as dockerfile:
-                dockerfile.write(docker_file.docker_lines.encode('utf-8'))
-                dockerfile.seek(0)
-                if mtime:
-                    os.utime(dockerfile.name, (mtime, mtime))
-                t.add(dockerfile.name, arcname="./Dockerfile")
-
-            t.close()
-            tmpfile.seek(0)
-            yield tmpfile
+            yield ContextWrapper(t, tmpfile)
 
     def find_mtimes(self, context, silent_build):
         """

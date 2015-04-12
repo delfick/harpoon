@@ -35,7 +35,7 @@ class Runner(object):
     ###   USAGE
     ########################
 
-    def run_container(self, conf, images, detach=False, started=None, dependency=False):
+    def run_container(self, conf, images, detach=False, started=None, dependency=False, tag=None):
         """Run this image and all dependency images"""
         if conf.container_id:
             return
@@ -50,7 +50,7 @@ class Runner(object):
         finally:
             if not detach and not dependency:
                 self.stop_deps(conf, images)
-                self.stop_container(conf)
+                self.stop_container(conf, tag=tag)
 
     ########################
     ###   DEPS
@@ -214,7 +214,7 @@ class Runner(object):
     ###   STOPPING
     ########################
 
-    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None):
+    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None, tag=None):
         """Stop some container"""
         stopped = False
         container_id = conf.container_id
@@ -245,7 +245,7 @@ class Runner(object):
         if stopped:
             exit_code = inspection["State"]["ExitCode"]
             if exit_code != 0 and fail_on_bad_exit:
-                if not self.harpoon.interactive:
+                if not conf.harpoon.interactive:
                     print_logs = True
                 else:
                     print("!!!!")
@@ -283,6 +283,11 @@ class Runner(object):
                         raise
                     else:
                         break
+
+        if tag:
+            log.info("Tagging a container\tcontainer_id=%s\ttag=%s", container_id, tag)
+            new_id = conf.harpoon.docker_context.commit(container_id)["Id"]
+            conf.harpoon.docker_context.tag(new_id, repository=tag, tag="latest", force=True)
 
         if not conf.harpoon.no_cleanup:
             log.info("Removing container %s:%s", container_name, container_id)

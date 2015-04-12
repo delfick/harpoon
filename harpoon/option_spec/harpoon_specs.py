@@ -138,6 +138,11 @@ class HarpoonSpec(object):
             , bash = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , command = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , commands = required(container_spec(Commands, listof(command_spec())))
+            , recursive = optional_spec(create_spec(image_objs.Recursive
+                , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
+                , volumes = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+                ))
+
             , links = listof(specs.link_spec(), expect=image_objs.Link)
 
             , context = dict_from_bool_spec(lambda meta, val: {"enabled": val}
