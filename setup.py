@@ -12,7 +12,7 @@ setup(
       , "option_merge==0.9.2"
       , "input_algorithms==0.4.4"
 
-      , "docker-py==0.7.2"
+      , "docker-py==1.1.0"
       #, "dockerpty==0.3.2"
 
       , "six"

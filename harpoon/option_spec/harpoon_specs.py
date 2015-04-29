@@ -44,6 +44,7 @@ class Harpoon(dictobj):
         , "docker_context": "The docker context object (set internally)"
         , "no_intervention": "Don't create intervention images when an image breaks"
         , "intervene_afterwards": "Create an intervention image even if the image succeeds"
+        , "docker_context_maker": "Function that makes a new docker context object (set internally)"
         }
 
 class other_options(dictobj):
@@ -223,5 +224,6 @@ class HarpoonSpec(object):
             , do_push = defaulted(formatted_boolean, False)
             , only_pushable = defaulted(formatted_boolean, False)
             , docker_context = any_spec()
+            , docker_context_maker = any_spec()
             )
 

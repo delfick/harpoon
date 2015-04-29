@@ -204,7 +204,7 @@ class Runner(object):
     def start_tty(self, conf, interactive):
         """Startup a tty"""
         try:
-            ctxt = conf.harpoon.docker_context
+            ctxt = conf.harpoon.docker_context_maker()
             container_id = conf.container_id
             dockerpty.start(ctxt, container_id, interactive=interactive)
         except KeyboardInterrupt:

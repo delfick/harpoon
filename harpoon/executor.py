@@ -220,6 +220,7 @@ class CliParser(object):
 
         if not no_docker:
             cli_args["harpoon"]["docker_context"] = docker_context()
+        cli_args["harpoon"]["docker_context_maker"] = docker_context
 
         for key in ('bash', 'command'):
             if cli_args[key] is None:
@@ -233,7 +234,10 @@ def docker_context():
     cert_path = os.environ.get('DOCKER_CERT_PATH')
     tls_verify = os.environ.get('DOCKER_TLS_VERIFY')
 
-    options = {"timeout": 60}
+    if cert_path == '':
+        cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
+
+    options = {"timeout": 60, "version": '1.17'}
     if host:
         options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
 
