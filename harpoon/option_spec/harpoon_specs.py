@@ -135,6 +135,7 @@ class HarpoonSpec(object):
             , configuration = any_spec()
 
             , vars = dictionary_spec()
+            , deleteable_image = defaulted(boolean(), False)
 
             # The spec itself
             , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))

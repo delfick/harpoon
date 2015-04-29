@@ -51,6 +51,7 @@ class Image(dictobj):
         , "other_options": "Other options to use in docker commands"
         , "restart_policy": "The behaviour to apply when the container exists"
         , "container_name": "The name to give to the running container"
+        , "deleteable_image": "Whether this image can be deleted after use"
         , "image_name_prefix": "The prefix given to the name of the image"
         , "dependency_options": "Any options to apply to our dependency containers"
         }

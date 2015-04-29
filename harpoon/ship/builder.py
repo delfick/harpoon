@@ -231,6 +231,7 @@ class Builder(object):
                         self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
                         conf.from_name = conf.image_name
                         conf.image_name = provider_name
+                        conf.deleteable = True
                         return
 
         builder_name = "{0}-for-commit".format(conf_image_name)
@@ -250,11 +251,16 @@ class Builder(object):
         with self.remove_replaced_images(conf):
             Runner().run_container(builder_conf, {provider_conf.name:provider_conf, builder_conf.name:builder_conf}, detach=False, dependency=False, tag=conf.image_name)
 
+        log.info("Removing intermediate image %s", builder_conf.image_name)
+        conf.harpoon.docker_context.remove_image(builder_conf.image_name)
+
         log.info("Building final provider of recursive image")
         with self.remove_replaced_images(provider_conf):
             with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
                 self.log_context_size(provider_context, provider_conf)
                 self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
+
         conf.from_name = conf.image_name
         conf.image_name = provider_name
+        conf.deleteable = True
 

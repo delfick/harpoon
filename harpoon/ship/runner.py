@@ -51,10 +51,19 @@ class Runner(object):
             if not detach and not dependency:
                 self.stop_deps(conf, images)
                 self.stop_container(conf, tag=tag)
+                self.delete_deps(conf, images)
 
     ########################
     ###   DEPS
     ########################
+
+    def delete_deps(self, conf, images):
+        """Delete any deleteable images"""
+        for dependency_name, _ in conf.dependency_images():
+            image = images[dependency_name]
+            if image.deleteable_image:
+                log.info("Removing un-needed image {0}".format(image.image_name))
+                conf.harpoon.docker_context.remove_image(image.image_name)
 
     def run_deps(self, conf, images):
         """Start containers for all our dependencies"""
