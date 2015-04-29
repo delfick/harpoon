@@ -27,6 +27,7 @@ class Image(dictobj):
     fields = {
           "env": "Environment options"
         , "cpu": "CPU options"
+        , "vars": "Arbritrary dictionary of values"
         , "name": "The name of the image"
         , "bash": "A command to run, will transform into ``bash -c '<bash>'``"
         , "user": "The user to use inside the container"
@@ -59,6 +60,13 @@ class Image(dictobj):
 
     def __str__(self):
         return "{IMAGE:{0}}".format(self.image_name)
+
+    def post_setup(self):
+        for key in ('bash', 'command'):
+            if getattr(self, key, NotSpecified) is not NotSpecified:
+                setattr(self, key, getattr(self, key)())
+        if getattr(self, 'recursive', NotSpecified) is not NotSpecified:
+            self.recursive.setup_lines()
 
     @property
     def image_name(self):
@@ -243,18 +251,30 @@ class Recursive(dictobj):
     fields = {
           "action": "The action that we are repeating"
         , "volumes": "The volume we are sharing"
+        , "image_name": "A function that returns the image name of the recursive container"
         }
 
-    def setup(self, *args, **kwargs):
-        super(Recursive, self).setup(*args, **kwargs)
-        # Excuse the $(echo $volume)) weirdness, it's necessary to avoid problems
-        self["shared_name"] = str(uuid.uuid1())
-        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar.gz | cut -f1))\"; tar xzPf "/{1}/$(echo $volume).tar.gz" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), self["shared_name"])
-        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar czPf "/{1}/$(echo $volume).tar.gz" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), self["shared_name"])
-        self["waiter_line"] = "echo \"$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__\"; export START=$(expr $(date +%s) - 5) && while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1; done".format(self["shared_name"])
+    def setup_lines(self):
+        """
+        Setup convenience lines for copying and waiting for copying
+        This setup_lines gets called by Image.post_setup, which gets called by OptionMerge conversion magic
+        We also call it in the dockerfile makers for good measure
+        """
+        if getattr(self, "_setup_lines", None):
+            return
+        self._setup_lines = True
+
+        # Make the shared volume name same as this image name so it doesn't change every time
+        shared_name = self["shared_name"] = self.image_name().replace('/', '__')
+
+        # Excuse the $(echo $volume), it's to avoid problems
+        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar.gz | cut -f1))\"; tar xzPf "/{1}/$(echo $volume).tar.gz" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar czPf "/{1}/$(echo $volume).tar.gz" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        self["waiter_line"] = "echo \"$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__\"; export START=$(expr $(date +%s) - 5) && while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1; done".format(shared_name)
         self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
 
     def make_first_dockerfile(self, docker_file):
+        self.setup_lines()
         docker_lines = docker_file.docker_lines + [
               "RUN bash -c '{0}'".format(self.action)
             , "VOLUME /{0}".format(self.shared_name)
@@ -263,6 +283,7 @@ class Recursive(dictobj):
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
     def make_provider_dockerfile(self, docker_file, image_name):
+        self.setup_lines()
         docker_lines = [
               "FROM {0}".format(image_name)
             , "VOLUME /{0}".format(self.shared_name)
@@ -271,6 +292,7 @@ class Recursive(dictobj):
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
     def make_changed_dockerfile(self, docker_file, image_name):
+        self.setup_lines()
         docker_lines = [
               "FROM {0}".format(image_name)
             ] + [line for line in docker_file.docker_lines if not line.startswith("FROM")] + [
@@ -280,6 +302,7 @@ class Recursive(dictobj):
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
     def make_builder_dockerfile(self, docker_file):
+        self.setup_lines()
         docker_lines = docker_file.docker_lines + [
               "CMD /bin/bash -c '{0} && {1} && {2}'".format(self.waiter_line, self.copy_line, self.action)
             ]

@@ -12,7 +12,7 @@ from input_algorithms.spec_base import (
     , directory_spec, filename_spec, file_spec
     , boolean, required, formatted, overridden
     , integer_spec, dictof, dict_from_bool_spec
-    , container_spec
+    , container_spec, many_format, delayed
     )
 
 from harpoon.option_spec.command_specs import command_spec
@@ -134,13 +134,16 @@ class HarpoonSpec(object):
             , mtime = defaulted(any_spec(), time.time())
             , configuration = any_spec()
 
+            , vars = dictionary_spec()
+
             # The spec itself
-            , bash = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-            , command = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
+            , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+            , command = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , commands = required(container_spec(Commands, listof(command_spec())))
             , recursive = optional_spec(create_spec(image_objs.Recursive
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
                 , volumes = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+                , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))
 
             , links = listof(specs.link_spec(), expect=image_objs.Link)
