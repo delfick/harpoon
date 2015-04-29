@@ -279,8 +279,8 @@ class Recursive(dictobj):
         shared_name = self["shared_name"] = self.image_name().replace('/', '__')
 
         # Excuse the $(echo $volume), it's to avoid problems
-        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar.gz | cut -f1))\"; tar xzPf "/{1}/$(echo $volume).tar.gz" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
-        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar czPf "/{1}/$(echo $volume).tar.gz" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))\"; tar xPf "/{1}/$(echo $volume).tar" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar cPf "/{1}/$(echo $volume).tar" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
         self["waiter_line"] = "echo \"$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__\"; export START=$(expr $(date +%s) - 5) && while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1; done".format(shared_name)
         self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
 
