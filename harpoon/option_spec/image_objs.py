@@ -280,10 +280,39 @@ class Recursive(dictobj):
         shared_name = self["shared_name"] = self.image_name().replace('/', '__')
 
         # Excuse the $(echo $volume), it's to avoid problems
-        self["copy_line"] = 'for volume in {0}; do mkdir -p "/{1}/$volume" "$volume" && echo \"$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))\"; tar xPf "/{1}/$(echo $volume).tar" "$volume/"; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
-        self["copy_to_shared_line"] = 'for volume in {0}; do mkdir -p "$volume/" "/{1}/$volume" && echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\"; tar cPf "/{1}/$(echo $volume).tar" "$volume/" ; done'.format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
-        self["waiter_line"] = "echo \"$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__\"; export START=$(expr $(date +%s) - 5) && while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1; done".format(shared_name)
-        self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
+        # I would also use rsync but that isn't necessarily installed by default
+        # Moving the files instead of tarring them is done for space and speed
+        # Speed because tarring takes time
+        # Space because docker doesn't clean up shared volumes if one of the containers hangs around
+        self["copy_line"] = '''
+            for volume in {0}; do
+                 echo \"$(date) - Recursive: moving shared $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))\";
+
+                 mkdir -p "/{1}/$volume" "$volume"
+              && cd "/{1}" && mkdir -p $(find "$volume/" -print0 -type d -printf "/%P ")
+              && cd "/{1}" && bash -c "$(find "$volume/" -print0 -type f -printf \"mv -f '/{1}/%P' '/%P';\")"
+            ;done
+        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+
+        self["copy_to_shared_line"] = '''
+            for volume in {0}; do
+                 echo \"$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))\";
+
+                 mkdir -p "$volume/" "/{1}/$volume"
+              && cd "$volume" && mkdir -p $(find . -print0 -type d -printf "/{1}/%P ")
+              && cd "$volume" && bash -c "$(find . -print0 -type f -printf \"mv -f '/%P' '/{1}/%P';\")"
+            ;done
+        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+
+        self["waiter_line"] = '''
+            echo "$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__";
+            export START=$(expr $(date +%s) - 5);
+            while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do
+              (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1
+            ;done
+        '''.replace("\n", "").format(shared_name)
+
+        self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"]).replace("{}", "{{}}")
 
     def make_first_dockerfile(self, docker_file):
         self.setup_lines()
