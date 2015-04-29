@@ -307,6 +307,7 @@ class Recursive(dictobj):
         '''.replace("\n", "").format(shared_name)
 
         self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
+        self["rmcmd"] = '''echo "$(date) - Recursive: Removing /{0} because docker does not" && rm -rf /{0}/*'''.format(shared_name)
 
     def make_first_dockerfile(self, docker_file):
         self.setup_lines()
