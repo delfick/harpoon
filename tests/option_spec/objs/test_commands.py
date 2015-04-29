@@ -29,10 +29,10 @@ describe HarpoonCase, "Context object":
             self.assertEqual(co.Command(("blah", "meh")).as_string, "blah meh")
             self.assertEqual(co.Command("blah meh").as_string, "blah meh")
 
-        it "gets image_name from the command if it's not a string and the action is FROM":
-            image_name = self.unique_val()
-            cmd = mock.NonCallableMock(name="cmd", image_name=image_name)
-            self.assertEqual(co.Command(("FROM", cmd)).as_string, "FROM {0}".format(image_name))
+        it "gets from_name from the command if it's not a string and the action is FROM":
+            from_name = self.unique_val()
+            cmd = mock.NonCallableMock(name="cmd", from_name=from_name)
+            self.assertEqual(co.Command(("FROM", cmd)).as_string, "FROM {0}".format(from_name))
 
 describe HarpoonCase, "Commands":
     describe "commands":

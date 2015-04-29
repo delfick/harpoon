@@ -69,6 +69,17 @@ class Image(dictobj):
             self.recursive.setup_lines()
 
     @property
+    def from_name(self):
+        if getattr(self, "_from_name", NotSpecified) is NotSpecified:
+            return self.image_name
+        else:
+            return self._from_name
+
+    @from_name.setter
+    def from_name(self, val):
+        self._from_name = val
+
+    @property
     def image_name(self):
         """
         The image_name of a container is the concatenation of the ``image_index``,

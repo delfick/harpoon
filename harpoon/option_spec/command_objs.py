@@ -30,7 +30,7 @@ class Command(dictobj):
     def as_string(self):
         """Return the command as a single string for the docker file"""
         if self.action == "FROM" and not isinstance(self.command, six.string_types):
-            return "{0} {1}".format(self.action, self.command.image_name)
+            return "{0} {1}".format(self.action, self.command.from_name)
         else:
             return "{0} {1}".format(self.action, self.command)
 
