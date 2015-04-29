@@ -194,10 +194,15 @@ class Builder(object):
         """Do a recursive build!"""
         from harpoon.option_spec.image_objs import Volumes
         from harpoon.ship.runner import Runner
-        cached = self.do_build(conf, context, stream, image_name="{0}-tester".format(conf.image_name))
+        conf_image_name = conf.name
+        if conf.image_name_prefix is not NotSpecified:
+            conf_image_name = "{0}-{1}".format(conf.image_name_prefix, conf.name)
+
+        with self.remove_replaced_images(conf):
+            cached = self.do_build(conf, context, stream, image_name="{0}-tester".format(conf_image_name))
         have_final = "{0}:latest".format(conf.image_name) in chain.from_iterable([image["RepoTags"] for image in conf.harpoon.docker_context.images()])
 
-        provider_name = "{0}-provider".format(conf.image_name)
+        provider_name = "{0}-provider".format(conf_image_name)
         provider_conf = conf.clone()
         provider_conf.name = "provider"
         provider_conf.image_name = provider_name
@@ -224,7 +229,7 @@ class Builder(object):
                         conf.image_name = provider_name
                         return
 
-        builder_name = "{0}-for-commit".format(conf.image_name)
+        builder_name = "{0}-for-commit".format(conf_image_name)
         builder_conf = conf.clone()
 
         builder_conf.image_name = builder_name
