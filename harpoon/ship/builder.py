@@ -198,8 +198,12 @@ class Builder(object):
         if conf.image_name_prefix is not NotSpecified:
             conf_image_name = "{0}-{1}".format(conf.image_name_prefix, conf.name)
 
-        with self.remove_replaced_images(conf):
-            cached = self.do_build(conf, context, stream, image_name="{0}-tester".format(conf_image_name))
+        test_conf = conf.clone()
+        test_conf.image_name = "{0}-tester".format(conf_image_name)
+        log.info("Building test image for recursive image to see if the cache changed")
+        with self.remove_replaced_images(test_conf):
+            cached = self.do_build(test_conf, context, stream)
+
         have_final = "{0}:latest".format(conf.image_name) in chain.from_iterable([image["RepoTags"] for image in conf.harpoon.docker_context.images()])
 
         provider_name = "{0}-provider".format(conf_image_name)
