@@ -195,7 +195,7 @@ class Builder(object):
         from harpoon.option_spec.image_objs import Volumes
         from harpoon.ship.runner import Runner
         conf_image_name = conf.name
-        if conf.image_name_prefix is not NotSpecified:
+        if conf.image_name_prefix not in (NotSpecified, "", None):
             conf_image_name = "{0}-{1}".format(conf.image_name_prefix, conf.name)
 
         test_conf = conf.clone()
