@@ -74,11 +74,14 @@ class Builder(object):
     ###   USAGE
     ########################
 
-    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False):
+    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, share_with_deps=None):
         """Make us an image"""
         made = made or {}
         chain = chain or []
         parent_chain = parent_chain or []
+
+        if share_with_deps is None:
+            share_with_deps = self.determine_share_with_deps(images, conf)
 
         if conf.name in made:
             return
@@ -94,20 +97,23 @@ class Builder(object):
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True)
+                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps)
 
         if not ignore_parent:
             parent_image = conf.commands.parent_image
             if not isinstance(parent_image, six.string_types):
-                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True)
+                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps)
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
-        self.build_image(conf)
+        self.build_image(conf, share_with_deps)
         made[conf.name] = True
 
-    def build_image(self, conf):
+    def build_image(self, conf, share_with_deps=None):
         """Build this image"""
+        if share_with_deps is None:
+            share_with_deps = []
+
         with self.context(conf) as context:
             try:
                 stream = BuildProgressStream(conf.harpoon.silent_build)
@@ -115,7 +121,7 @@ class Builder(object):
                     if conf.recursive is NotSpecified:
                         self.do_build(conf, context, stream)
                     else:
-                        self.do_recursive_build(conf, context, stream)
+                        self.do_recursive_build(conf, context, stream, needs_provider=conf.name in share_with_deps)
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if stream.current_container:
@@ -140,6 +146,17 @@ class Builder(object):
     ########################
     ###   UTILITY
     ########################
+
+    def determine_share_with_deps(self, images, root_conf, share_with=None):
+        """Determine all the containers that are in a volumes.share_with"""
+        if share_with is None:
+            share_with = []
+
+        share_with.extend(root_conf.shared_volume_containers())
+        for dependency, image in root_conf.dependency_images():
+            self.determine_share_with_deps(images, images[dependency], share_with=share_with)
+
+        return set(share_with)
 
     @contextmanager
     def context(self, conf):
@@ -190,7 +207,7 @@ class Builder(object):
 
         return stream.cached
 
-    def do_recursive_build(self, conf, context, stream):
+    def do_recursive_build(self, conf, context, stream, needs_provider=False):
         """Do a recursive build!"""
         from harpoon.option_spec.image_objs import Volumes
         from harpoon.ship.runner import Runner
@@ -226,6 +243,9 @@ class Builder(object):
                         self.log_context_size(provider_context, provider_conf)
                         self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
                 else:
+                    if not needs_provider:
+                        return
+
                     with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
                         self.log_context_size(provider_context, provider_conf)
                         self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
@@ -253,6 +273,9 @@ class Builder(object):
 
         log.info("Removing intermediate image %s", builder_conf.image_name)
         conf.harpoon.docker_context.remove_image(builder_conf.image_name)
+
+        if not needs_provider:
+            return
 
         log.info("Building final provider of recursive image")
         with self.remove_replaced_images(provider_conf):

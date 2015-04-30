@@ -178,15 +178,19 @@ class Image(dictobj):
             if link.container:
                 candidates.append(link.container.name)
 
-        for container in self.volumes.share_with:
-            if not isinstance(container, six.string_types):
-                candidates.append(container.name)
+        candidates.extend(list(self.shared_volume_containers()))
 
         done = []
         for candidate in candidates:
             if candidate not in done:
                 done.append(candidate)
                 yield candidate, detach.get(candidate, True)
+
+    def shared_volume_containers(self):
+        """All the harpoon containers in volumes.share_with for this container"""
+        for container in self.volumes.share_with:
+            if not isinstance(container, six.string_types):
+                yield container.name
 
     def find_missing_env(self):
         """Find any missing environment variables"""
