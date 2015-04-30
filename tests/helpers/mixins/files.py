@@ -13,7 +13,7 @@ class FilesAssertionsMixin:
         """Return a uuid1 value"""
         return str(uuid.uuid1())
 
-    def make_temp_file(self):
+    def make_temp_file(self, content=None):
         """
         Make a temp file.
         Record it so it can be cleaned up later
@@ -22,7 +22,10 @@ class FilesAssertionsMixin:
             self._temp_files = []
 
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        self._temp_files.append(tmp)
+        if content:
+            with open(tmp.name, 'w') as fle:
+                fle.write(content)
+        self._temp_files.append(tmp.name)
         return tmp
 
     def make_temp_dir(self):
@@ -43,8 +46,10 @@ class FilesAssertionsMixin:
         """
         for key in ("_temp_dirs", "_temp_files"):
             for tmp in getattr(self, key, []):
-                if os.path.exists(tmp):
+                if os.path.isdir(tmp):
                     shutil.rmtree(tmp)
+                else:
+                    os.remove(tmp)
     cleanup_temp_things._harpoon_case_teardown = True
 
     @contextmanager
@@ -188,13 +193,14 @@ class FilesAssertionsMixin:
             if isinstance(contents, tuple):
                 mtime, contents = contents
             if mtime:
-                expected_mtime, expected_contents = expected[identity]
-                self.assertEqual(tarinfo.mtime, expected_mtime)
-                self.assertEqual(contents, expected_contents)
-                if expected_contents is None:
+                self.assertEqual(tarinfo.mtime, mtime)
+                if data is not None or contents is not None:
+                    self.assertEqual(data.decode('utf-8'), contents)
+                if contents is None:
                     self.assertIs(tarinfo.isdir(), True)
             else:
-                self.assertEqual(contents, expected_contents)
+                if data is not None or contents is not None:
+                    self.assertEqual(data.decode('utf-8'), contents)
         self.assertEqual(found, set(expected.keys()))
 
     def extract_tar(self, location):

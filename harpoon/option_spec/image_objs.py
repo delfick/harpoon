@@ -212,7 +212,13 @@ class Image(dictobj):
 
     @property
     def docker_file(self):
-        return DockerFile(self.commands.docker_lines_list, self.mtime)
+        if getattr(self, "_docker_file", NotSpecified) is NotSpecified:
+            self._docker_file = DockerFile(self.commands.docker_lines_list, self.mtime)
+        return self._docker_file
+
+    @docker_file.setter
+    def docker_file(self, val):
+        self._docker_file = val
 
     def add_docker_file_to_tarfile(self, docker_file, tar):
         """Add a Dockerfile to a tarfile"""

@@ -69,7 +69,7 @@ class Commands(dictobj):
     @property
     def docker_lines(self):
         """Return the commands as a newline seperated list of strings"""
-        return '\n'.join(self.docker_lines_list())
+        return '\n'.join(self.docker_lines_list)
 
     @property
     def docker_lines_list(self):

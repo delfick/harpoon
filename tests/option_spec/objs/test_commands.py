@@ -60,6 +60,11 @@ describe HarpoonCase, "Commands":
             orig_commands = [[co.Command("1 2"), co.Command("3 4")], co.Command("5 6"), [co.Command("7 8"), co.Command("9 10")]]
             self.assertEqual(co.Commands(orig_commands).docker_lines, "1 2\n3 4\n5 6\n7 8\n9 10")
 
+    describe "docker_lines_list":
+        it "returns list of as_string of all the commands":
+            orig_commands = [[co.Command("1 2"), co.Command("3 4")], co.Command("5 6"), [co.Command("7 8"), co.Command("9 10")]]
+            self.assertEqual(co.Commands(orig_commands).docker_lines_list, ["1 2", "3 4", "5 6", "7 8", "9 10"])
+
     describe "extra_context":
         it "yields all the extra_context found on commands":
             ec1 = mock.Mock(name="ec1")

@@ -1,18 +1,72 @@
 # coding: spec
 
+from harpoon.ship.context import ContextBuilder, ContextWrapper
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.option_spec import image_objs as objs
-from harpoon.ship.context import ContextBuilder
 from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
+from input_algorithms.meta import Meta
+import tarfile
 import shutil
 import time
 import nose
 import mock
 import six
 import os
+
+describe HarpoonCase, "Context Wrapper":
+    before_each:
+        self.t = mock.Mock(name="t")
+        self.tmpfile = mock.Mock(name="tmpfile")
+
+    it "takes in a tarfile and tmpfile":
+        wrapper = ContextWrapper(self.t, self.tmpfile)
+        self.assertIs(wrapper.t, self.t)
+        self.assertIs(wrapper.tmpfile, self.tmpfile)
+
+    it "has a proxy to tmpfile.name":
+        name = mock.Mock(name="mock")
+        self.tmpfile.name = name
+        self.assertIs(ContextWrapper(self.t, self.tmpfile).name, name)
+
+    describe "close":
+        it "closes the tarfile and seeks to the beginning of the file":
+            wrapper = ContextWrapper(self.t, self.tmpfile)
+            self.assertEqual(self.t.close.mock_calls, [])
+            self.assertEqual(self.tmpfile.seek.mock_calls, [])
+
+            wrapper.close()
+            self.t.close.assert_called_once()
+            self.tmpfile.seek.assert_called_once_with(0)
+
+    describe "clone_with_new_dockerfile":
+        it "copies over files from the old tar file into a new tarfile and returns a new wrapper":
+            if six.PY3:
+                raise nose.SkipTest()
+
+            tmpfile = self.make_temp_file()
+            old_tar = tarfile.open(tmpfile.name, "w:gz")
+            old_tar.add(self.make_temp_file("blah").name, "./one")
+            old_tar.add(self.make_temp_file("meh").name, "./two")
+            old_tar.add(self.make_temp_file("Dockerfile_lines").name, "./Dockerfile")
+            wrapper = ContextWrapper(old_tar, tmpfile)
+            wrapper.close()
+
+            conf = HarpoonSpec().image_spec.normalise(
+                  Meta({"_key_name_1": "awesome", "config_root": self.make_temp_dir()}, [])
+                , {"commands": ["FROM ubuntu:14.04"]}
+                )
+            docker_file = conf.docker_file
+
+            with wrapper.clone_with_new_dockerfile(conf, docker_file) as new_wrapper:
+                assert new_wrapper.t is not wrapper.t
+                self.assertNotEqual(new_wrapper.tmpfile, wrapper.tmpfile)
+                new_wrapper.close()
+                self.assertTarFileContent(new_wrapper.t.name, {"./one": "blah", "./two": "meh", "./Dockerfile": "FROM ubuntu:14.04"})
+                self.assertTarFileContent(wrapper.t.name, {"./one": "blah", "./two": "meh", "./Dockerfile": "Dockerfile_lines"})
 
 describe HarpoonCase, "Context builder":
     before_each:
@@ -37,16 +91,17 @@ describe HarpoonCase, "Context builder":
             self.docker_lines = '\n'.join(["FROM somewhere", "RUN touch /tmp/stuff"])
             self.docker_file = objs.DockerFile(self.docker_lines, self.mtime)
 
-        it "adds Dockerfile and everything from find_mtimes":
+        it "adds everything from find_mtimes":
             find_mtimes = mock.Mock(name="find_mtimes")
             mtime = int(time.time())
             folder, files = self.setup_directory({"one": {"1": self.one_val}, "two": self.two_val}, root=self.folder)
             find_mtimes.return_value = [(files["one"]["/folder/"], mtime, './one'), (files["one"]["1"]["/file/"], mtime, "./one/1"), (files["two"]["/file/"], mtime, "./two")]
 
             with mock.patch.object(ContextBuilder, "find_mtimes", find_mtimes):
-                with ContextBuilder().make_context(self.context, self.docker_file) as tmpfile:
+                with ContextBuilder().make_context(self.context) as tmpfile:
+                    tmpfile.close()
                     self.assertTarFileContent(tmpfile.name
-                        , {"./one": (mtime, None), "./one/1": (mtime, self.one_val), "./two": (mtime, self.two_val), "./Dockerfile": (self.mtime, self.docker_lines)}
+                        , {"./one": (mtime, None), "./one/1": (mtime, self.one_val), "./two": (mtime, self.two_val)}
                         )
 
         it "adds extra_content after find_mtimes":
@@ -58,9 +113,10 @@ describe HarpoonCase, "Context builder":
             find_mtimes.return_value = [(files["one"]["/file/"], mtime, './one'), (files["two"]["/file/"], mtime, "./two")]
 
             with mock.patch.object(ContextBuilder, "find_mtimes", find_mtimes):
-                with ContextBuilder().make_context(self.context, self.docker_file, extra_context=extra_context) as tmpfile:
+                with ContextBuilder().make_context(self.context, extra_context=extra_context) as tmpfile:
+                    tmpfile.close()
                     self.assertTarFileContent(tmpfile.name
-                        , {"./one": (mtime, self.three_val), "./two": (mtime, self.two_val), "./four": (self.mtime, self.four_val), "./Dockerfile": (self.mtime, self.docker_lines)}
+                        , {"./one": (mtime, self.three_val), "./two": (mtime, self.two_val), "./four": (self.mtime, self.four_val)}
                         )
 
     describe "find_mtimes":
