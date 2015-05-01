@@ -344,7 +344,7 @@ class Recursive(dictobj):
     def make_builder_dockerfile(self, docker_file):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "CMD /bin/bash -c '{0} && {1} && {2}'".format(self.waiter_line, self.copy_line, self.action)
+              "CMD /bin/bash -c '{0} && {1} && {2} && {3}'".format(self.waiter_line, self.copy_line, self.rmcmd, self.action)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
