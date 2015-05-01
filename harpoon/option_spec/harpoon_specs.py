@@ -143,7 +143,7 @@ class HarpoonSpec(object):
             , commands = required(container_spec(Commands, listof(command_spec())))
             , recursive = optional_spec(create_spec(image_objs.Recursive
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-                , volumes = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+                , persist = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
                 , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))
 

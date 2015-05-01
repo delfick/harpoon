@@ -266,7 +266,7 @@ class Recursive(dictobj):
     """Options to make an image be built recursively"""
     fields = {
           "action": "The action that we are repeating"
-        , "volumes": "The volume we are sharing"
+        , "persist": "The folders to persist between builds"
         , "image_name": "A function that returns the image name of the recursive container"
         }
 
@@ -291,7 +291,7 @@ class Recursive(dictobj):
                  mkdir -p "/{1}/$volume" "$volume"
               && tar xPf "/{1}/$(echo $volume).tar" "$volume/"
             ;done
-        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.persist), shared_name)
 
         self["copy_to_shared_line"] = '''
             for volume in {0}; do
@@ -300,7 +300,7 @@ class Recursive(dictobj):
                  mkdir -p "$volume/" "/{1}/$volume"
               && tar cPf "/{1}/$(echo $volume).tar" "$volume/"
             ;done
-        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.volumes), shared_name)
+        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.persist), shared_name)
 
         self["waiter_line"] = '''
             echo "$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__";

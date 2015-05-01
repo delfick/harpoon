@@ -30,7 +30,7 @@ Let's say we have the following configuration:
         # And a list of folders that get persisted between builds
         recursive:
           action: cd /project && npm install
-          volumes: /project/node_modules
+          persist: /project/node_modules
 
         commands:
           - FROM ubuntu:14.04
@@ -106,7 +106,7 @@ We can do something like:
       resolved:
         recursive:
           action: cd /project && sbt update
-          volumes:
+          persist:
             - /project/target/
             - /project/project/target/
             - /project/project/project/
@@ -120,7 +120,7 @@ We can do something like:
       compiled:
         recursive:
           action: cd /project && sbt compile && sbt test:compile
-          volumes:
+          persist:
             - /project/target/
             - /project/project/target/
             - /project/project/project/
@@ -151,7 +151,7 @@ One problem you may have is you might want to include multiple recursive
 containers or for some reason not chain the containers together like we've been
 doing.
 
-In that case, we can copy the volumes in at container time using the
+In that case, we can copy the persisting folders in at container time using the
 "{images.<container>.recursive.precmd}" variable instead.
 
 For example, our sbt application at the top can be redone as below (the only
@@ -195,7 +195,7 @@ thing that changes is the ``installed`` image at the bottom):
       resolved:
         recursive:
           action: cd /project && sbt update
-          volumes:
+          persist:
             - /project/target/
             - /project/project/target/
             - /project/project/project/
@@ -209,7 +209,7 @@ thing that changes is the ``installed`` image at the bottom):
       compiled:
         recursive:
           action: cd /project && sbt compile && sbt test:compile
-          volumes:
+          persist:
             - /project/target/
             - /project/project/target/
             - /project/project/project/
@@ -224,7 +224,7 @@ thing that changes is the ``installed`` image at the bottom):
         commands:
           - [FROM, "{images.prepared}"]
 
-        volumes:
+        persist:
           # Share the volumes from our recursive images with this image
           # Note that the order here is important because compiled has the
           # same shared folder as resolved
@@ -260,7 +260,7 @@ the commands in the recursive image and the action specified by the recursive
 image.
 
 The first time it is built, it creates a docker file that is the commands plus
-the action plus a ``CMD`` that copies the folders specified by ``volumes`` into
+the action plus a ``CMD`` that copies the folders specified by ``persist`` into
 a docker volume.
 
 If the recursive image already exists then harpoon will figure out if the docker
@@ -274,16 +274,16 @@ If the cache is broken, then it creates two containers:
 
 changer
     This is a dockerfile that does a "FROM <recursive image>" followed by
-    all the commands and the action and a ``CMD`` that copies the ``volumes``
-    into a docker volume.
+    all the commands and the action and a ``CMD`` that copies the ``persist``
+    folders into a docker volume.
 
 builder
     This is a dockerfile with the normal commands and a ``CMD`` that copies
-    the ``volumes`` from the shared volume into their place in the container
-    before running the action.
+    the ``persist`` folders from the shared volume into their place in the
+    container before running the action.
 
     The builder runs, sharing volumes with the changer such that before it runs
-    the action again, it gets the previous run's ``volumes`` injected into place.
+    the action again, it gets the previous run's ``persist`` injected into place.
 
     This container is committed and tagged as the new recursive image.
 
@@ -294,7 +294,7 @@ this point.
 If there is a reference, however, then it needs to create a ``provider`` container.
 
 This is a container that inherits from the recursive image and just has a ``CMD``
-that copies the ``volumes`` into a docker volume.
+that copies the ``persist`` folders into a docker volume.
 
 When you share volumes with a recursive image, you're actually sharing volumes
 with a ``provider``.
