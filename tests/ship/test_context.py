@@ -266,7 +266,7 @@ describe HarpoonCase, "Context builder":
             with mock.patch.object(ContextBuilder, "find_ignored_git_files", self.find_ignored_git_files):
                 found_files, found_mtime_ignoreable = ContextBuilder().find_files(self.context, False)
                 self.assertEqual(found_files, expected_files)
-                self.assertEqual(found_mtime_ignoreable, set())
+                self.assertEqual(found_mtime_ignoreable, set(["one"]))
 
         it "includes ignored files if use_git is True but use_gitignore is False":
             _, files = self.setup_directory(

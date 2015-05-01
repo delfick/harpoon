@@ -132,7 +132,7 @@ class ContextBuilder(object):
         if status != 0:
             raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
         all_files = set(self.convert_nonascii(output))
-        total_files = set(output)
+        total_files = set(all_files)
 
         combined = set(all_files)
         mtime_ignoreable = set()
@@ -142,9 +142,11 @@ class ContextBuilder(object):
                 all_files = set([path for path in all_files if not path.startswith(".git")])
 
             combined = set(all_files)
-            changed_files, mtime_ignoreable, ignored_files = self.find_ignored_git_files(context, silent_build)
+            changed_files, untracked_files, ignored_files = self.find_ignored_git_files(context, silent_build)
+            mtime_ignoreable = set(list(changed_files) + list(untracked_files) + list(ignored_files))
+
             removed = set()
-            for lst in (changed_files, mtime_ignoreable, ignored_files):
+            for lst in (untracked_files, ignored_files):
                 for fle in lst:
                     if fle in combined:
                         removed.add(fle)
@@ -265,9 +267,11 @@ class ContextBuilder(object):
         """
         Find all the files that are ignored by git
 
-        Also find all the files that we should ignore mtimes from
+        And all the files that are untracked
 
-        return (mtime_ignoreable, ignored)
+        And all the files that have been changed
+
+        return (changed_files, untracked_files, ignored_files)
         """
         root_folder = context.git_root
         def git(args, error_message, **error_kwargs):
@@ -281,12 +285,12 @@ class ContextBuilder(object):
         # Dulwich doesn't include gitignore functionality and so has to be implemented here
         # I don't feel confident in my ability to implement that detail, so we just ask git for that information
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
-        mtime_ignoreable = git("ls-files --others --exclude-standard", "Failed to find untracked files")
+        untracked_files = git("ls-files --others --exclude-standard", "Failed to find untracked files")
 
-        others = set()
+        ignored_files = set()
         if context.use_gitignore:
-            others = git("ls-files --others", "Failed to find ignored files")
+            ignored_files = git("ls-files --others", "Failed to find ignored files")
 
         to_set = lambda lst: set(self.convert_nonascii(lst))
-        return to_set(changed_files), to_set(mtime_ignoreable), to_set(others) - to_set(mtime_ignoreable)
+        return to_set(changed_files), to_set(untracked_files), to_set(ignored_files) - to_set(untracked_files)
 
