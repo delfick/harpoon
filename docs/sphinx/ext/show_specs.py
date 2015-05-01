@@ -1,4 +1,4 @@
-from harpoon.option_spec.many_item_spec import many_item_formatted_spec
+from input_algorithms.many_item_spec import many_item_formatted_spec
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 
 from input_algorithms import spec_base as sb
