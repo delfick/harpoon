@@ -236,6 +236,8 @@ class Builder(object):
         provider_conf.image_name = provider_name
         provider_conf.container_id = None
         provider_conf.container_name = "{0}-intermediate-{1}".format(provider_name, str(uuid.uuid1())).replace("/", "__")
+        provider_conf.bash = NotSpecified
+        provider_conf.command = NotSpecified
 
         with self.remove_replaced_images(provider_conf):
             if not have_final:
@@ -268,6 +270,8 @@ class Builder(object):
         builder_conf.container_id = None
         builder_conf.container_name = "{0}-intermediate-{1}".format(builder_name, str(uuid.uuid1())).replace("/", "__")
         builder_conf.volumes = Volumes(mount=[], share_with=[provider_conf])
+        builder_conf.bash = NotSpecified
+        builder_conf.command = NotSpecified
         log.info("Building intermediate builder for recursive image")
         with self.remove_replaced_images(builder_conf):
             with context.clone_with_new_dockerfile(conf, conf.recursive.make_builder_dockerfile(conf.docker_file)) as provider_context:
