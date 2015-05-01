@@ -47,6 +47,7 @@ class Image(dictobj):
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
+        , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "configuration": "The root configuration"
         , "other_options": "Other options to use in docker commands"
         , "restart_policy": "The behaviour to apply when the container exists"
@@ -54,6 +55,7 @@ class Image(dictobj):
         , "deleteable_image": "Whether this image can be deleted after use"
         , "image_name_prefix": "The prefix given to the name of the image"
         , "dependency_options": "Any options to apply to our dependency containers"
+        , "squash_before_push": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash before pushing an image"
         }
 
     def __repr__(self):

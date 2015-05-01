@@ -587,3 +587,49 @@ may specify ``dependency_options``::
       commands:
         ...
         - CMD ./do_a_uitest.sh running:9000
+
+Squashing containers
+--------------------
+
+Currently if you want to squash your containers, you must rely on the third party
+`docker squash <https://github.com/jwilder/docker-squash>`_ tool.
+
+Harpoon loosely integrates with this tool using the ``squash_after`` and
+``squash_before_push`` options.
+
+The ``squash_after`` option means that docker-squash will be used every time the
+image is built, whereas ``squash_before_push`` is used only if the image is
+about to be pushed by harpoon.
+
+Both options can be either a boolean saying ``true`` or ``false``; or can be a
+list of extra DockerFile commands to use before squashing the image.
+
+If extra DockerFile commands are specified, an intermediate image is created with
+these extra commands and it's the intermediate image that will be squashed.
+
+For example:
+
+.. code-block:: yaml
+
+  images:
+      with_node:
+        image_index: <wherever your docker index is>
+        commands:
+          - FROM ubuntu:14.04
+          - RUN apt-get update && apt-get install software-properties-common -y
+          - RUN add-apt-repository ppa:chris-lea/node.js
+          - RUN apt-get update && apt-get install -y nodejs
+          - RUN mkdir /project
+
+        squash_before_push:
+          - RUN sudo apt-get clean
+
+        tasks:
+          node_version:
+            options:
+              command: node --version
+
+With this configuration we can run our ``node_version`` task without having to
+wait for docker-squash to do it's thing and when we're ready, ``harpoon push with_node``
+will build and squash and push the image.
+

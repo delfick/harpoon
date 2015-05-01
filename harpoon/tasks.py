@@ -33,7 +33,7 @@ def push(overview, configuration, images, image):
     """Push an image"""
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
-    Builder().make_image(image, images)
+    Builder().make_image(image, images, pushing=True)
     Syncer().push(image)
 
 @a_task(needs_images=True)

@@ -6,9 +6,12 @@ Building an image requires building all dependent images, creating the necessary
 context, and actually building the current image.
 """
 
-from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit
+from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit, BadEnvironment, HarpoonError
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
+from harpoon.processes import command_output
+from harpoon.option_spec import command_objs
 from harpoon.ship.runner import Runner
+from harpoon import helpers as hp
 from harpoon.layers import Layers
 
 from input_algorithms.spec_base import NotSpecified
@@ -81,7 +84,7 @@ class Builder(object):
     ###   USAGE
     ########################
 
-    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, share_with_deps=None):
+    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, share_with_deps=None, pushing=False):
         """Make us an image"""
         made = made or {}
         chain = chain or []
@@ -104,19 +107,19 @@ class Builder(object):
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps)
+                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps, pushing=pushing)
 
         if not ignore_parent:
             parent_image = conf.commands.parent_image
             if not isinstance(parent_image, six.string_types):
-                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps)
+                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps, pushing=pushing)
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
-        self.build_image(conf, share_with_deps)
+        self.build_image(conf, share_with_deps, pushing=pushing)
         made[conf.name] = True
 
-    def build_image(self, conf, share_with_deps=None):
+    def build_image(self, conf, share_with_deps=None, pushing=False):
         """Build this image"""
         if share_with_deps is None:
             share_with_deps = []
@@ -134,6 +137,19 @@ class Builder(object):
                 if stream.current_container:
                     Runner().stage_build_intervention(conf, stream.current_container)
 
+                if isinstance(error, KeyboardInterrupt):
+                    raise UserQuit()
+                else:
+                    six.reraise(*exc_info)
+
+            try:
+                for squash_options, condition in [(conf.squash_after, True), (conf.squash_before_push, pushing)]:
+                    if squash_options is not NotSpecified and condition:
+                        if type(squash_options) is command_objs.Commands:
+                            squash_commands = squash_options.docker_lines_list
+                        self.squash_build(conf, context, stream, squash_commands)
+            except (KeyboardInterrupt, Exception) as error:
+                exc_info = sys.exc_info()
                 if isinstance(error, KeyboardInterrupt):
                     raise UserQuit()
                 else:
@@ -274,9 +290,9 @@ class Builder(object):
         builder_conf.command = NotSpecified
         log.info("Building intermediate builder for recursive image")
         with self.remove_replaced_images(builder_conf):
-            with context.clone_with_new_dockerfile(conf, conf.recursive.make_builder_dockerfile(conf.docker_file)) as provider_context:
-                self.log_context_size(context, conf)
-                self.do_build(builder_conf, provider_context, stream, image_name=builder_name)
+            with context.clone_with_new_dockerfile(conf, conf.recursive.make_builder_dockerfile(conf.docker_file)) as builder_context:
+                self.log_context_size(provider_context, builder_conf)
+                self.do_build(builder_conf, builder_context, stream, image_name=builder_name)
 
         log.info("Running and committing builder container for recursive image")
         with self.remove_replaced_images(conf):
@@ -297,4 +313,46 @@ class Builder(object):
         conf.from_name = conf.image_name
         conf.image_name = provider_name
         conf.deleteable = True
+
+    def squash_build(self, conf, context, stream, squash_commands):
+        """Do a squash build"""
+        from harpoon.option_spec.image_objs import DockerFile
+        squashing = conf
+        output, status = command_output("which docker-squash")
+        if status != 0:
+            raise BadEnvironment("Please put docker-squash in your PATH first: https://github.com/jwilder/docker-squash")
+
+        if squash_commands:
+            squasher_conf = conf.clone()
+            squasher_conf.image_name = "{0}-for-squashing".format(conf.name)
+            if conf.image_name_prefix not in ("", None, NotSpecified):
+                squasher.conf.image_name = "{0}-{1}".format(conf.image_name_prefix, squasher_conf.image_name)
+
+            with self.remove_replaced_images(squasher_conf):
+                self.log_context_size(context, conf)
+                original_docker_file = conf.docker_file
+                new_docker_file = DockerFile(["FROM {0}".format(conf.image_name)] + squash_commands, original_docker_file.mtime)
+                with context.clone_with_new_dockerfile(squasher_conf, new_docker_file) as squasher_context:
+                    self.log_context_size(squasher_context, squasher_conf)
+                    self.do_build(squasher_conf, squasher_context, stream)
+            squashing = squasher_conf
+
+        log.info("Saving image\timage=%s", squashing.image_name)
+        with hp.a_temp_file() as fle:
+            res = conf.harpoon.docker_context.get_image(squashing.image_name)
+            fle.write(res.read())
+            fle.close()
+
+            with hp.a_temp_file() as fle2:
+                output, status = command_output("sudo docker-squash -i {0} -o {1} -t {2} -verbose".format(fle.name, fle2.name, conf.image_name), verbose=True, timeout=600)
+                if status != 0:
+                    raise HarpoonError("Failed to squash the image!")
+
+                output, status = command_output("docker load", stdin=open(fle2.name), verbose=True, timeout=600)
+                if status != 0:
+                    raise HarpoonError("Failed to load the squashed image")
+
+        if squashing is not conf:
+            log.info("Removing intermediate image %s", squashing.image_name)
+            conf.harpoon.docker_context.remove_image(squashing.image_name)
 

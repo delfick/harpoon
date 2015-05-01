@@ -33,11 +33,20 @@ def command_output(command, *command_extras, **kwargs):
     """Get the output from a command"""
     output = []
     cwd = kwargs.get("cwd", None)
+    stdin = kwargs.get("stdin", None)
+    verbose = kwargs.get("verbose", False)
+
     args = shlex.split(' '.join([command] + list(command_extras)))
     timeout = kwargs.get("timeout", 10)
 
     log.debug("Running command\targs=%s", args)
-    process = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=cwd)
+    if verbose:
+        log.info("Running command\tcommand=%s", command)
+
+    process_kwargs = {"stderr": subprocess.STDOUT, "stdout": subprocess.PIPE, "cwd": cwd}
+    if stdin is not None:
+        process_kwargs["stdin"] = stdin
+    process = subprocess.Popen(args, **process_kwargs)
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
     fcntl.fcntl(process.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -50,6 +59,7 @@ def command_output(command, *command_extras, **kwargs):
             break
         for nxt in read_non_blocking(process.stdout):
             output.append(nxt.decode("utf8").strip())
+            if verbose: print(output[-1])
         time.sleep(0.01)
 
     attempted_sigkill = False
@@ -65,6 +75,7 @@ def command_output(command, *command_extras, **kwargs):
                 break
             for nxt in read_non_blocking(process.stdout):
                 output.append(nxt.decode("utf8").strip())
+                if verbose: print(output[-1])
             time.sleep(0.01)
 
         if process.poll() is None:
@@ -74,6 +85,7 @@ def command_output(command, *command_extras, **kwargs):
 
     for nxt in read_non_blocking(process.stdout):
         output.append(nxt.decode("utf8").strip())
+        if verbose: print(output[-1])
 
     if process.poll() is not 0 and attempted_sigkill:
         raise CouldntKill("Failed to sigkill hanging process", pid=process.pid, command=args, output="\n".join(output))

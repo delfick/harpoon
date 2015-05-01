@@ -62,3 +62,6 @@ class BadFilename(BadSpecValue):
 class DeprecatedFeature(BadSpecValue):
     desc = "Feature is deprecated"
 
+class BadEnvironment(HarpoonError):
+    desc = "Something bad in the environment"
+

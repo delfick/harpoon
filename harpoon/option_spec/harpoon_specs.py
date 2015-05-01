@@ -141,6 +141,8 @@ class HarpoonSpec(object):
             , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , command = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , commands = required(container_spec(Commands, listof(command_spec())))
+            , squash_after = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
+            , squash_before_push = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
             , recursive = optional_spec(create_spec(image_objs.Recursive
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
                 , persist = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
