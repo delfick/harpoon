@@ -112,7 +112,7 @@ class ContextBuilder(object):
         output, status = command_output("find {0} -type f -print".format(' '.join(first_layer)), cwd=context.parent_dir)
         if status != 0:
             raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
-        all_files = set(output)
+        all_files = set(self.convert_nonascii(output))
         total_files = set(output)
 
         combined = set(all_files)
@@ -123,11 +123,12 @@ class ContextBuilder(object):
                 all_files = set([path for path in all_files if not path.startswith(".git")])
 
             combined = set(all_files)
-            mtime_ignoreable, ignored_files = self.find_ignored_git_files(context, silent_build)
+            changed_files, mtime_ignoreable, ignored_files = self.find_ignored_git_files(context, silent_build)
             removed = set()
-            for fle in ignored_files:
-                if fle in combined:
-                    removed.add(fle)
+            for lst in (changed_files, mtime_ignoreable, ignored_files):
+                for fle in lst:
+                    if fle in combined:
+                        removed.add(fle)
             if removed and not silent_build: log.info("Ignoring %s/%s files", len(removed), len(combined))
             combined -= removed
 
@@ -232,6 +233,15 @@ class ContextBuilder(object):
 
         return mtimes
 
+    def convert_nonascii(self, lst):
+        """Convert the strange outputs from git commands"""
+        for item in lst:
+            if item.startswith('"') and item.endswith('"'):
+                item = item[1:-1]
+                yield item.decode('unicode-escape')
+            else:
+                yield item.encode('utf-8').decode('unicode-escape')
+
     def find_ignored_git_files(self, context, silent_build):
         """
         Find all the files that are ignored by git
@@ -252,12 +262,12 @@ class ContextBuilder(object):
         # Dulwich doesn't include gitignore functionality and so has to be implemented here
         # I don't feel confident in my ability to implement that detail, so we just ask git for that information
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
-        mtime_ignoreable = set(changed_files + list(git("ls-files --others --exclude-standard", "Failed to find untracked files")))
+        mtime_ignoreable = git("ls-files --others --exclude-standard", "Failed to find untracked files")
 
+        others = set()
         if context.use_gitignore:
-            others = set(git("ls-files --others", "Failed to find ignored files")) - mtime_ignoreable
-        else:
-            others = set()
+            others = git("ls-files --others", "Failed to find ignored files")
 
-        return mtime_ignoreable, others
+        to_set = lambda lst: set(self.convert_nonascii(lst))
+        return to_set(changed_files), to_set(mtime_ignoreable), to_set(others) - to_set(mtime_ignoreable)
 
