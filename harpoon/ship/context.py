@@ -97,7 +97,7 @@ class ContextBuilder(object):
         for path in files:
             if os.path.exists(path):
                 relname = os.path.relpath(path, context.parent_dir)
-                arcname = "./{0}".format(relname)
+                arcname = "./{0}".format(relname.encode('utf-8').decode('ascii', 'ignore'))
                 if os.path.exists(path):
                     if not context.use_git_timestamps or relname in mtime_ignoreable:
                         yield path, None, arcname
