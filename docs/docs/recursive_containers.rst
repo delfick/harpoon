@@ -24,6 +24,14 @@ Let's say we have the following configuration:
     context: false
 
     images:
+      with_node:
+        commands:
+          - FROM ubuntu:14.04
+          - RUN apt-get update && apt-get install -y software-properties-common
+          - RUN add-apt-repository ppa:chris-lea/node.js
+          - RUN apt-get update && apt-get install -y nodejs
+          - RUN mkdir /project
+
       dependencies:
         # Here we define our recursive block
         # It takes the final action that generates our cache
@@ -33,11 +41,7 @@ Let's say we have the following configuration:
           persist: /project/node_modules
 
         commands:
-          - FROM ubuntu:14.04
-          - RUN apt-get update && apt-get install -y software-properties-common
-          - RUN add-apt-repository ppa:chris-lea/node.js
-          - RUN apt-get update && apt-get install -y nodejs
-          - RUN mkdir /project
+          - [FROM, "{images.with_node}"]
           - - ADD
             - dest: /project/package.json
               content: |

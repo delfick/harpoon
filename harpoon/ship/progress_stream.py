@@ -28,7 +28,7 @@ class ProgressStream(object):
 
         self.interpret_line(line_detail)
 
-    def interpret_line(self):
+    def interpret_line(self, line_detail):
         raise NotImplementedError()
 
     def interpret_unknown(self, line_detail):

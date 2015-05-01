@@ -29,21 +29,28 @@ log = logging.getLogger("harpoon.ship.builder")
 
 class BuildProgressStream(ProgressStream):
     def setup(self):
+        self.last_line = ""
         self.current_container = None
 
     def interpret_line(self, line_detail):
         if "stream" in line_detail:
             self.interpret_stream(line_detail["stream"])
+            self.last_line = line_detail["stream"]
         elif "status" in line_detail:
             self.interpret_status(line_detail["status"])
+            self.last_line = line_detail["status"]
         else:
             self.interpret_unknown(line_detail)
+            self.last_line = str(line_detail)
 
     def interpret_stream(self, line):
         if line.strip().startswith("---> Running in"):
             self.current_container = line[len("---> Running in "):].strip()
         elif line.strip().startswith("Successfully built"):
             self.current_container = line[len("Successfully built"):].strip()
+
+        if self.last_line.startswith("Step ") and line.strip().startswith("---> "):
+            self.cached = False
 
         if line.strip().startswith("---> Running in"):
             self.cached = False
