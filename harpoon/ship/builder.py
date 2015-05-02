@@ -255,29 +255,28 @@ class Builder(object):
         provider_conf.bash = NotSpecified
         provider_conf.command = NotSpecified
 
+        if not have_final:
+            log.info("Building first image for recursive image")
+            with context.clone_with_new_dockerfile(conf, conf.recursive.make_first_dockerfile(conf.docker_file)) as new_context:
+                self.do_build(conf, new_context, stream)
+
+        if not needs_provider and cached:
+            return
+
         with self.remove_replaced_images(provider_conf):
-            if not have_final:
-                log.info("Building first image for recursive image")
-                with context.clone_with_new_dockerfile(conf, conf.recursive.make_first_dockerfile(conf.docker_file)) as new_context:
-                    self.do_build(provider_conf, new_context, stream, image_name=provider_name)
-                conf.harpoon.docker_context.tag(provider_name, conf.image_name, tag="latest", force=True)
+            if cached:
+                with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
+                    self.log_context_size(provider_context, provider_conf)
+                    self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
+                    conf.from_name = conf.image_name
+                    conf.image_name = provider_name
+                    conf.deleteable = True
+                    return
             else:
                 log.info("Building intermediate provider for recursive image")
-                if not cached:
-                    with context.clone_with_new_dockerfile(conf, conf.recursive.make_changed_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
-                        self.log_context_size(provider_context, provider_conf)
-                        self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
-                else:
-                    if not needs_provider:
-                        return
-
-                    with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
-                        self.log_context_size(provider_context, provider_conf)
-                        self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
-                        conf.from_name = conf.image_name
-                        conf.image_name = provider_name
-                        conf.deleteable = True
-                        return
+                with context.clone_with_new_dockerfile(conf, conf.recursive.make_changed_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
+                    self.log_context_size(provider_context, provider_conf)
+                    self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
 
         builder_name = "{0}-for-commit".format(conf_image_name)
         builder_conf = conf.clone()

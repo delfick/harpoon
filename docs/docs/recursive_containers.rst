@@ -264,8 +264,7 @@ the commands in the recursive image and the action specified by the recursive
 image.
 
 The first time it is built, it creates a docker file that is the commands plus
-the action plus a ``CMD`` that copies the folders specified by ``persist`` into
-a docker volume.
+the action.
 
 If the recursive image already exists then harpoon will figure out if the docker
 cache is broken by any of the layers in the specified commands.

@@ -319,8 +319,6 @@ class Recursive(dictobj):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
               "RUN bash -c '{0}'".format(self.action)
-            , "VOLUME /{0}".format(self.shared_name)
-            , "CMD /bin/bash -c '{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done'".format(self.copy_to_shared_line, self.shared_name)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
