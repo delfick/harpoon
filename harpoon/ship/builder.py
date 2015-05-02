@@ -291,7 +291,7 @@ class Builder(object):
         log.info("Building intermediate builder for recursive image")
         with self.remove_replaced_images(builder_conf):
             with context.clone_with_new_dockerfile(conf, conf.recursive.make_builder_dockerfile(conf.docker_file)) as builder_context:
-                self.log_context_size(provider_context, builder_conf)
+                self.log_context_size(builder_context, builder_conf)
                 self.do_build(builder_conf, builder_context, stream, image_name=builder_name)
 
         log.info("Running and committing builder container for recursive image")
