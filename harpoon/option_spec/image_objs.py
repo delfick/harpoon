@@ -338,7 +338,8 @@ class Recursive(dictobj):
         docker_lines = [
               "FROM {0}".format(image_name)
             ] + [line for line in docker_file.docker_lines if not line.startswith("FROM")] + [
-              "VOLUME /{0}".format(self.shared_name)
+              "RUN bash -c '{0}'".format(self.action)
+            , "VOLUME /{0}".format(self.shared_name)
             , "CMD /bin/bash -c '{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done'".format(self.copy_to_shared_line, self.shared_name)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
@@ -346,7 +347,7 @@ class Recursive(dictobj):
     def make_builder_dockerfile(self, docker_file):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "CMD /bin/bash -c '{0} && {1} && {2} && {3}'".format(self.waiter_line, self.copy_line, self.rmcmd, self.action)
+              "CMD /bin/bash -c '{0} && {1} && {2}'".format(self.waiter_line, self.copy_line, self.rmcmd)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 

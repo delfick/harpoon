@@ -284,12 +284,13 @@ changer
 builder
     This is a dockerfile with the normal commands and a ``CMD`` that copies
     the ``persist`` folders from the shared volume into their place in the
-    container before running the action.
+    container.
 
-    The builder runs, sharing volumes with the changer such that before it runs
-    the action again, it gets the previous run's ``persist`` injected into place.
+    This container is run, sharing volumes with the changer and when it's finished,
+    it is committed and tagged as the new recursive image.
 
-    This container is committed and tagged as the new recursive image.
+    This step is necessary to make sure that we don't just keep growing the
+    number of layers used by the recursive image.
 
 If the recursive image isn't referenced in any ``volumes.share_with`` for another
 container, then harpoon doesn't need to build anymore images or containers at
