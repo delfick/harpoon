@@ -288,7 +288,7 @@ class Recursive(dictobj):
         # Excuse the $(echo $volume), it's to avoid problems
         self["copy_line"] = '''
             for volume in {0}; do
-                 echo "$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))";
+                 echo "\r$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))";
 
                  mkdir -p "/{1}/$volume" "$volume"
               && tar xPf "/{1}/$(echo $volume).tar" "$volume/"
@@ -297,7 +297,7 @@ class Recursive(dictobj):
 
         self["copy_to_shared_line"] = '''
             for volume in {0}; do
-                 echo "$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))";
+                 echo "\r$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))";
 
                  mkdir -p "$volume/" "/{1}/$volume"
               && tar cPf "/{1}/$(echo $volume).tar" "$volume/"
@@ -305,7 +305,7 @@ class Recursive(dictobj):
         '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.persist), shared_name)
 
         self["waiter_line"] = '''
-            echo "$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__";
+            echo "\r$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__";
             export START=$(expr $(date +%s) - 5);
             while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do
               (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1
@@ -313,7 +313,7 @@ class Recursive(dictobj):
         '''.replace("\n", "").format(shared_name)
 
         self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
-        self["rmcmd"] = '''echo "$(date) - Recursive: Removing /{0} because docker does not" && rm -rf /{0}/*'''.format(shared_name)
+        self["rmcmd"] = '''echo "\r$(date) - Recursive: Removing /{0} because docker does not" && rm -rf /{0}/*'''.format(shared_name)
         self["copy_and_stay_cmd"] = "{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done".format(self.copy_to_shared_line, self.shared_name)
 
     def make_first_dockerfile(self, docker_file):
