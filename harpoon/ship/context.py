@@ -146,10 +146,9 @@ class ContextBuilder(object):
             mtime_ignoreable = set(list(changed_files) + list(untracked_files) + list(ignored_files))
 
             removed = set()
-            for lst in (untracked_files, ignored_files):
-                for fle in lst:
-                    if fle in combined:
-                        removed.add(fle)
+            for fle in ignored_files:
+                if fle in combined:
+                    removed.add(fle)
             if removed and not silent_build: log.info("Ignoring %s/%s files", len(removed), len(combined))
             combined -= removed
 

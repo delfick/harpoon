@@ -85,6 +85,9 @@ describe HarpoonCase, "Context builder":
         self.four_val = self.unique_val()
         self.four_mtime = int(time.time()) + 20
 
+        self.five_val = self.unique_val()
+        self.five_mtime = int(time.time()) + 30
+
     describe "make_context":
         before_each:
             self.mtime = int(time.time())
@@ -252,21 +255,21 @@ describe HarpoonCase, "Context builder":
 
         it "ignores files specified as ignored":
             _, files = self.setup_directory(
-                  {".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}}, "one": self.one_val, "two": self.two_val, "three": {"four": self.four_val}}
+                  {".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}}, "one": self.one_val, "two": self.two_val, "three": {"four": self.four_val}, "five": self.five_val}
                 , root=self.folder
                 )
 
             self.context.use_gitignore = True
             assert self.context.use_git
             expected_files = sorted([
-                  files["two"]["/file/"], files["three"]["four"]["/file/"]
+                  files["two"]["/file/"], files["three"]["four"]["/file/"], files["five"]["/file/"]
                 ])
 
-            self.find_ignored_git_files.return_value = (set(), set(), set(["one"]))
+            self.find_ignored_git_files.return_value = (set(), set(["five"]), set(["one"]))
             with mock.patch.object(ContextBuilder, "find_ignored_git_files", self.find_ignored_git_files):
                 found_files, found_mtime_ignoreable = ContextBuilder().find_files(self.context, False)
                 self.assertEqual(found_files, expected_files)
-                self.assertEqual(found_mtime_ignoreable, set(["one"]))
+                self.assertEqual(found_mtime_ignoreable, set(["one", "five"]))
 
         it "includes ignored files if use_git is True but use_gitignore is False":
             _, files = self.setup_directory(
