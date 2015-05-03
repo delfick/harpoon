@@ -223,15 +223,10 @@ class Runner(object):
     ###   STOPPING
     ########################
 
-    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None, tag=None):
-        """Stop some container"""
+    def wait_till_stopped(self, conf, container_id, timeout=10, message=None, waiting=True):
+        """Wait till a container is stopped"""
         stopped = False
-        container_id = conf.container_id
-        if not container_id:
-            return
-
-        container_name = conf.container_name
-        for _ in until(timeout=10):
+        for _ in until(timeout=timeout, action=message):
             try:
                 inspection = conf.harpoon.docker_context.inspect_container(container_id)
                 if not isinstance(inspection, dict):
@@ -251,8 +246,25 @@ class Runner(object):
                 else:
                     break
 
+        exit_code = inspection["State"]["ExitCode"]
+        return stopped, exit_code
+
+    def is_stopped(self, *args, **kwargs):
+        """Return whether this container is stopped"""
+        kwargs["waiting"] = False
+        return self.wait_till_stopped(*args, **kwargs)
+
+    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None, tag=None):
+        """Stop some container"""
+        stopped = False
+        container_id = conf.container_id
+        if not container_id:
+            return
+
+        container_name = conf.container_name
+        stopped, exit_code = self.is_stopped(conf, container_id)
+
         if stopped:
-            exit_code = inspection["State"]["ExitCode"]
             if exit_code != 0 and fail_on_bad_exit:
                 if not conf.harpoon.interactive:
                     print_logs = True
@@ -276,22 +288,7 @@ class Runner(object):
                 conf.harpoon.docker_context.kill(container_id, 9)
             except DockerAPIError:
                 pass
-
-            for _ in until(timeout=10, action="waiting for container to die\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id)):
-                try:
-                    inspection = conf.harpoon.docker_context.inspect_container(container_id)
-                    if not inspection["State"]["Running"]:
-                        conf.container_id = None
-                        break
-                except socket.timeout:
-                    pass
-                except ValueError:
-                    log.warning("Failed to inspect the container\tcontainer_id=%s", container_id)
-                except DockerAPIError as error:
-                    if error.response.status_code != 404:
-                        raise
-                    else:
-                        break
+            self.wait_till_stopped(conf, container_id, timeout=10, message="waiting for container to die\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id))
 
         if tag:
             log.info("Tagging a container\tcontainer_id=%s\ttag=%s", container_id, tag)
