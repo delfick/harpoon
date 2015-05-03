@@ -56,15 +56,19 @@ describe CommandCase, "Complex ADD spec":
             content = "blah de blah blah da"
             command = {"content": content, "dest": dest}
 
+            mtime = mock.Mock(name="mtime")
+            everything = {"mtime": lambda: mtime}
+            self.meta.everything = everything
+
             result = self.spec.normalise(self.meta, command)
             self.assertEqual(result.action, "ADD")
             md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
-            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun".format(md5)))
+            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun-mtime({1})".format(md5, mtime)))
 
         it "sets command as adding in context dest to actual dest":
             dest = "/somewhere/nice and fun"
             content = "blah de blah blah da"
-            command = {"content": content, "dest": dest}
+            command = {"content": content, "dest": dest, "mtime": 1430660233}
             result = self.spec.normalise(self.meta, command)
             self.assertDockerLines(command, ["ADD {0} {1}".format(result.extra_context[1], dest)])
 
@@ -187,7 +191,7 @@ describe CommandCase, "command_spec":
         blah_image = self.unique_val()
         md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
 
-        everything = MergedOptions.using({"one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
+        everything = MergedOptions.using({"mtime": lambda: 1430660297, "one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
         meta = Meta(everything, [('test', "")])
 
         commands = [
@@ -197,6 +201,7 @@ describe CommandCase, "command_spec":
             , ["ENV", ["TWO {two}", "THREE {three}"]]
             , ["ADD", {"get": ["blah", "and", "stuff"], "prefix": "/projects"}]
             , {"ADD": {"content": content, "dest": "the_destination"}}
+            , {"ADD": {"content": content, "dest": "the_destination2", "mtime": 1530660298}}
             , "CMD cacafire"
             ]
 
@@ -210,7 +215,8 @@ describe CommandCase, "command_spec":
               , "ADD blah /projects/blah"
               , "ADD and /projects/and"
               , "ADD stuff /projects/stuff"
-              , "ADD {0}-the_destination the_destination".format(md5)
+              , "ADD {0}-the_destination-mtime(1430660297) the_destination".format(md5)
+              , "ADD {0}-the_destination2-mtime(1530660298) the_destination2".format(md5)
               , "CMD cacafire"
               ]
             )

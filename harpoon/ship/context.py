@@ -19,6 +19,7 @@ import fnmatch
 import logging
 import tarfile
 import os
+import re
 
 log = logging.getLogger("harpoon.ship.context")
 
@@ -60,7 +61,7 @@ class ContextBuilder(object):
     Can take into account git to determine what to include and exclude.
     """
     @contextmanager
-    def make_context(self, context, silent_build=False, extra_context=None, mtime=None):
+    def make_context(self, context, silent_build=False, extra_context=None):
         """
         Context manager for creating the context of the image
 
@@ -79,7 +80,6 @@ class ContextBuilder(object):
             First string represents the content to put in a file and the second
             string represents where in the context this extra file should go
         """
-        provided_mtime = mtime
         with a_temp_file() as tmpfile:
             t = tarfile.open(mode='w:gz', fileobj=tmpfile)
             for thing, mtime, arcname in self.find_mtimes(context, silent_build):
@@ -89,11 +89,14 @@ class ContextBuilder(object):
 
             if extra_context:
                 for content, arcname in extra_context:
+                    mtime_match = re.search("mtime\((\d+)\)$", arcname)
+                    specified_mtime = None if not mtime_match else int(mtime_match.groups()[0])
+
                     with a_temp_file() as fle:
                         fle.write(content.encode('utf-8'))
                         fle.seek(0)
-                        if provided_mtime:
-                            os.utime(fle.name, (provided_mtime, provided_mtime))
+                        if specified_mtime:
+                            os.utime(fle.name, (specified_mtime, specified_mtime))
                         t.add(fle.name, arcname=arcname)
 
             yield ContextWrapper(t, tmpfile)
