@@ -86,9 +86,9 @@ class Builder(object):
 
     def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, share_with_deps=None, pushing=False):
         """Make us an image"""
-        made = made or {}
-        chain = chain or []
-        parent_chain = parent_chain or []
+        made = {} if made is None else made
+        chain = [] if chain is None else chain
+        parent_chain = [] if parent_chain is None else parent_chain
 
         if share_with_deps is None:
             share_with_deps = self.determine_share_with_deps(images, conf)
