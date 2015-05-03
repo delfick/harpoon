@@ -79,6 +79,7 @@ class ContextBuilder(object):
             First string represents the content to put in a file and the second
             string represents where in the context this extra file should go
         """
+        provided_mtime = mtime
         with a_temp_file() as tmpfile:
             t = tarfile.open(mode='w:gz', fileobj=tmpfile)
             for thing, mtime, arcname in self.find_mtimes(context, silent_build):
@@ -92,7 +93,7 @@ class ContextBuilder(object):
                         fle.write(content.encode('utf-8'))
                         fle.seek(0)
                         if mtime:
-                            os.utime(fle.name, (mtime, mtime))
+                            os.utime(fle.name, (provided_mtime, provided_mtime))
                         t.add(fle.name, arcname=arcname)
 
             yield ContextWrapper(t, tmpfile)
