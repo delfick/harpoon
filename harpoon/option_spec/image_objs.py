@@ -18,6 +18,7 @@ from input_algorithms.dictobj import dictobj
 from contextlib import contextmanager
 import logging
 import uuid
+import time
 import six
 import os
 
@@ -50,6 +51,7 @@ class Image(dictobj):
         , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "configuration": "The root configuration"
         , "other_options": "Other options to use in docker commands"
+        , "wait_condition": "Wait for this condition to resolve before starting other containers"
         , "restart_policy": "The behaviour to apply when the container exists"
         , "container_name": "The name to give to the running container"
         , "deleteable_image": "Whether this image can be deleted after use"
@@ -354,6 +356,65 @@ class DockerFile(dictobj):
     """Understand about the dockerfile"""
     fields = ["docker_lines", "mtime"]
 
+class WaitCondition(dictobj):
+    """Options for waiting for images"""
+    class KeepWaiting: pass
+    class Timedout: pass
+
+    fields = {
+          "harpoon": "Access to the harpoon object"
+        , ("timeout", 300): "How many seconds till we stop waiting altogether"
+        , ("wait_between_attempts", 10): "How many seconds to wait between attempts"
+
+        , "greps": "A dictionary of filename to a regex of what to expect in the file"
+        , "command": "A list of commands to run"
+        , "port_open": "A list of ports to look for"
+        , "file_value": "A dictionary of filename to expected content"
+        , "curl_result": "A dictionary of urls and expected content from the url"
+        , "file_exists": "A list of files to look for"
+        }
+
+    def conditions(self, start, last_attempt):
+        """
+        Yield lines to execute in a docker context
+
+        All conditions must evaluate for the container to be considered ready
+        """
+        if time.time() - start > self.timeout:
+            yield WaitCondition.Timedout
+            return
+
+        if last_attempt is not None and time.time() - last_attempt < self.wait_between_attempts:
+            yield WaitCondition.KeepWaiting
+            return
+
+        if self.greps is not NotSpecified:
+            for name, val in self.greps.items():
+                yield 'grep "{0}" "{1}"'.format(val, name)
+
+        if self.file_value is not NotSpecified:
+            for name, val in self.file_value.items():
+                command = 'diff <(echo {0}) <(cat {1})'.format(val, name)
+                if not self.harpoon.debug:
+                    command = "{0} > /dev/null".format(command)
+                yield command
+
+        if self.port_open is not NotSpecified:
+            for port in self.port_open:
+                yield 'nc -z 127.0.0.1 {0}'.format(port)
+
+        if self.curl_result is not NotSpecified:
+            for url, content in self.curl_result.items():
+                yield 'diff <(curl "{0}") <(echo {1})'.format(url, content)
+
+        if self.file_exists is not NotSpecified:
+            for path in self.file_exists:
+                yield 'cat {0} > /dev/null'.format(path)
+
+        if self.command is not NotSpecified:
+            for command in self.command:
+                yield command
+
 class Context(dictobj):
     """Understand how to build the context for a container"""
     fields = {
@@ -523,7 +584,8 @@ class Network(dictobj):
 class DependencyOptions(dictobj):
     """Options for dependency containers"""
     fields = {
-          ("attached", False): "Whether harpoon attaches to this container or not"
+          "wait_condition": "Dictionary of image name to wait_conditions. These override wait conditions on the dependency itself"
+        , ("attached", False): "Whether harpoon attaches to this container or not"
         }
 
 class Cpu(dictobj):

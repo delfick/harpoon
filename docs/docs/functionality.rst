@@ -588,6 +588,102 @@ may specify ``dependency_options``::
         ...
         - CMD ./do_a_uitest.sh running:9000
 
+Waiting for dependency containers
+---------------------------------
+
+Harpoon will let you specify ``wait_condition`` options to say what conditions
+must be satisfied before a container is considered ready to be used as a
+dependency.
+
+For example:
+
+.. code-block:: yaml
+
+  ---
+
+  images:
+    first:
+      commands:
+        - FROM ubuntu:14.04
+        - CMD sleep 4 && touch /tmp/wait
+
+      wait_condition:
+        file_exists:
+          - /tmp/wait
+
+    second:
+      links:
+        - "{image.first}"
+
+      commands:
+        - FROM ubuntu:14.04
+        - CMD date
+
+When we do something like ``harpoon run second`` it will create images for both
+of them, and then create a container for the ``first`` image, wait for the
+condition to be met (in this case waiting for ``/tmp/wait`` to exist in the
+container) and then, when that condition is met, will start the ``second``
+container and link it with the first.
+
+There are several different conditions you may specify:
+
+greps
+    A dictionary of <file to grep>: <string to grep for>
+
+command
+    A list of commands that must be met
+
+port_open
+    A list of ports that must be waiting for traffic (tested with ``nc -z 127.0.0.1 <port>``)
+
+file_value
+    A dictionary of <file>: <expected content>
+
+curl_result
+    A dictionary of <url>: <expected result>
+
+file_exists
+    A list of files to look for
+
+You also have these two options:
+
+timeout
+  Fail waiting for the container after this amount of time
+
+wait_between_attempts
+  Wait atleast this long between attempting to resolve all the conditions
+
+You may also specify wait_conditions for dependencies on the container that uses
+those dependencies:
+
+.. code-block:: yaml
+
+  ---
+
+  images:
+    first:
+      commands:
+        - FROM ubuntu:14.04
+        - CMD sleep 4 && touch /tmp/wait
+
+    second:
+
+      dependency_options:
+        first:
+          wait_condition:
+            file_exists:
+              - /tmp/wait
+
+      links:
+        - "{image.first}"
+
+      commands:
+        - FROM ubuntu:14.04
+        - CMD date
+
+Wait conditions specified this way will overwrite any wait_conditions set by the
+dependency itself.
+
 Squashing containers
 --------------------
 

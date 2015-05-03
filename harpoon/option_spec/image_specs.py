@@ -7,12 +7,23 @@ options.
 
 from harpoon.option_spec.image_objs import Link, Mount, Environment, Port, ContainerPort
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.errors import BadConfiguration
 
 from input_algorithms.many_item_spec import many_item_formatted_spec
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
+from input_algorithms.spec_base import Spec
 
 import six
+
+class image_name_spec(Spec):
+    def normalise_filled(self, meta, val):
+        """Only care about valid image names"""
+        available = list(meta.everything["images"].keys())
+        val = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter).normalise(meta, val)
+        if val not in available:
+            raise BadConfiguration("Specified image doesn't exist", specified=val, available=available)
+        return val
 
 class mount_spec(many_item_formatted_spec):
     value_name = "Volume mounting"

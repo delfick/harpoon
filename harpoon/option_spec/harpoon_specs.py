@@ -13,6 +13,7 @@ from input_algorithms.spec_base import (
     , boolean, required, formatted, overridden
     , integer_spec, dictof, dict_from_bool_spec
     , container_spec, many_format, delayed
+    , string_or_int_as_string_spec, float_spec
     )
 
 from harpoon.option_spec.command_specs import command_spec
@@ -59,22 +60,6 @@ class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""
 
     @memoized_property
-    def image_name_spec(self):
-        """
-        Image names are constrained by what docker wants
-
-        And by the fact that option_merge means we can't have keys with dots in them.
-        Otherwise if we have something like "ubuntu14.04" as an image, then when we do
-        {images.ubuntu14.04.image_name} it'll look for config["images"]["ubuntu14"]["04"]["image_name"]
-        instead of config["images"]["ubuntu14.04"]["image_name"] which is unlikely to be the
-        desired result.
-        """
-        return valid_string_spec(
-              validators.no_whitespace()
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-            )
-
-    @memoized_property
     def task_name_spec(self):
         """Just needs to be ascii"""
         return valid_string_spec(
@@ -100,6 +85,24 @@ class HarpoonSpec(object):
                 , overrides = dictionary_spec()
                 , description = string_spec()
                 )
+            )
+
+    @memoized_property
+    def wait_condition_spec(self):
+        """Spec for a wait_condition block"""
+        from harpoon.option_spec import image_objs
+        formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
+        return create_spec(image_objs.WaitCondition
+            , harpoon = formatted(overridden("{harpoon}"), formatter=MergedOptionStringFormatter)
+            , timeout = defaulted(integer_spec(), 300)
+            , wait_between_attempts = defaulted(float_spec(), 5)
+
+            , greps = optional_spec(dictof(formatted_string, formatted_string))
+            , command = optional_spec(listof(formatted_string))
+            , port_open = optional_spec(listof(integer_spec()))
+            , file_value = optional_spec(dictof(formatted_string, formatted_string))
+            , curl_result = optional_spec(dictof(formatted_string, formatted_string))
+            , file_exists = optional_spec(listof(formatted_string))
             )
 
     @memoized_property
@@ -164,6 +167,8 @@ class HarpoonSpec(object):
                     )
                 )
 
+            , wait_condition = optional_spec(self.wait_condition_spec)
+
             , lxc_conf = defaulted(filename_spec(), None)
 
             , volumes = create_spec(image_objs.Volumes
@@ -171,9 +176,10 @@ class HarpoonSpec(object):
                 , share_with = listof(formatted(string_spec(), MergedOptionStringFormatter, expected_type=image_objs.Image))
                 )
 
-            , dependency_options = dictof(self.image_name_spec
+            , dependency_options = dictof(specs.image_name_spec()
                 , create_spec(image_objs.DependencyOptions
                   , attached = defaulted(boolean(), False)
+                  , wait_condition = optional_spec(self.wait_condition_spec)
                   )
                 )
 
@@ -221,6 +227,7 @@ class HarpoonSpec(object):
             , config = file_spec()
 
             , extra = defaulted(formatted_string, "")
+            , debug = defaulted(boolean(), False)
             , chosen_task = defaulted(formatted_string, "list_tasks")
             , chosen_image = defaulted(formatted_string, "")
 

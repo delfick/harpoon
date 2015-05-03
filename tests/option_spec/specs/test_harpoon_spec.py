@@ -17,7 +17,8 @@ describe HarpoonCase, "HarpoonSpec":
 
     it "can get a fake Image":
         with self.a_temp_dir() as directory:
-            everything = MergedOptions.using({"config_root": directory, "_key_name_1": "blah"})
+            harpoon = mock.Mock(name="harpoon")
+            everything = MergedOptions.using({"config_root": directory, "_key_name_1": "blah", "harpoon": harpoon})
             meta = Meta(everything, [])
             fake = HarpoonSpec().image_spec.fake_filled(meta, with_non_defaulted=True)
             self.assertEqual(fake.context.parent_dir, directory)
@@ -55,11 +56,6 @@ describe HarpoonCase, "HarpoonSpec":
         it "allows values that are with alphanumeric, dashes and underscores":
             for value in ("dasdf", "ka-sd", "j_k", "l0Tk-", "d9001"):
                 self.assertEqual(self.spec.normalise(self.meta, value), value)
-
-        describe "image_name_spec":
-            @property
-            def spec(self):
-                return HarpoonSpec().image_name_spec
 
         describe "task_name_spec":
             @property

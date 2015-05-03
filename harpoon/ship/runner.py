@@ -12,8 +12,8 @@ containers.
 
 from __future__ import print_function
 
+from harpoon.errors import BadOption, BadImage, BadResult, UserQuit
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.errors import BadOption, BadImage, BadResult
 from harpoon.helpers import until
 
 from docker.errors import APIError as DockerAPIError
@@ -24,6 +24,7 @@ from harpoon import dockerpty
 import logging
 import socket
 import uuid
+import time
 import os
 
 log = logging.getLogger("harpoon.ship.runner")
@@ -46,6 +47,12 @@ class Runner(object):
             container_id = self.create_container(conf, detach, tty)
 
             conf.container_id = container_id
+
+            try:
+                self.wait_for_deps(conf, images)
+            except KeyboardInterrupt:
+                raise UserQuit()
+
             self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
         finally:
             if not detach and not dependency:
@@ -82,6 +89,99 @@ class Runner(object):
                 raise
             except Exception as error:
                 log.warning("Failed to stop dependency container\timage=%s\tdependency=%s\tcontainer_name=%s\terror=%s", conf.name, dependency, images[dependency].container_name, error)
+
+    def wait_for_deps(self, conf, images):
+        """Wait for all our dependencies"""
+        from harpoon.option_spec.image_objs import WaitCondition
+        waited = set()
+        last_attempt = {}
+        dependencies = set(dep for dep, _ in conf.dependency_images())
+
+        # Wait conditions come from dependency_options first
+        # Or if none specified there, they come from the image itself
+        wait_conditions = {}
+        for dependency in dependencies:
+            if conf.dependency_options is not NotSpecified and dependency in conf.dependency_options and conf.dependency_options[dependency].wait_condition is not NotSpecified:
+                wait_conditions[dependency] = conf.dependency_options[dependency].wait_condition
+            elif images[dependency].wait_condition is not NotSpecified:
+                wait_conditions[dependency] = images[dependency].wait_condition
+
+        if not wait_conditions:
+            return
+
+        start = time.time()
+        while True:
+            this_round = []
+            for dependency in dependencies:
+                if dependency in waited:
+                    continue
+
+                image = images[dependency]
+                if dependency in wait_conditions:
+                    done = self.wait_for_dep(image, wait_conditions[dependency], start, last_attempt.get(dependency))
+                    this_round.append(done)
+                    if done is True:
+                        waited.add(dependency)
+                    elif done is False:
+                        last_attempt[dependency] = time.time()
+                    elif done is WaitCondition.Timedout:
+                        log.warning("Stopping dependency because it timedout waiting\tcontainer_id=%s", image.container_id)
+                        self.stop_container(image)
+                else:
+                    waited.add(dependency)
+
+            if set(this_round) != set([WaitCondition.KeepWaiting]):
+                if dependencies - waited == set():
+                    log.info("Finished waiting for dependencies")
+                    break
+                else:
+                    log.info("Still waiting for dependencies\twaiting_on=%s", list(dependencies-waited))
+
+                couldnt_wait = set()
+                for dependency in dependencies:
+                    if dependency in waited:
+                        continue
+
+                    image = images[dependency]
+                    if image.container_id is None:
+                        stopped = True
+                    else:
+                        stopped, _ = self.is_stopped(image, image.container_id)
+
+                    if stopped:
+                        couldnt_wait.add(dependency)
+
+                if couldnt_wait:
+                    raise BadImage("One or more of the dependencies stopped running whilst waiting for other dependencies", stopped=list(couldnt_wait))
+
+            time.sleep(0.1)
+
+    def wait_for_dep(self, conf, wait_condition, start, last_attempt):
+        """Wait for this image"""
+        from harpoon.option_spec.image_objs import WaitCondition
+        conditions = list(wait_condition.conditions(start, last_attempt))
+        if conditions[0] in (WaitCondition.KeepWaiting, WaitCondition.Timedout):
+            return conditions[0]
+
+        log.info("Waiting for %s", conf.container_name)
+        for condition in conditions:
+            log.debug("Running condition\tcondition=%s", condition)
+            command = 'bash -c "{0}"'.format(condition)
+            try:
+                exec_id = conf.harpoon.docker_context.exec_create(conf.container_id, command, tty=False)
+            except DockerAPIError as error:
+                log.error("Failed to run condition\tcondition=%s\tdependency=%s\terror=%s", condition, conf.name, error)
+                return False
+
+            output = conf.harpoon.docker_context.exec_start(exec_id)
+            inspection = conf.harpoon.docker_context.exec_inspect(exec_id)
+            exit_code = inspection["ExitCode"]
+            if exit_code != 0:
+                log.error("Condition says no\tcondition=%s\toutput:\n\t%s", condition, "\n\t".join(line for line in output.split('\n')))
+                return False
+
+        log.info("Finished waiting for %s", conf.container_name)
+        return True
 
     ########################
     ###   CREATION
