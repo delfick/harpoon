@@ -31,6 +31,7 @@ class Harpoon(dictobj):
     fields = {
           "flat": "Don't show images as layers when doing ``harpoon show``"
         , "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline"
+        , "debug": "Whether debug has been specified"
         , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
         , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
         , "no_cleanup": "Don't cleanup the images/containers automatically after finish"

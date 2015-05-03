@@ -97,6 +97,7 @@ class CliParser(object):
 
         logging.add_argument("--debug"
             , help = "Debug logs"
+            , dest = "harpoon_debug"
             , action = "store_true"
             )
 
@@ -261,14 +262,14 @@ def docker_context():
 def main(argv=None):
     try:
         args, cli_args = CliParser().interpret_args(argv)
-        handler = setup_logging(verbose=args.verbose, silent=args.silent, debug=args.debug)
+        handler = setup_logging(verbose=args.verbose, silent=args.silent, debug=args.harpoon_debug)
         Overview(configuration_file=args.harpoon_config.name, logging_handler=handler).start(cli_args)
     except DelfickError as error:
         print("")
         print("!" * 80)
         print("Something went wrong! -- {0}".format(error.__class__.__name__))
         print("\t{0}".format(error))
-        if CliParser().parse_args(argv)[0].debug:
+        if CliParser().parse_args(argv)[0].harpoon_debug:
             raise
         sys.exit(1)
 
