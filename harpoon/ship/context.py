@@ -92,7 +92,7 @@ class ContextBuilder(object):
                     with a_temp_file() as fle:
                         fle.write(content.encode('utf-8'))
                         fle.seek(0)
-                        if mtime:
+                        if provided_mtime:
                             os.utime(fle.name, (provided_mtime, provided_mtime))
                         t.add(fle.name, arcname=arcname)
 
