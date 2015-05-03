@@ -85,6 +85,8 @@ class ContextBuilder(object):
             for thing, mtime, arcname in self.find_mtimes(context, silent_build):
                 if mtime:
                     os.utime(thing, (mtime, mtime))
+
+                log.debug("Context: {0}".format(arcname))
                 t.add(thing, arcname=arcname)
 
             if extra_context:
@@ -97,6 +99,8 @@ class ContextBuilder(object):
                         fle.seek(0)
                         if specified_mtime:
                             os.utime(fle.name, (specified_mtime, specified_mtime))
+
+                        log.debug("Context: {0}".format(arcname))
                         t.add(fle.name, arcname=arcname)
 
             yield ContextWrapper(t, tmpfile)
