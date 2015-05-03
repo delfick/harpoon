@@ -116,7 +116,7 @@ describe HarpoonCase, "Context builder":
             find_mtimes.return_value = [(files["one"]["/file/"], mtime, './one'), (files["two"]["/file/"], mtime, "./two")]
 
             with mock.patch.object(ContextBuilder, "find_mtimes", find_mtimes):
-                with ContextBuilder().make_context(self.context, extra_context=extra_context) as tmpfile:
+                with ContextBuilder().make_context(self.context, extra_context=extra_context, mtime=time.time()) as tmpfile:
                     tmpfile.close()
                     self.assertTarFileContent(tmpfile.name
                         , {"./one": (mtime, self.three_val), "./two": (mtime, self.two_val), "./four": (self.mtime, self.four_val)}
