@@ -62,7 +62,7 @@ describe HarpoonCase, "Image object":
 									self.assertIs(ct, ctxt)
 
 				add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
-				make_context_manager.assert_called_once_with(context_options, silent_build=self.silent_build, extra_context=extra_context, mtime=self.mtime)
+				make_context_manager.assert_called_once_with(context_options, silent_build=self.silent_build, extra_context=extra_context)
 
 			it "uses ContextBuilder with docker_file passed in":
 				image = self.make_image({"commands": ["FROM ubuntu:14.04"]})
@@ -89,7 +89,7 @@ describe HarpoonCase, "Image object":
 									self.assertIs(ct, ctxt)
 
 				add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
-				make_context_manager.assert_called_once_with(context_options, silent_build=self.silent_build, extra_context=extra_context, mtime=self.mtime)
+				make_context_manager.assert_called_once_with(context_options, silent_build=self.silent_build, extra_context=extra_context)
 
 		describe "add_docker_file_to_tarfile":
 			it "adds a temp file with the docker_lines in it to the docker file":
