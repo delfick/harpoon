@@ -93,6 +93,8 @@ class Runner(object):
     def wait_for_deps(self, conf, images):
         """Wait for all our dependencies"""
         from harpoon.option_spec.image_objs import WaitCondition
+        ctxt = conf.harpoon.docker_context_maker()
+
         waited = set()
         last_attempt = {}
         dependencies = set(dep for dep, _ in conf.dependency_images())
@@ -118,7 +120,7 @@ class Runner(object):
 
                 image = images[dependency]
                 if dependency in wait_conditions:
-                    done = self.wait_for_dep(image, wait_conditions[dependency], start, last_attempt.get(dependency))
+                    done = self.wait_for_dep(ctxt, image, wait_conditions[dependency], start, last_attempt.get(dependency))
                     this_round.append(done)
                     if done is True:
                         waited.add(dependency)
@@ -156,7 +158,7 @@ class Runner(object):
 
             time.sleep(0.1)
 
-    def wait_for_dep(self, conf, wait_condition, start, last_attempt):
+    def wait_for_dep(self, ctxt, conf, wait_condition, start, last_attempt):
         """Wait for this image"""
         from harpoon.option_spec.image_objs import WaitCondition
         conditions = list(wait_condition.conditions(start, last_attempt))
@@ -168,13 +170,13 @@ class Runner(object):
             log.debug("Running condition\tcondition=%s", condition)
             command = 'bash -c "{0}"'.format(condition)
             try:
-                exec_id = conf.harpoon.docker_context.exec_create(conf.container_id, command, tty=False)
+                exec_id = ctxt.exec_create(conf.container_id, command, tty=False)
             except DockerAPIError as error:
                 log.error("Failed to run condition\tcondition=%s\tdependency=%s\terror=%s", condition, conf.name, error)
                 return False
 
-            output = conf.harpoon.docker_context.exec_start(exec_id)
-            inspection = conf.harpoon.docker_context.exec_inspect(exec_id)
+            output = ctxt.exec_start(exec_id)
+            inspection = ctxt.exec_inspect(exec_id)
             exit_code = inspection["ExitCode"]
             if exit_code != 0:
                 log.error("Condition says no\tcondition=%s\toutput:\n\t%s", condition, "\n\t".join(line for line in output.split('\n')))
