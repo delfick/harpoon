@@ -34,9 +34,10 @@ def harpoon_init(self, methodName='runTest'):
     """
     self._teardowns = []
     for attr in dir(self):
-        thing = getattr(self, attr)
-        if hasattr(thing, "_harpoon_case_teardown"):
-            self._teardowns.append(thing)
+        if attr != "docker_client":
+            thing = getattr(self, attr)
+            if hasattr(thing, "_harpoon_case_teardown"):
+                self._teardowns.append(thing)
 
     if methodName == 'runTest':
         methodName = 'empty'
