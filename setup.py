@@ -29,6 +29,8 @@ setup(
         [ "noseOfYeti>=1.5.0"
         , "nose"
         , "mock"
+        , "nose-pattern-exclude"
+        , "nose-focus==0.1.2"
         ]
       }
 
