@@ -225,7 +225,7 @@ class Builder(object):
                 log.warning("Unknown line\tline=%s", error)
 
             for part in stream.printable():
-                sys.stdout.write(part.encode("utf-8", "replace"))
+                sys.stdout.write(part.encode("utf-8", "replace").decode('utf-8'))
             sys.stdout.flush()
 
         return stream.cached

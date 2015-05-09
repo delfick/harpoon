@@ -18,9 +18,9 @@ class ProgressStream(object):
         log.debug(line)
         line_detail = None
         try:
-            line_detail = json.loads(line)
+            line_detail = json.loads(line.decode('utf-8'))
         except (ValueError, TypeError) as error:
-            log.warning("line from docker wasn't json", got=line, error=error)
+            log.warning("line from docker wasn't json\tgot=%s\terror=%s", line, error)
             return
 
         if "errorDetail" in line_detail:
