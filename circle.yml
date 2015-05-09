@@ -1,0 +1,11 @@
+machine:
+  environment:
+    CI_SERVER: true
+test:
+  override:
+    - tox
+
+dependencies:
+  override:
+    - echo "tox does this"
+
