@@ -1,11 +1,16 @@
 machine:
+  services:
+    - docker
+
   environment:
     CI_SERVER: true
+
 test:
   override:
-    - tox
+    - tox -e py27,py34
 
 dependencies:
   override:
     - echo "tox does this"
+    - sudo apt-get install python3-dev
 
