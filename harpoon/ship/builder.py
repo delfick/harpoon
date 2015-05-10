@@ -17,12 +17,17 @@ from harpoon.layers import Layers
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 from itertools import chain
+from six import StringIO
 import humanize
 import logging
 import uuid
 import six
 import sys
 import os
+
+TextIOWrapper = StringIO
+if six.PY3:
+    from io import TextIOWrapper
 
 log = logging.getLogger("harpoon.ship.builder")
 
@@ -237,7 +242,10 @@ class Builder(object):
                 log.warning("Unknown line\tline=%s", error)
 
             for part in stream.printable():
-                conf.harpoon.stdout.write(part.encode("utf-8", "replace").decode('utf-8'))
+                if (isinstance(part, six.binary_type) or six.PY3 and isinstance(conf.harpoon.stdout, StringIO)) or isinstance(conf.harpoon.stdout, TextIOWrapper):
+                    conf.harpoon.stdout.write(part)
+                else:
+                    conf.harpoon.stdout.write(part.encode("utf-8", "replace"))
             conf.harpoon.stdout.flush()
 
         return stream.cached

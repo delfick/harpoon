@@ -375,18 +375,18 @@ class Runner(object):
                 if not conf.harpoon.interactive:
                     print_logs = True
                 else:
-                    conf.harpoon.stdout.write("!!!!\n")
-                    conf.harpoon.stdout.write("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}\n".format(container_name, container_id, exit_code))
-                    conf.harpoon.stdout.write("Do you want to see the logs from this container?\n")
+                    conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
+                    conf.harpoon.stdout.write("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}\n".format(container_name, container_id, exit_code).encode('utf-8'))
+                    conf.harpoon.stdout.write("Do you want to see the logs from this container?\n".encode('utf-8'))
                     conf.harpoon.stdout.flush()
                     answer = input("[y]: ")
                     print_logs = not answer or answer.lower().startswith("y")
 
                 if print_logs:
-                    conf.harpoon.stdout.write("=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
+                    conf.harpoon.stdout.write("=================== Logs for failed container {0} ({1})\n".format(container_id, container_name).encode('utf-8'))
                     for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
-                        conf.harpoon.stdout.write("{0}\n".format(line))
-                    conf.harpoon.stdout.write("------------------- End logs for failed container\n")
+                        conf.harpoon.stdout.write("{0}\n".format(line).encode('utf-8'))
+                    conf.harpoon.stdout.write("------------------- End logs for failed container\n".encode('utf-8'))
                 fail_reason = fail_reason or "Failed to run container"
                 raise BadImage(fail_reason, container_id=container_id, container_name=container_name)
         else:
@@ -446,9 +446,9 @@ class Runner(object):
         if just_do_it:
             answer = 'y'
         else:
-            conf.harpoon.stdout.write("!!!!\n")
-            conf.harpoon.stdout.write("Failed to run the container!\n")
-            conf.harpoon.stdout.write("Do you want commit the container in it's current state and /bin/bash into it to debug?\n")
+            conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
+            conf.harpoon.stdout.write("Failed to run the container!\n".encode('utf-8'))
+            conf.harpoon.stdout.write("Do you want commit the container in it's current state and /bin/bash into it to debug?\n".encode('utf-8'))
             conf.harpoon.stdout.flush()
             answer = input("[y]: ")
         if not answer or answer.lower().startswith("y"):
@@ -482,9 +482,9 @@ class Runner(object):
             yield
             return
 
-        conf.harpoon.stdout.write("!!!!\n")
-        conf.harpoon.stdout.write("It would appear building the image failed\n")
-        conf.harpoon.stdout.write("Do you want to run /bin/bash where the build to help debug why it failed?\n")
+        conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
+        conf.harpoon.stdout.write("It would appear building the image failed\n".encode('utf-8'))
+        conf.harpoon.stdout.write("Do you want to run /bin/bash where the build to help debug why it failed?\n".encode('utf-8'))
         conf.harpoon.stdout.flush()
         answer = input("[y]: ")
         if answer and not answer.lower().startswith("y"):

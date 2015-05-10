@@ -3,6 +3,7 @@ from harpoon.errors import HarpoonError
 from contextlib import contextmanager
 from textwrap import dedent
 import json
+import six
 import re
 
 class NotSpecified(object):
@@ -28,14 +29,20 @@ class AssertionsAssertionsMixin:
         """Assert that all the lines match each other in order"""
         expected = dedent(expected).strip()
         expected_lines = expected.split('\n')
+        expected = expected.encode('utf-8')
 
         output = dedent(output).strip()
         output_lines = output.split('\n')
+        output = output.encode('utf-8')
 
         if len(expected_lines) != len(output_lines):
             assert False, "Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
 
-        for a, b in zip(expected.split('\n'), output.split('\n')):
+        for a, b in zip(expected_lines, output_lines):
+            if not isinstance(a, six.binary_type):
+                a = a.encode('utf-8')
+            if not isinstance(b, six.binary_type):
+                b = b.encode('utf-8')
             assert re.match(a, b), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
 
     @contextmanager
