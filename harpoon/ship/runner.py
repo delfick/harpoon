@@ -410,13 +410,8 @@ class Runner(object):
                     break
                 except socket.timeout:
                     break
-                except ValueError:
-                    log.warning("Failed to remove container\tcontainer_id=%s", container_id)
-                except DockerAPIError as error:
-                    if error.response.status_code != 404:
-                        raise
-                    else:
-                        break
+                except (ValueError, DockerAPIError) as error:
+                    log.warning("Failed to remove container\tcontainer_id=%s\terror=%s", container_id, error)
 
     ########################
     ###   UTILITY
