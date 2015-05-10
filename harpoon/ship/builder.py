@@ -33,6 +33,7 @@ log = logging.getLogger("harpoon.ship.builder")
 class BuildProgressStream(ProgressStream):
     def setup(self):
         self.last_line = ""
+        self.current_action = ""
         self.current_container = None
 
     def interpret_line(self, line_detail):
@@ -47,13 +48,20 @@ class BuildProgressStream(ProgressStream):
             self.last_line = str(line_detail)
 
     def interpret_stream(self, line):
+        if line.startswith("Step "):
+            action = line[line.find(":")+1:].strip()
+            self.current_action = action[:action.find(" ")].strip()
+
         if line.strip().startswith("---> Running in"):
             self.current_container = line[len("---> Running in "):].strip()
         elif line.strip().startswith("Successfully built"):
             self.current_container = line[len("Successfully built"):].strip()
 
         if self.last_line.startswith("Step ") and line.strip().startswith("---> "):
-            self.cached = False
+            if self.current_action == "FROM":
+                self.cached = True
+            else:
+                self.cached = False
 
         if line.strip().startswith("---> Running in"):
             self.cached = False
@@ -116,8 +124,9 @@ class Builder(object):
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
-        self.build_image(conf, share_with_deps, pushing=pushing)
+        cached = self.build_image(conf, share_with_deps, pushing=pushing)
         made[conf.name] = True
+        return cached
 
     def build_image(self, conf, share_with_deps=None, pushing=False):
         """Build this image"""
@@ -129,9 +138,9 @@ class Builder(object):
                 stream = BuildProgressStream(conf.harpoon.silent_build)
                 with self.remove_replaced_images(conf):
                     if conf.recursive is NotSpecified:
-                        self.do_build(conf, context, stream)
+                        cached = self.do_build(conf, context, stream)
                     else:
-                        self.do_recursive_build(conf, context, stream, needs_provider=conf.name in share_with_deps)
+                        cached = self.do_recursive_build(conf, context, stream, needs_provider=conf.name in share_with_deps)
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if stream.current_container:
@@ -148,12 +157,15 @@ class Builder(object):
                         if type(squash_options) is command_objs.Commands:
                             squash_commands = squash_options.docker_lines_list
                         self.squash_build(conf, context, stream, squash_commands)
+                        cached = False
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if isinstance(error, KeyboardInterrupt):
                     raise UserQuit()
                 else:
                     six.reraise(*exc_info)
+
+        return cached
 
     def layered(self, images, only_pushable=False):
         """Yield layers of images"""
@@ -261,7 +273,7 @@ class Builder(object):
                 self.do_build(conf, new_context, stream)
 
         if not needs_provider and cached:
-            return
+            return cached
 
         with self.remove_replaced_images(provider_conf):
             if cached:
@@ -271,7 +283,7 @@ class Builder(object):
                     conf.from_name = conf.image_name
                     conf.image_name = provider_name
                     conf.deleteable = True
-                    return
+                    return cached
             else:
                 log.info("Building intermediate provider for recursive image")
                 with context.clone_with_new_dockerfile(conf, conf.recursive.make_changed_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
@@ -301,7 +313,7 @@ class Builder(object):
         conf.harpoon.docker_context.remove_image(builder_conf.image_name)
 
         if not needs_provider:
-            return
+            return cached
 
         log.info("Building final provider of recursive image")
         with self.remove_replaced_images(provider_conf):
@@ -312,6 +324,7 @@ class Builder(object):
         conf.from_name = conf.image_name
         conf.image_name = provider_name
         conf.deleteable = True
+        return cached
 
     def squash_build(self, conf, context, stream, squash_commands):
         """Do a squash build"""

@@ -4,7 +4,7 @@ export BASE_IMAGE=busybox:buildroot-2014.02
 
 exclusions=""
 if [[ -z $TOX ]]; then
-  exclusions="--only-include-filename 'test_docker_*.py'"
+  exclusions="--only-include-filename test_docker_*.py"
 fi
 
 if [[ -z $CI_SERVER ]]; then
