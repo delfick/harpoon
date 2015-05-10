@@ -237,8 +237,8 @@ class Builder(object):
                 log.warning("Unknown line\tline=%s", error)
 
             for part in stream.printable():
-                sys.stdout.write(part.encode("utf-8", "replace").decode('utf-8'))
-            sys.stdout.flush()
+                conf.harpoon.stdout.write(part.encode("utf-8", "replace").decode('utf-8'))
+            conf.harpoon.stdout.flush()
 
         return stream.cached
 

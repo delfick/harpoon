@@ -87,6 +87,6 @@ class Syncer(object):
                 log.warning("Unknown line\tline=%s", error)
 
             for part in sync_stream.printable():
-                sys.stdout.write(part.encode('utf-8', 'replace'))
-            sys.stdout.flush()
+                conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
+            conf.harpoon.stdout.flush()
 

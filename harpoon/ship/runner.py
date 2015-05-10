@@ -10,8 +10,6 @@ Finally, the Runner is also responsible for starting and cleaning up interventio
 containers.
 """
 
-from __future__ import print_function
-
 from harpoon.errors import BadOption, BadImage, BadResult, UserQuit
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.helpers import until
@@ -21,6 +19,7 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
+from six.moves import input
 import logging
 import socket
 import uuid
@@ -317,7 +316,12 @@ class Runner(object):
         try:
             ctxt = conf.harpoon.docker_context_maker()
             container_id = conf.container_id
-            dockerpty.start(ctxt, container_id, interactive=interactive)
+
+            stdout = conf.harpoon.tty_stdout
+            stderr = conf.harpoon.tty_stderr
+            if callable(stdout): stdout = stdout()
+            if callable(stderr): stderr = stderr()
+            dockerpty.start(ctxt, container_id, interactive=interactive, stdout=stdout, stderr=stderr)
         except KeyboardInterrupt:
             pass
 
@@ -371,17 +375,18 @@ class Runner(object):
                 if not conf.harpoon.interactive:
                     print_logs = True
                 else:
-                    print("!!!!")
-                    print("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}".format(container_name, container_id, exit_code))
-                    print("Do you want to see the logs from this container?")
-                    answer = raw_input("[y]: ")
+                    conf.harpoon.stdout.write("!!!!\n")
+                    conf.harpoon.stdout.write("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}\n".format(container_name, container_id, exit_code))
+                    conf.harpoon.stdout.write("Do you want to see the logs from this container?\n")
+                    conf.harpoon.stdout.flush()
+                    answer = input("[y]: ")
                     print_logs = not answer or answer.lower().startswith("y")
 
                 if print_logs:
-                    print("=================== Logs for failed container {0} ({1})".format(container_id, container_name))
+                    conf.harpoon.stdout.write("=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
                     for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
-                        print(line)
-                    print("------------------- End logs for failed container")
+                        conf.harpoon.stdout.write("{0}\n".format(line))
+                    conf.harpoon.stdout.write("------------------- End logs for failed container\n")
                 fail_reason = fail_reason or "Failed to run container"
                 raise BadImage(fail_reason, container_id=container_id, container_name=container_name)
         else:
@@ -441,10 +446,11 @@ class Runner(object):
         if just_do_it:
             answer = 'y'
         else:
-            print("!!!!")
-            print("Failed to run the container!")
-            print("Do you want commit the container in it's current state and /bin/bash into it to debug?")
-            answer = raw_input("[y]: ")
+            conf.harpoon.stdout.write("!!!!\n")
+            conf.harpoon.stdout.write("Failed to run the container!\n")
+            conf.harpoon.stdout.write("Do you want commit the container in it's current state and /bin/bash into it to debug?\n")
+            conf.harpoon.stdout.flush()
+            answer = input("[y]: ")
         if not answer or answer.lower().startswith("y"):
             with self.commit_and_run(conf.container_id, conf, command="/bin/bash"):
                 pass
@@ -476,10 +482,11 @@ class Runner(object):
             yield
             return
 
-        print("!!!!")
-        print("It would appear building the image failed")
-        print("Do you want to run /bin/bash where the build to help debug why it failed?")
-        answer = raw_input("[y]: ")
+        conf.harpoon.stdout.write("!!!!\n")
+        conf.harpoon.stdout.write("It would appear building the image failed\n")
+        conf.harpoon.stdout.write("Do you want to run /bin/bash where the build to help debug why it failed?\n")
+        conf.harpoon.stdout.flush()
+        answer = input("[y]: ")
         if answer and not answer.lower().startswith("y"):
             yield
             return

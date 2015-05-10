@@ -27,15 +27,19 @@ from input_algorithms import validators
 
 import time
 import six
+import sys
 
 class Harpoon(dictobj):
     fields = {
           "flat": "Don't show images as layers when doing ``harpoon show``"
         , "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline"
         , "debug": "Whether debug has been specified"
+        , "stdout": "The stdout to use for printing"
         , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
         , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
         , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
+        , "tty_stdout": "The stdout to use for a tty"
+        , "tty_stderr": "The stderr to use for a tty"
         , "chosen_task": "The task to run"
         , "interactive": "Run the container with a tty"
         , "chosen_image": "The image that we want to run"
@@ -244,5 +248,9 @@ class HarpoonSpec(object):
             , only_pushable = defaulted(formatted_boolean, False)
             , docker_context = any_spec()
             , docker_context_maker = any_spec()
+
+            , stdout = defaulted(any_spec(), sys.stdout)
+            , tty_stdout = defaulted(any_spec(), lambda: sys.stdout)
+            , tty_stderr = defaulted(any_spec(), lambda: sys.stderr)
             )
 

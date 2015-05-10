@@ -1,7 +1,9 @@
 from harpoon.errors import HarpoonError
 
 from contextlib import contextmanager
+from textwrap import dedent
 import json
+import re
 
 class NotSpecified(object):
     """Tell the difference between empty and None"""
@@ -21,6 +23,20 @@ class AssertionsAssertionsMixin:
             print("Expected --------------->")
             print(json.dumps(two, indent=2, sort_keys=True))
             raise
+
+    def assertReMatchLines(self, expected, output):
+        """Assert that all the lines match each other in order"""
+        expected = dedent(expected).strip()
+        expected_lines = expected.split('\n')
+
+        output = dedent(output).strip()
+        output_lines = output.split('\n')
+
+        if len(expected_lines) != len(output_lines):
+            assert False, "Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
+
+        for a, b in zip(expected.split('\n'), output.split('\n')):
+            assert re.match(a, b), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
 
     @contextmanager
     def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):
