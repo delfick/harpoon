@@ -171,15 +171,8 @@ class Stream(object):
 
     def close(self):
         self.close_requested = True
-
-        # We don't close the fd immediately, as there may still be data pending
-        # to write.
         if not self.closed and len(self.buffer) == 0:
             self.closed = True
-            if hasattr(self.fd, 'close'):
-                self.fd.close()
-            else:
-                os.close(self.fd.fileno())
 
     def __repr__(self):
         return "{cls}({fd})".format(cls=type(self).__name__, fd=self.fd)
