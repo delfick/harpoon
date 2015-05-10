@@ -7,6 +7,7 @@ from tests.helpers import HarpoonCase
 
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
+import docker.errors
 import time
 import uuid
 import os
@@ -34,7 +35,10 @@ describe HarpoonCase, "Building docker images":
         try:
             yield cached, conf
         finally:
-            self.docker_client.remove_image(ident_tag)
+            try:
+                self.docker_client.remove_image(ident_tag)
+            except docker.errors.APIError as error:
+                print("Failed to delete the image", error)
 
     it "Builds an image":
         ident = str(uuid.uuid1())
