@@ -69,6 +69,8 @@ describe HarpoonCase, "Building docker images":
         with codecs.open(fake_sys_stdout.name, errors='ignore') as fle:
             output = fle.read().strip().decode('utf-8', 'ignore')
 
+        output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
+
         expected = """
          Step 0 : FROM busybox:buildroot-2014.02
           ---> 8c2e06607696

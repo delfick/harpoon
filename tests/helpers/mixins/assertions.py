@@ -38,12 +38,13 @@ class AssertionsAssertionsMixin:
         if len(expected_lines) != len(output_lines):
             assert False, "Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
 
+        ansi_escape = re.compile(r'\x1b[^m]*m')
         for a, b in zip(expected_lines, output_lines):
             if not isinstance(a, six.binary_type):
                 a = a.encode('utf-8')
             if not isinstance(b, six.binary_type):
                 b = b.encode('utf-8')
-            assert re.match(a, b), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
+            assert re.match(a, re.sub(ansi_escape, '', b)), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
 
     @contextmanager
     def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):
