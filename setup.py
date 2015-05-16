@@ -31,6 +31,7 @@ setup(
         , "mock"
         , "nose-pattern-exclude"
         , "nose-focus==0.1.2"
+        , "tox"
         ]
       }
 

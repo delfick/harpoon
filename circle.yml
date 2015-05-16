@@ -13,4 +13,5 @@ dependencies:
   override:
     - echo "tox does this"
     - sudo apt-get install python3-dev
+    - pip install tox
 
