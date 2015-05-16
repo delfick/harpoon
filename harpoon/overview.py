@@ -246,6 +246,9 @@ class Overview(object):
 
             , t("list_tasks", "List the available tasks")
             , t("delete_untagged", "Delete untagged images")
+
+            , t("print_dockerfile", "Print me a dockerfile")
+            , t("print_all_dockerfiles", "Print me all the dockerfiles")
             ])
 
     def find_tasks(self, configuration=None):

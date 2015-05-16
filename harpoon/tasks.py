@@ -149,3 +149,15 @@ def show_pushable(overview, configuration, **kwargs):
     configuration['harpoon'].only_pushable = True
     show(overview, configuration, **kwargs)
 
+@a_task(needs_image=True)
+def print_dockerfile(overview, configuration, images, image, **kwargs):
+    """Print a dockerfile for the specified image"""
+    print('\n'.join(images[image].docker_file.docker_lines))
+
+@a_task(needs_images=True)
+def print_all_dockerfiles(overview, configuration, images, **kwargs):
+    for image in images:
+        print("{0}".format(image))
+        print("-" * len(image))
+        print_dockerfile(overview, configuration, images, image)
+
