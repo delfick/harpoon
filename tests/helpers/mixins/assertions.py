@@ -43,8 +43,10 @@ class AssertionsAssertionsMixin:
             if not isinstance(a, six.binary_type):
                 a = a.encode('utf-8')
             if not isinstance(b, six.binary_type):
-                b = b.encode('utf-8')
-            assert re.match(a, re.sub(ansi_escape, '', b)), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
+                b = re.sub(ansi_escape, '', b).encode('utf-8')
+            else:
+                b = re.sub(ansi_escape, '', b.decode('utf-8')).encode('utf-8')
+            assert re.match(a, b), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
 
     @contextmanager
     def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):

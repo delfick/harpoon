@@ -1,8 +1,8 @@
 #coding: spec
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.errors import FailedImage, BadImage
 from harpoon.ship.runner import Runner
-from harpoon.errors import FailedImage
 
 from tests.helpers import HarpoonCase
 
@@ -66,9 +66,11 @@ describe HarpoonCase, "Building docker images":
 
         self.assertEqual(called, ["commit_and_run"])
 
-        with codecs.open(fake_sys_stdout.name, errors='ignore') as fle:
-            output = fle.read().strip().decode('utf-8', 'ignore')
+        with open(fake_sys_stdout.name) as fle:
+            output = fle.read().strip()
 
+        if isinstance(output, six.binary_type):
+            output = output.decode('utf-8')
         output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
 
         expected = """
@@ -79,6 +81,107 @@ describe HarpoonCase, "Building docker images":
          !!!!
          It would appear building the image failed
          Do you want to run /bin/bash where the build to help debug why it failed?
+         intervention_goes_here
+        """
+
+        self.assertReMatchLines(expected, output)
+
+    it "can intervene a broken container":
+        if six.PY3:
+            raise nose.SkipTest()
+
+        called = []
+        original_commit_and_run = Runner.commit_and_run
+        def commit_and_run(*args, **kwargs):
+            kwargs["command"] = "echo 'intervention_goes_here'"
+            called.append("commit_and_run")
+            return original_commit_and_run(Runner(), *args, **kwargs)
+        fake_commit_and_run = mock.Mock(name="commit_and_run", side_effect=commit_and_run)
+
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD ['/bin/sh', '-c', 'exit 1']"]
+
+        try:
+            fake_sys_stdout = self.make_temp_file()
+            fake_sys_stderr = self.make_temp_file()
+            with mock.patch("harpoon.ship.builder.Runner.commit_and_run", fake_commit_and_run):
+                with mock.patch("harpoon.ship.runner.input", lambda *args: 'y\n'):
+                    with self.a_built_image({"context": False, "commands": commands}, {"stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}) as (cached, conf):
+                        Runner().run_container(conf, {conf.name: conf})
+        except BadImage as error:
+            assert "Failed to run container" in str(error)
+
+        self.assertEqual(called, ["commit_and_run"])
+
+        with codecs.open(fake_sys_stdout.name) as fle:
+            output = fle.read().strip()
+
+        if isinstance(output, six.binary_type):
+            output = output.decode('utf-8')
+        output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
+
+        expected = """
+         Step 0 : FROM busybox:buildroot-2014.02
+          ---> 8c2e06607696
+         Step 1 : CMD ['/bin/sh', '-c', 'exit 1']
+          ---> Running in .+
+          --->
+         Removing intermediate container .+
+         Successfully built .+
+         /bin/sh: \[/bin/sh,: not found
+         !!!!
+         Failed to run the container!
+         Do you want commit the container in it's current state and /bin/bash into it to debug?
+         intervention_goes_here
+        """
+
+        self.assertReMatchLines(expected, output)
+
+    it "can intervene a broken container with the tty starting":
+        if six.PY3:
+            raise nose.SkipTest()
+
+        called = []
+        original_commit_and_run = Runner.commit_and_run
+        def commit_and_run(*args, **kwargs):
+            kwargs["command"] = "echo 'intervention_goes_here'"
+            called.append("commit_and_run")
+            return original_commit_and_run(Runner(), *args, **kwargs)
+        fake_commit_and_run = mock.Mock(name="commit_and_run", side_effect=commit_and_run)
+
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), '''CMD echo 'hi'; sleep 1; exit 1''']
+
+        try:
+            fake_sys_stdout = self.make_temp_file()
+            fake_sys_stderr = self.make_temp_file()
+            with mock.patch("harpoon.ship.builder.Runner.commit_and_run", fake_commit_and_run):
+                with mock.patch("harpoon.ship.runner.input", lambda *args: 'y\n'):
+                    with self.a_built_image({"context": False, "commands": commands}, {"stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}) as (cached, conf):
+                        Runner().run_container(conf, {conf.name: conf})
+        except BadImage as error:
+            print(error)
+            assert "Failed to run container" in str(error)
+
+        self.assertEqual(called, ["commit_and_run"])
+
+        with codecs.open(fake_sys_stdout.name) as fle:
+            output = fle.read().strip()
+
+        if isinstance(output, six.binary_type):
+            output = output.decode('utf-8')
+        output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
+
+        expected = """
+         Step 0 : FROM busybox:buildroot-2014.02
+          ---> 8c2e06607696
+         Step 1 : CMD echo 'hi'; sleep 1; exit 1
+          ---> Running in .+
+          ---> .+
+         Removing intermediate container .+
+         Successfully built .+
+         hi
+         !!!!
+         Failed to run the container!
+         Do you want commit the container in it's current state and /bin/bash into it to debug?
          intervention_goes_here
         """
 

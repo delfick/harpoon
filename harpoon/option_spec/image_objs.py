@@ -150,12 +150,19 @@ class Image(dictobj):
         If we have ``bash``, then the command is ``/bin/bash -c <bash>``, whereas
         if the ``command`` is set, then we just return that.
         """
-        if self.bash is not NotSpecified:
-            return "/bin/bash -c '{0}'".format(self.bash)
-        elif self.command is not NotSpecified:
-            return self.command
-        else:
-            return None
+        bash = self.bash
+        if bash is not NotSpecified and callable(bash):
+            bash = bash()
+        if bash is not NotSpecified:
+            return "/bin/bash -c '{0}'".format(bash)
+
+        command = self.command
+        if command is not NotSpecified and callable(command):
+            command = command()
+        if command is not NotSpecified:
+            return command
+
+        return None
 
     @container_name.setter
     def container_name(self, val):

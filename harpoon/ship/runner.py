@@ -12,6 +12,7 @@ containers.
 
 from harpoon.errors import BadOption, BadImage, BadResult, UserQuit
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon import helpers as hp
 from harpoon.helpers import until
 
 from docker.errors import APIError as DockerAPIError
@@ -20,6 +21,7 @@ from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
 from six.moves import input
+import docker.errors
 import logging
 import socket
 import uuid
@@ -273,31 +275,36 @@ class Runner(object):
         if ports:
             log.info("\tPort bindings: %s", ports)
 
-        conf.harpoon.docker_context.start(container_id
-            , links = links
-            , binds = binds
-            , port_bindings = ports
-            , volumes_from = volumes_from
+        try:
+            conf.harpoon.docker_context.start(container_id
+                , links = links
+                , binds = binds
+                , port_bindings = ports
+                , volumes_from = volumes_from
 
-            , devices = conf.devices
-            , lxc_conf = conf.lxc_conf
-            , privileged = conf.privileged
-            , restart_policy = conf.restart_policy
+                , devices = conf.devices
+                , lxc_conf = conf.lxc_conf
+                , privileged = conf.privileged
+                , restart_policy = conf.restart_policy
 
-            , dns = conf.network.dns
-            , dns_search = conf.network.dns_search
-            , extra_hosts = conf.network.extra_hosts
-            , network_mode = conf.network.mode
-            , publish_all_ports = conf.network.publish_all_ports
+                , dns = conf.network.dns
+                , dns_search = conf.network.dns_search
+                , extra_hosts = conf.network.extra_hosts
+                , network_mode = conf.network.mode
+                , publish_all_ports = conf.network.publish_all_ports
 
-            , cap_add = conf.cpu.cap_add
-            , cap_drop = conf.cpu.cap_drop
+                , cap_add = conf.cpu.cap_add
+                , cap_drop = conf.cpu.cap_drop
 
-            , **conf.other_options.run
-            )
+                , **conf.other_options.run
+                )
 
-        if not detach and not is_dependency:
-            self.start_tty(conf, interactive=tty)
+        except docker.errors.APIError as error:
+            if str(error).startswith("404 Client Error: Not Found"):
+                log.error("Container died before we could even get to it...")
+        else:
+            if not detach and not is_dependency:
+                self.start_tty(conf, interactive=tty)
 
         inspection = None
         if not detach and not is_dependency:
@@ -375,18 +382,18 @@ class Runner(object):
                 if not conf.harpoon.interactive:
                     print_logs = True
                 else:
-                    conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
-                    conf.harpoon.stdout.write("Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}\n".format(container_name, container_id, exit_code).encode('utf-8'))
-                    conf.harpoon.stdout.write("Do you want to see the logs from this container?\n".encode('utf-8'))
+                    hp.write_to(conf.harpoon.stdout, "!!!!\n")
+                    hp.write_to(conf.harpoon.stdout, "Container had already exited with a non zero exit code\tcontainer_name={0}\tcontainer_id={1}\texit_code={2}\n".format(container_name, container_id, exit_code))
+                    hp.write_to(conf.harpoon.stdout, "Do you want to see the logs from this container?\n")
                     conf.harpoon.stdout.flush()
                     answer = input("[y]: ")
                     print_logs = not answer or answer.lower().startswith("y")
 
                 if print_logs:
-                    conf.harpoon.stdout.write("=================== Logs for failed container {0} ({1})\n".format(container_id, container_name).encode('utf-8'))
+                    hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
                     for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
-                        conf.harpoon.stdout.write("{0}\n".format(line).encode('utf-8'))
-                    conf.harpoon.stdout.write("------------------- End logs for failed container\n".encode('utf-8'))
+                        hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
+                    hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                 fail_reason = fail_reason or "Failed to run container"
                 raise BadImage(fail_reason, container_id=container_id, container_name=container_name)
         else:
@@ -441,9 +448,9 @@ class Runner(object):
         if just_do_it:
             answer = 'y'
         else:
-            conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
-            conf.harpoon.stdout.write("Failed to run the container!\n".encode('utf-8'))
-            conf.harpoon.stdout.write("Do you want commit the container in it's current state and /bin/bash into it to debug?\n".encode('utf-8'))
+            hp.write_to(conf.harpoon.stdout, "!!!!\n")
+            hp.write_to(conf.harpoon.stdout, "Failed to run the container!\n")
+            hp.write_to(conf.harpoon.stdout, "Do you want commit the container in it's current state and /bin/bash into it to debug?\n")
             conf.harpoon.stdout.flush()
             answer = input("[y]: ")
         if not answer or answer.lower().startswith("y"):
@@ -477,9 +484,9 @@ class Runner(object):
             yield
             return
 
-        conf.harpoon.stdout.write("!!!!\n".encode('utf-8'))
-        conf.harpoon.stdout.write("It would appear building the image failed\n".encode('utf-8'))
-        conf.harpoon.stdout.write("Do you want to run /bin/bash where the build to help debug why it failed?\n".encode('utf-8'))
+        hp.write_to(conf.harpoon.stdout, "!!!!\n")
+        hp.write_to(conf.harpoon.stdout, "It would appear building the image failed\n")
+        hp.write_to(conf.harpoon.stdout, "Do you want to run /bin/bash where the build to help debug why it failed?\n")
         conf.harpoon.stdout.flush()
         answer = input("[y]: ")
         if answer and not answer.lower().startswith("y"):

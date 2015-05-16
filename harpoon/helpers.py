@@ -1,8 +1,14 @@
 from contextlib import contextmanager
+from six import StringIO
 import tempfile
 import logging
 import time
+import six
 import os
+
+TextIOWrapper = StringIO
+if six.PY3:
+    from io import TextIOWrapper
 
 log = logging.getLogger("harpoon.helpers")
 
@@ -57,3 +63,9 @@ class memoized_property(object):
         if hasattr(instance, self.cache_name):
             delattr(instance, self.cache_name)
 
+def write_to(output, txt):
+    """Write some text to some output"""
+    if (isinstance(txt, six.binary_type) or six.PY3 and isinstance(output, StringIO)) or isinstance(output, TextIOWrapper):
+        output.write(txt)
+    else:
+        output.write(txt.encode("utf-8", "replace"))
