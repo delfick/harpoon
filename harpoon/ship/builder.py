@@ -115,12 +115,12 @@ class Builder(object):
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps, pushing=pushing)
+                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, share_with_deps=share_with_deps, pushing=pushing)
 
         if not ignore_parent:
             parent_image = conf.commands.parent_image
             if not isinstance(parent_image, six.string_types):
-                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, ignore_deps=True, share_with_deps=share_with_deps, pushing=pushing)
+                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, share_with_deps=share_with_deps, pushing=pushing)
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
