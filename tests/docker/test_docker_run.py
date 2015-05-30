@@ -98,7 +98,7 @@ describe HarpoonCase, "Building docker images":
             return original_commit_and_run(Runner(), *args, **kwargs)
         fake_commit_and_run = mock.Mock(name="commit_and_run", side_effect=commit_and_run)
 
-        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD ['/bin/sh', '-c', 'exit 1']"]
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD /bin/sh -c 'exit 1'"]
 
         try:
             fake_sys_stdout = self.make_temp_file()
@@ -127,7 +127,6 @@ describe HarpoonCase, "Building docker images":
           --->
          Removing intermediate container .+
          Successfully built .+
-         /bin/sh: \[/bin/sh,: not found
          !!!!
          Failed to run the container!
          Do you want commit the container in it's current state and /bin/bash into it to debug?

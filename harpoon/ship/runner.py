@@ -300,15 +300,15 @@ class Runner(object):
         log.info("Starting container %s (%s)", container_name, container_id)
 
         try:
-            conf.harpoon.docker_context.start(container_id
-                , **conf.other_options.start
-                )
+            if not detach and not is_dependency:
+                self.start_tty(conf, interactive=tty, **conf.other_options.start)
+            else:
+                conf.harpoon.docker_context.start(container_id
+                    , **conf.other_options.start
+                    )
         except docker.errors.APIError as error:
             if str(error).startswith("404 Client Error: Not Found"):
                 log.error("Container died before we could even get to it...")
-        else:
-            if not detach and not is_dependency:
-                self.start_tty(conf, interactive=tty)
 
         inspection = None
         if not detach and not is_dependency:
