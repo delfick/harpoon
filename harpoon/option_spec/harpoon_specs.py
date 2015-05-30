@@ -55,9 +55,10 @@ class Harpoon(dictobj):
 
 class other_options(dictobj):
     fields = {
-          "run": "Extra options to pass into docker.run"
+          "start": "Extra options to pass into docker.start"
         , "create": "Extra options to pass into docker.create"
         , "build": "Extra options to pass into docker.build"
+        , "host_config": "extra options to pass into docker.utils.host_config"
         }
 
 class HarpoonSpec(object):
@@ -191,9 +192,10 @@ class HarpoonSpec(object):
             , ports = listof(specs.port_spec(), expect=image_objs.Port)
 
             , other_options = create_spec(other_options
-                , run = dictionary_spec()
+                , start = dictionary_spec()
                 , build = dictionary_spec()
                 , create = dictionary_spec()
+                , host_config = dictionary_spec()
                 )
 
             , network = create_spec(image_objs.Network
@@ -203,7 +205,8 @@ class HarpoonSpec(object):
                 , domainname = defaulted(string_spec(), None)
                 , disabled = defaulted(boolean(), False)
                 , dns_search = defaulted(listof(string_spec()), None)
-                , extra_hosts = optional_spec(listof(string_spec(), None))
+                , extra_hosts = listof(string_spec())
+                , network_mode = defaulted(string_spec(), None)
                 , publish_all_ports = defaulted(boolean(), False)
                 )
 

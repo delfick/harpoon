@@ -19,6 +19,7 @@ from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
+from docker.utils import utils
 from harpoon import dockerpty
 from six.moves import input
 import docker.errors
@@ -199,9 +200,12 @@ class Runner(object):
 
         env = dict(e.pair for e in conf.env)
         ports = [port.host_port for port in conf.ports]
+        links = [link.pair for link in conf.links]
         binds = conf.volumes.binds
         command = conf.formatted_command
         volume_names = conf.volumes.volume_names
+        volumes_from = list(conf.volumes.share_with_names)
+        port_bindings = dict([port.pair for port in conf.ports])
 
         uncreated = []
         for name in binds:
@@ -219,8 +223,37 @@ class Runner(object):
             log.info("\tUsing volumes\tvolumes=%s", volume_names)
         if env:
             log.info("\tUsing environment\tenv=%s", sorted(env.keys()))
+        if links:
+            log.info("\tLinks: %s", links)
         if ports:
             log.info("\tUsing ports\tports=%s", ports)
+        if port_bindings:
+            log.info("\tPort bindings: %s", ports)
+        if volumes_from:
+            log.info("\tVolumes from: %s", volumes_from)
+
+        host_config = utils.create_host_config(
+              links = links
+            , binds = binds
+            , volumes_from = volumes_from
+            , port_bindings = port_bindings
+
+            , devices = conf.devices
+            , lxc_conf = conf.lxc_conf
+            , privileged = conf.privileged
+            , restart_policy = conf.restart_policy
+
+            , dns = conf.network.dns
+            , dns_search = conf.network.dns_search
+            , extra_hosts = conf.network.extra_hosts
+            , network_mode = conf.network.network_mode
+            , publish_all_ports = conf.network.publish_all_ports
+
+            , cap_add = conf.cpu.cap_add
+            , cap_drop = conf.cpu.cap_drop
+
+            , **conf.other_options.host_config
+            )
 
         container_id = conf.harpoon.docker_context.create_container(image_name
             , name=container_name
@@ -244,6 +277,8 @@ class Runner(object):
             , cpu_shares = conf.cpu.cpu_shares
             , memswap_limit = conf.cpu.memswap_limit
 
+            , host_config = host_config
+
             , **conf.other_options.create
             )
 
@@ -260,45 +295,14 @@ class Runner(object):
 
     def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
         """Start up a single container"""
-        binds = conf.volumes.binds
-        links = [link.pair for link in conf.links]
-        ports = dict([port.pair for port in conf.ports])
-        volumes_from = list(conf.volumes.share_with_names)
         container_id = conf.container_id
         container_name = conf.container_name
-
         log.info("Starting container %s (%s)", container_name, container_id)
-        if links:
-            log.info("\tLinks: %s", links)
-        if volumes_from:
-            log.info("\tVolumes from: %s", volumes_from)
-        if ports:
-            log.info("\tPort bindings: %s", ports)
 
         try:
             conf.harpoon.docker_context.start(container_id
-                , links = links
-                , binds = binds
-                , port_bindings = ports
-                , volumes_from = volumes_from
-
-                , devices = conf.devices
-                , lxc_conf = conf.lxc_conf
-                , privileged = conf.privileged
-                , restart_policy = conf.restart_policy
-
-                , dns = conf.network.dns
-                , dns_search = conf.network.dns_search
-                , extra_hosts = conf.network.extra_hosts
-                , network_mode = conf.network.mode
-                , publish_all_ports = conf.network.publish_all_ports
-
-                , cap_add = conf.cpu.cap_add
-                , cap_drop = conf.cpu.cap_drop
-
-                , **conf.other_options.run
+                , **conf.other_options.start
                 )
-
         except docker.errors.APIError as error:
             if str(error).startswith("404 Client Error: Not Found"):
                 log.error("Container died before we could even get to it...")

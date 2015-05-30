@@ -585,6 +585,7 @@ class Network(dictobj):
         , "disabled": "Whether the network is disabled"
         , "dns_search": "A list of DNS search domains"
         , "domainname": "The desired domain name to use for the containe"
+        , "network_mode": "The network mode"
         , "extra_hosts": "A list of hostnames/IP mappings to be added to the container's /etc/hosts file"
         , "publish_all_ports": "Allocates a random host port for all of a container's exposed ports"
         }
