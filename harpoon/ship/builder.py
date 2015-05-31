@@ -17,6 +17,7 @@ from harpoon.layers import Layers
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 from itertools import chain
+import docker.errors
 import humanize
 import logging
 import uuid
@@ -208,23 +209,26 @@ class Builder(object):
     def remove_replaced_images(self, conf):
         current_ids = None
         if not conf.harpoon.keep_replaced:
-            images = conf.harpoon.docker_context.images()
-            current_ids = [image["Id"] for image in images if "{0}:latest".format(conf.image_name) in image["RepoTags"]]
+            try:
+                current_id = conf.harpoon.docker_context.inspect_image("{0}:latest".format(conf.image_name))["Id"]
+            except docker.errors.APIError as error:
+                if str(error).startswith("404 Client Error: Not Found"):
+                    current_id = None
+                else:
+                    raise
 
         info = {"cached": False}
         yield info
 
-        if current_ids and not info.get("cached"):
+        if current_id and not info.get("cached"):
             log.info("Looking for replaced images to remove")
-            images = conf.harpoon.docker_context.images()
-            untagged = [image["Id"] for image in images if image["RepoTags"] == ["<none>:<none>"]]
-            for image in current_ids:
-                if image in untagged:
-                    log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}:latest".format(conf.image_name), image)
-                    try:
-                        conf.harpoon.docker_context.remove_image(image)
-                    except Exception as error:
-                        log.error("Failed to remove replaced image\thash=%s\terror=%s", image, error)
+            untagged = [image["Id"] for image in conf.harpoon.docker_context.images(filters={"dangling": True})]
+            if current_id in untagged:
+                log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}:latest".format(conf.image_name), current_id)
+                try:
+                    conf.harpoon.docker_context.remove_image(current_id)
+                except Exception as error:
+                    log.error("Failed to remove replaced image\thash=%s\terror=%s", current_id, error)
 
     def do_build(self, conf, context, stream, image_name=None, verbose=False):
         if image_name is None:
