@@ -19,6 +19,7 @@ from option_merge import Converter
 from itertools import chain
 import logging
 import yaml
+import six
 import os
 
 log = logging.getLogger("harpoon.executor")
@@ -119,20 +120,24 @@ class Overview(object):
         configuration_dir = os.path.dirname(os.path.abspath(configuration_file))
 
         images_from = []
-        images_from_path = None
         if "images" in result and "__images_from__" in result["images"]:
             images_from_path = result["images"]["__images_from__"]
 
-            if not images_from_path.startswith("/"):
-                images_from_path = os.path.join(configuration_dir, images_from_path)
+            if isinstance(images_from_path, six.string_types):
+                images_from_path = [images_from_path]
 
-            if not os.path.exists(images_from_path) or not os.path.isdir(images_from_path):
-                raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=images_from_path)
+            for ifp in images_from_path:
 
-            images_from = sorted(chain.from_iterable([
-                  [os.path.join(root, fle) for fle in files if fle.endswith(".yml") or fle.endswith(".yaml")]
-                  for root, dirs, files in os.walk(images_from_path)
-                ]))
+                if not ifp.startswith("/"):
+                    ifp = os.path.join(configuration_dir, ifp)
+
+                if not os.path.exists(ifp) or not os.path.isdir(ifp):
+                    raise BadConfiguration("Specified folder for other configuration files points to a folder that doesn't exist", path="images.__images_from__", value=ifp)
+
+                images_from.extend(sorted(chain.from_iterable([
+                    [os.path.join(root, fle) for fle in files if fle.endswith(".yml") or fle.endswith(".yaml")]
+                    for root, dirs, files in os.walk(ifp)
+                    ])))
 
         harpoon_spec = HarpoonSpec()
         configuration = MergedOptions(dont_prefix=[dictobj])
