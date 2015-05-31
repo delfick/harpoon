@@ -136,11 +136,12 @@ class Builder(object):
         with self.context(conf) as context:
             try:
                 stream = BuildProgressStream(conf.harpoon.silent_build)
-                with self.remove_replaced_images(conf):
+                with self.remove_replaced_images(conf) as info:
                     if conf.recursive is NotSpecified:
                         cached = self.do_build(conf, context, stream)
                     else:
                         cached = self.do_recursive_build(conf, context, stream, needs_provider=conf.name in share_with_deps)
+                    info['cached'] = cached
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if stream.current_container:
@@ -210,9 +211,11 @@ class Builder(object):
             images = conf.harpoon.docker_context.images()
             current_ids = [image["Id"] for image in images if "{0}:latest".format(conf.image_name) in image["RepoTags"]]
 
-        yield
+        info = {"cached": False}
+        yield info
 
-        if current_ids:
+        if current_ids and not info.get("cached"):
+            log.info("Looking for replaced images to remove")
             images = conf.harpoon.docker_context.images()
             untagged = [image["Id"] for image in images if image["RepoTags"] == ["<none>:<none>"]]
             for image in current_ids:
@@ -253,8 +256,9 @@ class Builder(object):
         test_conf = conf.clone()
         test_conf.image_name = "{0}-tester".format(conf_image_name)
         log.info("Building test image for recursive image to see if the cache changed")
-        with self.remove_replaced_images(test_conf):
+        with self.remove_replaced_images(test_conf) as info:
             cached = self.do_build(test_conf, context, stream)
+            info['cached'] = cached
 
         have_final = "{0}:latest".format(conf.image_name) in chain.from_iterable([image["RepoTags"] for image in conf.harpoon.docker_context.images()])
 
@@ -275,11 +279,11 @@ class Builder(object):
         if not needs_provider and cached:
             return cached
 
-        with self.remove_replaced_images(provider_conf):
+        with self.remove_replaced_images(provider_conf) as info:
             if cached:
                 with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
                     self.log_context_size(provider_context, provider_conf)
-                    self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
+                    info['cached'] = self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
                     conf.from_name = conf.image_name
                     conf.image_name = provider_name
                     conf.deleteable = True
@@ -300,10 +304,10 @@ class Builder(object):
         builder_conf.bash = NotSpecified
         builder_conf.command = NotSpecified
         log.info("Building intermediate builder for recursive image")
-        with self.remove_replaced_images(builder_conf):
+        with self.remove_replaced_images(builder_conf) as info:
             with context.clone_with_new_dockerfile(conf, conf.recursive.make_builder_dockerfile(conf.docker_file)) as builder_context:
                 self.log_context_size(builder_context, builder_conf)
-                self.do_build(builder_conf, builder_context, stream, image_name=builder_name)
+                info['cached'] = self.do_build(builder_conf, builder_context, stream, image_name=builder_name)
 
         log.info("Running and committing builder container for recursive image")
         with self.remove_replaced_images(conf):
@@ -316,10 +320,10 @@ class Builder(object):
             return cached
 
         log.info("Building final provider of recursive image")
-        with self.remove_replaced_images(provider_conf):
+        with self.remove_replaced_images(provider_conf) as info:
             with conf.make_context(docker_file=conf.recursive.make_provider_dockerfile(conf.docker_file, conf.image_name)) as provider_context:
                 self.log_context_size(provider_context, provider_conf)
-                self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
+                info['cached'] = self.do_build(provider_conf, provider_context, stream, image_name=provider_name)
 
         conf.from_name = conf.image_name
         conf.image_name = provider_name
@@ -340,13 +344,13 @@ class Builder(object):
             if conf.image_name_prefix not in ("", None, NotSpecified):
                 squasher.conf.image_name = "{0}-{1}".format(conf.image_name_prefix, squasher_conf.image_name)
 
-            with self.remove_replaced_images(squasher_conf):
+            with self.remove_replaced_images(squasher_conf) as info:
                 self.log_context_size(context, conf)
                 original_docker_file = conf.docker_file
                 new_docker_file = DockerFile(["FROM {0}".format(conf.image_name)] + squash_commands, original_docker_file.mtime)
                 with context.clone_with_new_dockerfile(squasher_conf, new_docker_file) as squasher_context:
                     self.log_context_size(squasher_context, squasher_conf)
-                    self.do_build(squasher_conf, squasher_context, stream)
+                    info['cached'] = self.do_build(squasher_conf, squasher_context, stream)
             squashing = squasher_conf
 
         log.info("Saving image\timage=%s", squashing.image_name)
