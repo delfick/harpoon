@@ -41,6 +41,8 @@ class Overview(object):
         self.configuration.update(
             { "$@": harpoon.get("extra", "")
             , "harpoon": harpoon
+            , "bash": cli_args["bash"] or NotSpecified
+            , "command": cli_args["command"] or NotSpecified
             , "config_root" : self.configuration_folder
             }
         , source = "<cli>"
