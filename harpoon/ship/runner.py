@@ -142,6 +142,7 @@ class Runner(object):
                     log.info("Still waiting for dependencies\twaiting_on=%s", list(dependencies-waited))
 
                 couldnt_wait = set()
+                container_ids = {}
                 for dependency in dependencies:
                     if dependency in waited:
                         continue
@@ -149,13 +150,29 @@ class Runner(object):
                     image = images[dependency]
                     if image.container_id is None:
                         stopped = True
+                        if dependency not in container_ids:
+                            available = sorted([i for i in available if "/{0}".format(image.container_name) in i["Names"]], key=lambda i: i["Created"])
+                            if available:
+                                container_ids[dependency] = available[0]["Id"]
                     else:
+                        if dependency not in container_ids:
+                            container_ids[dependency] = image.container_id
                         stopped, _ = self.is_stopped(image, image.container_id)
 
                     if stopped:
                         couldnt_wait.add(dependency)
 
                 if couldnt_wait:
+                    for container in couldnt_wait:
+                        if container not in images or container not in container_ids:
+                            continue
+                        image = images[container]
+                        container_id = container_ids[container]
+                        container_name = image.container_name
+                        hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
+                        for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
+                            hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
+                        hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                     raise BadImage("One or more of the dependencies stopped running whilst waiting for other dependencies", stopped=list(couldnt_wait))
 
             time.sleep(0.1)
