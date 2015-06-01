@@ -349,7 +349,7 @@ Where instruction may be::
 [<string>, <dictionary>]
   This has special meaning depending on the first String.
 
-  [ADD, {content:<content>, dest:<dest>}]
+  [ADD, {content:<content>, mtime:<mtime>, dest:<dest>}]
 
     This will add a file to the context with the content specified and make
     sure that gets to the destination specified.
@@ -364,6 +364,7 @@ Where instruction may be::
             - FROM ubuntu
             - - ADD
               - dest: /tmp/blah
+                mtime: 1433139432
                 content: |
                   blah and
                   stuff
@@ -374,6 +375,15 @@ Where instruction may be::
 
       FROM ubuntu
       ADD DDC895F6-6F65-43C1-BDAA-00C4B3F9BB7B /tmp/blah
+
+    The mtime you specify will be the modified time that is given to this temp
+    file.
+
+  [ADD, {context:<context>, mtime:<mtime>, dest:<dest>}]
+
+    This is the same as specifying ``content`` instead of ``context``, however
+    ``context`` is the same as the context options on the image and will create
+    a tar archive that is untarred into the dockerfile.
 
   [ADD, {prefix: <prefix>, get:[<string>, <string>]}]
 

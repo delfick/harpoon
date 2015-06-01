@@ -18,6 +18,7 @@ from dulwich.repo import Repo
 import fnmatch
 import logging
 import tarfile
+import six
 import os
 import re
 
@@ -61,7 +62,7 @@ class ContextBuilder(object):
     Can take into account git to determine what to include and exclude.
     """
     @contextmanager
-    def make_context(self, context, silent_build=False, extra_context=None):
+    def make_context(self, context, silent_build=False, use_gzip=True, extra_context=None):
         """
         Context manager for creating the context of the image
 
@@ -81,7 +82,8 @@ class ContextBuilder(object):
             string represents where in the context this extra file should go
         """
         with a_temp_file() as tmpfile:
-            t = tarfile.open(mode='w:gz', fileobj=tmpfile)
+            mode = "w:gz" if use_gzip else "w"
+            t = tarfile.open(mode=mode, fileobj=tmpfile)
             for thing, mtime, arcname in self.find_mtimes(context, silent_build):
                 if mtime:
                     os.utime(thing, (mtime, mtime))
@@ -90,13 +92,12 @@ class ContextBuilder(object):
                 t.add(thing, arcname=arcname)
 
             if extra_context:
-                for content, arcname in extra_context:
+                extra = list(extra_context)
+                for content, arcname in extra:
                     mtime_match = re.search("mtime\((\d+)\)$", arcname)
                     specified_mtime = None if not mtime_match else int(mtime_match.groups()[0])
 
-                    with a_temp_file() as fle:
-                        fle.write(content.encode('utf-8'))
-                        fle.seek(0)
+                    with self.the_context(content, silent_build=silent_build) as fle:
                         if specified_mtime:
                             os.utime(fle.name, (specified_mtime, specified_mtime))
 
@@ -104,6 +105,19 @@ class ContextBuilder(object):
                         t.add(fle.name, arcname=arcname)
 
             yield ContextWrapper(t, tmpfile)
+
+    @contextmanager
+    def the_context(self, content, silent_build=False):
+        """Return either a file with the content written to it, or a whole new context tar"""
+        if isinstance(content, six.string_types):
+            with a_temp_file() as fle:
+                fle.write(content.encode('utf-8'))
+                fle.seek(0)
+                yield fle
+        else:
+            with ContextBuilder().make_context(content["context"], silent_build=silent_build, use_gzip=False) as wrapper:
+                wrapper.close()
+                yield wrapper.tmpfile
 
     def find_mtimes(self, context, silent_build):
         """

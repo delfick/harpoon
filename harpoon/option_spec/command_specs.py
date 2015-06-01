@@ -16,14 +16,23 @@ import six
 
 class complex_ADD_spec(sb.Spec):
     def normalise(self, meta, val):
-        if "content" in val:
-            spec = sb.set_options(mtime=sb.optional_spec(sb.integer_spec()), dest=sb.required(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)), content=sb.string_spec())
+        from harpoon.option_spec.harpoon_specs import HarpoonSpec
+        if "content" in val or "context" in val:
+            spec = sb.set_options(mtime=sb.optional_spec(sb.integer_spec()), dest=sb.required(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)), content=sb.string_spec(), context=sb.optional_spec(HarpoonSpec().context_spec))
             result = spec.normalise(meta, val)
+            if result["content"] != "" and result["context"] is not NotSpecified:
+                raise BadOption("Please don't specify both context and content")
+
             mtime = result["mtime"]
             if mtime is NotSpecified:
                 mtime = meta.everything["mtime"]()
             context_name = "{0}-{1}-mtime({2})".format(hashlib.md5(result['content'].encode('utf-8')).hexdigest(), result["dest"].replace("/", "-").replace(" ", "--"), mtime)
-            return Command(("ADD", "{0} {1}".format(context_name, result["dest"])), (result["content"], context_name))
+            extra_context = (result["content"], context_name)
+            if result["context"] is not NotSpecified:
+                context_name = "{0}.tar".format(context_name)
+                extra_context = ({"context": result["context"]}, context_name)
+
+            return Command(("ADD", "{0} {1}".format(context_name, result["dest"])), extra_context)
         else:
             spec = sb.set_options(
                   get=sb.required(sb.listof(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)))

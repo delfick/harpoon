@@ -111,6 +111,22 @@ class HarpoonSpec(object):
             )
 
     @memoized_property
+    def context_spec(self):
+        """Spec for specifying context options"""
+        from harpoon.option_spec import image_objs
+        return dict_from_bool_spec(lambda meta, val: {"enabled": val}
+            , create_spec(image_objs.Context
+                , include = listof(string_spec())
+                , exclude = listof(string_spec())
+                , enabled = defaulted(boolean(), True)
+
+                , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
+                , use_gitignore = defaulted(boolean(), False)
+                , use_git_timestamps = defaulted(or_spec(boolean(), listof(string_spec())), False)
+                )
+            )
+
+    @memoized_property
     def image_spec(self):
         """Spec for each image"""
         from harpoon.option_spec import image_specs as specs
@@ -160,18 +176,7 @@ class HarpoonSpec(object):
 
             , links = listof(specs.link_spec(), expect=image_objs.Link)
 
-            , context = dict_from_bool_spec(lambda meta, val: {"enabled": val}
-                , create_spec(image_objs.Context
-                    , include = listof(string_spec())
-                    , exclude = listof(string_spec())
-                    , enabled = defaulted(boolean(), True)
-
-                    , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
-                    , use_gitignore = defaulted(boolean(), False)
-                    , use_git_timestamps = defaulted(or_spec(boolean(), listof(string_spec())), False)
-                    )
-                )
-
+            , context = self.context_spec
             , wait_condition = optional_spec(self.wait_condition_spec)
 
             , lxc_conf = defaulted(filename_spec(), None)
