@@ -57,10 +57,10 @@ class Runner(object):
 
             self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
         finally:
-            self.stop_deps(conf, images)
             if not detach and not dependency:
+                self.stop_deps(conf, images)
                 self.stop_container(conf, tag=tag)
-            self.delete_deps(conf, images)
+                self.delete_deps(conf, images)
 
     ########################
     ###   DEPS
@@ -85,6 +85,7 @@ class Runner(object):
     def stop_deps(self, conf, images):
         """Stop the containers for all our dependencies"""
         for dependency, _ in conf.dependency_images():
+            self.stop_deps(images[dependency], images)
             try:
                 self.stop_container(images[dependency], fail_on_bad_exit=True, fail_reason="Failed to run dependency container")
             except BadImage:
