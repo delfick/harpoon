@@ -57,10 +57,10 @@ class Runner(object):
 
             self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
         finally:
+            self.stop_deps(conf, images)
             if not detach and not dependency:
-                self.stop_deps(conf, images)
                 self.stop_container(conf, tag=tag)
-                self.delete_deps(conf, images)
+            self.delete_deps(conf, images)
 
     ########################
     ###   DEPS
