@@ -238,7 +238,7 @@ def docker_context():
     if cert_path == '':
         cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
 
-    options = {"timeout": 60, "version": 'auto'}
+    options = {"timeout": 180, "version": 'auto'}
     if host:
         options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
 
