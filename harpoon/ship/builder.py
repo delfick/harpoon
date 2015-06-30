@@ -235,7 +235,7 @@ class Builder(object):
             image_name = conf.image_name
 
         context.close()
-        for line in conf.harpoon.docker_context.build(fileobj=context.tmpfile, custom_context=True, tag=image_name, stream=True, rm=True):
+        for line in conf.harpoon.docker_context.build(fileobj=context.tmpfile, custom_context=True, tag=image_name, stream=True, rm=True, pull=False):
             try:
                 stream.feed(line)
             except Failure as error:
