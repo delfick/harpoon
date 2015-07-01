@@ -10,11 +10,14 @@ from harpoon.ship.syncer import Syncer
 from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
+from textwrap import dedent
 import itertools
 import logging
 
 log = logging.getLogger("harpoon.tasks")
 
+info = {"is_default": True}
+default_tasks = []
 available_tasks = {}
 class a_task(object):
     """Records a task in the ``available_tasks`` dictionary"""
@@ -26,6 +29,8 @@ class a_task(object):
         available_tasks[func.__name__] = func
         func.needs_image = self.needs_image
         func.needs_images = self.needs_images
+        if info["is_default"]:
+            default_tasks.append(func.__name__)
         return func
 
 @a_task(needs_image=True)
@@ -92,20 +97,21 @@ def run(overview, configuration, images, image, **kwargs):
     image.build_and_run(images)
 
 @a_task()
-def list_tasks(overview, configuration, **kwargs):
+def list_tasks(collector, configuration, tasks, **kwargs):
     """List the available_tasks"""
     print("Available tasks to choose from are:")
     print("Use the --task option to choose one")
     print("")
     keygetter = lambda item: item[1].label
-    tasks = sorted(overview.find_tasks().items(), key=keygetter)
+    tasks = sorted(tasks.items(), key=keygetter)
     for label, items in itertools.groupby(tasks, keygetter):
         print("--- {0}".format(label))
         print("----{0}".format("-" * len(label)))
         sorted_tasks = sorted(list(items), key=lambda item: len(item[0]))
         max_length = max(len(name) for name, _ in sorted_tasks)
         for key, task in sorted_tasks:
-            print("\t{0}{1} :-: {2}".format(" " * (max_length-len(key)), key, task.description or ""))
+            desc = dedent(task.description or "").strip().split('\n')[0]
+            print("\t{0}{1} :-: {2}".format(" " * (max_length-len(key)), key, desc))
         print("")
 
 @a_task()
@@ -156,8 +162,11 @@ def print_dockerfile(overview, configuration, images, image, **kwargs):
 
 @a_task(needs_images=True)
 def print_all_dockerfiles(overview, configuration, images, **kwargs):
+    """Print all the dockerfiles"""
     for image in images:
         print("{0}".format(image))
         print("-" * len(image))
         print_dockerfile(overview, configuration, images, image)
 
+# Make it so future use of @a_task doesn't result in more default tasks
+info["is_default"] = False

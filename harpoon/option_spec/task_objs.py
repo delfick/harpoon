@@ -28,12 +28,23 @@ class Task(dictobj):
         , ("label", "Project"): "The namespace when listing tasks"
         }
 
-    def run(self, overview, cli_args, image, available_tasks=None):
+    def setup(self, *args, **kwargs):
+        super(Task, self).setup(*args, **kwargs)
+        self.set_description()
+
+    def set_description(self, available_actions=None):
+        if not self.description:
+            if not available_actions:
+                from harpoon.tasks import available_tasks as available_actions
+            if self.action in available_actions:
+                self.description = available_actions[self.action].__doc__
+
+    def run(self, collector, cli_args, image, available_actions=None, tasks=None, **extras):
         """Run this task"""
-        if available_tasks is None:
-            from harpoon.tasks import available_tasks
-        task_func = available_tasks[self.action]
-        configuration = MergedOptions.using(overview.configuration, dont_prefix=overview.configuration.dont_prefix, converters=overview.configuration.converters)
+        if available_actions is None:
+            from harpoon.tasks import available_tasks as available_actions
+        task_func = available_actions[self.action]
+        configuration = MergedOptions.using(collector.configuration, dont_prefix=collector.configuration.dont_prefix, converters=collector.configuration.converters)
 
         if self.options:
             if image:
@@ -49,20 +60,20 @@ class Task(dictobj):
                 overrides[key] = val
                 if isinstance(val, MergedOptions):
                     overrides[key] = dict(val.items())
-            overview.configuration.update(overrides)
+            collector.configuration.update(overrides)
 
         images = None
         if task_func.needs_images:
-            images = self.determine_image(image, overview, configuration, needs_image=task_func.needs_image)
+            images = self.determine_image(image, collector, configuration, needs_image=task_func.needs_image)
             if image:
                 image = images[image]
 
         if image:
             image.find_missing_env()
 
-        return task_func(overview, configuration, images=images, image=image)
+        return task_func(collector, configuration, images=images, image=image, tasks=tasks, **extras)
 
-    def determine_image(self, image, overview, configuration, needs_image=True):
+    def determine_image(self, image, collector, configuration, needs_image=True):
         """Complain if we don't have an image"""
         images = configuration["images"]
 
@@ -74,7 +85,7 @@ class Task(dictobj):
                 info = {}
                 if available:
                     info["available"] = list(available)
-                raise BadOption("Please use --image to specify an image to run /bin/bash in", **info)
+                raise BadOption("Please use --image to specify an image", **info)
 
             if image not in images:
                 raise BadOption("No such image", wanted=image, available=list(images.keys()))
