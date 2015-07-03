@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 from contextlib import contextmanager
+
 import tempfile
 import tarfile
 import shutil
@@ -133,6 +136,24 @@ class FilesAssertionsMixin:
             else:
                 file_location, file_contents = file_spec
                 create(os.path.join(root, file_location), file_contents)
+
+    @contextmanager
+    def fake_std_streams(self):
+        with self.a_temp_file() as fake_stdout:
+            fake_stdout = open(fake_stdout, "w")
+            with self.a_temp_file() as fake_stderr:
+                fake_stderr = open(fake_stderr, "w")
+                sys.stdout, old_stdout = fake_stdout, sys.stdout
+                sys.stderr, old_stderr = fake_stderr, sys.stderr
+                try:
+                    yield fake_stdout, fake_stderr
+                except SystemExit:
+                    print(open(fake_stdout.name).read(), file=old_stdout)
+                    print(open(fake_stderr.name).read(), file=old_stderr)
+                    sys.stdout, sys.stderr = old_stdout, old_stderr
+                    raise
+                finally:
+                    sys.stdout, sys.stderr = old_stdout, old_stderr
 
     def setup_directory(self, heirarchy, root=None, record=None):
         """

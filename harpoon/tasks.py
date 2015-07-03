@@ -34,7 +34,7 @@ class a_task(object):
         return func
 
 @a_task(needs_image=True)
-def push(overview, configuration, images, image):
+def push(overview, configuration, images, image, **kwargs):
     """Push an image"""
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
@@ -64,7 +64,7 @@ def pull_all(overview, configuration, images, **kwargs):
             Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
 @a_task(needs_image=True)
-def make(overview, configuration, images, image):
+def make(overview, configuration, images, image, **kwargs):
     """Just create an image"""
     Builder().make_image(image, images)
     print("Created image {0}".format(image.image_name))
