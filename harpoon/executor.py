@@ -18,6 +18,36 @@ import os
 
 log = logging.getLogger("harpoon.executor")
 
+def docker_context():
+    """Make a docker context"""
+    host = os.environ.get('DOCKER_HOST')
+    cert_path = os.environ.get('DOCKER_CERT_PATH')
+    tls_verify = os.environ.get('DOCKER_TLS_VERIFY')
+
+    if cert_path == '':
+        cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
+
+    options = {"timeout": 180, "version": 'auto'}
+    if host:
+        options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
+
+    if tls_verify and cert_path:
+        options['tls'] = docker.tls.TLSConfig(
+            verify = True
+            , ca_cert = os.path.join(cert_path, 'ca.pem')
+            , client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
+            , ssl_version = ssl.PROTOCOL_TLSv1
+            , assert_hostname = False
+            )
+
+    client = DockerClient(**options)
+    try:
+        info = client.info()
+        log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+        raise BadDockerConnection(base_url=options.get('base_url'), error=error)
+    return client
+
 class App(App):
     cli_categories = ['harpoon']
     cli_description = "Docker client that reads yaml"
@@ -30,8 +60,8 @@ class App(App):
         cli_args["harpoon"]["extra"] = extra_args
 
         if not no_docker:
-            cli_args["harpoon"]["docker_context"] = self.docker_context()
-        cli_args["harpoon"]["docker_context_maker"] = self.docker_context
+            cli_args["harpoon"]["docker_context"] = docker_context()
+        cli_args["harpoon"]["docker_context_maker"] = docker_context
 
         for key in ('bash', 'command'):
             if cli_args[key] is None:
@@ -42,36 +72,6 @@ class App(App):
 
         collector.prepare(cli_args)
         collector.configuration["task_runner"](collector.configuration["harpoon"].chosen_task)
-
-    def docker_context(self):
-        """Make a docker context"""
-        host = os.environ.get('DOCKER_HOST')
-        cert_path = os.environ.get('DOCKER_CERT_PATH')
-        tls_verify = os.environ.get('DOCKER_TLS_VERIFY')
-
-        if cert_path == '':
-            cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
-
-        options = {"timeout": 180, "version": 'auto'}
-        if host:
-            options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
-
-        if tls_verify and cert_path:
-            options['tls'] = docker.tls.TLSConfig(
-                verify = True
-                , ca_cert = os.path.join(cert_path, 'ca.pem')
-                , client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
-                , ssl_version = ssl.PROTOCOL_TLSv1
-                , assert_hostname = False
-                )
-
-        client = DockerClient(**options)
-        try:
-            info = client.info()
-            log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
-            raise BadDockerConnection(base_url=options.get('base_url'), error=error)
-        return client
 
     def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
         logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
