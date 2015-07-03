@@ -76,5 +76,5 @@ describe HarpoonCase, "HarpoonSpec":
             self.assertEqual(task.action, "run")
             self.assertEqual(task.options, {})
             self.assertEqual(task.overrides, {})
-            self.assertEqual(task.description, "")
+            self.assertEqual(task.description, "Run specified task in this image")
 
