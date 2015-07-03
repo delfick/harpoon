@@ -15,6 +15,9 @@ env:
     - DOCKER_PORT_RANGE=2400:2500
     - SLIRP_PORTS=$(seq 2375 2500)
     - CI_SERVER=true
+  matrix:
+    - DOCKER_VERSION=1.6.2
+    - DOCKER_VERSION=1.7
 
 before_install:
   - sudo sh -c "wget -qO- https://get.docker.io/gpg | apt-key add -"
@@ -24,7 +27,7 @@ before_install:
 
 install:
   - sudo apt-get -qqy update
-  - sudo apt-get -qqy install lxc lxc-docker-1.6.2 slirp
+  - sudo apt-get -qqy install lxc lxc-docker-$DOCKER_VERSION slirp
   - sudo sudo usermod -aG docker "$USER"
   - git clone git://github.com/cptactionhank/sekexe
   - pip install pip --upgrade
