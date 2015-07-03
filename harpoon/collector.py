@@ -79,9 +79,11 @@ class Collector(Collector):
         except yaml.parser.ParserError as error:
             raise self.BadFileErrorKls("Failed to read yaml", location=location, error_type=error.__class__.__name__, error="{0}{1}".format(error.problem, error.problem_mark))
 
-    def get_committime_or_mtime(self, location):
+    def get_committime_or_mtime(self, context, location):
         """Get the commit time of some file or the modified time of of it if can't get from git"""
-        date, status = command_output("git show -s --format=%at -n1 -- {0}".format(os.path.basename(location)), cwd=os.path.dirname(location))
+        status, date = 0, None
+        if context.use_git:
+            date, status = command_output("git show -s --format=%at -n1 -- {0}".format(os.path.basename(location)), cwd=os.path.dirname(location))
         if status == 0 and date:
             return int(date[0])
         else:
@@ -92,7 +94,7 @@ class Collector(Collector):
 
         def make_mtime_func(source):
             """Lazily calculate the mtime to avoid wasted computation"""
-            return lambda: self.get_committime_or_mtime(source)
+            return lambda context: self.get_committime_or_mtime(context, source)
 
         if "images" in result and "__images_from__" in result["images"]:
             images_from_path = result["images"]["__images_from__"]

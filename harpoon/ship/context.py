@@ -132,7 +132,9 @@ class ContextBuilder(object):
         if not context.enabled:
             return
 
-        mtimes = self.find_git_mtimes(context, silent_build)
+        mtimes = {}
+        if context.use_git:
+            mtimes = self.find_git_mtimes(context, silent_build)
         files, mtime_ignoreable = self.find_files(context, silent_build)
 
         for path in files:

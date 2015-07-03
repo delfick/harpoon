@@ -225,7 +225,7 @@ class Image(dictobj):
     def mtime(self):
         """Mtime is set as a function to make it lazily computed via this property"""
         if callable(self._mtime):
-            self._mtime = self._mtime()
+            self._mtime = self._mtime(self.context)
 
         if self._mtime not in (NotSpecified, None) and type(self._mtime) is not int:
             self._mtime = int(self._mtime)
