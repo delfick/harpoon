@@ -7,8 +7,10 @@ from harpoon.option_spec.task_objs import Task
 from harpoon.errors import BadTask
 
 class TaskFinder(object):
-    def __init__(self, collector, cli_args):
+    def __init__(self, collector, cli_args=None):
         self.tasks = {}
+        if cli_args is None:
+            cli_args = {}
         self.cli_args = cli_args
         self.collector = collector
         self.configuration = self.collector.configuration
@@ -18,17 +20,12 @@ class TaskFinder(object):
 
     def task_runner(self, task, **kwargs):
         if task not in self.tasks:
-            raise BadTask("Unknown task", task=task, available=self.tasks.keys())
+            raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
         return self.tasks[task].run(self.collector, self.cli_args, self.image_finder(task), available_actions=available_tasks, tasks=self.tasks, **kwargs)
 
     def default_tasks(self):
         """Return default tasks"""
-        def t(name, description=None, action=None, overrides=None, **options):
-            if not action:
-                action = name
-            return (name, Task(action=action, options=options, overrides=overrides, description=description, label="Harpoon"))
-        base = dict(t(name) for name in default_tasks)
-        return base
+        return dict((name, Task(action=name, label="Harpoon")) for name in default_tasks)
 
     def find_tasks(self, overrides):
         """Find the custom tasks and record the associated image with each task"""
@@ -46,4 +43,5 @@ class TaskFinder(object):
             tasks.update(overrides)
 
         self.tasks = tasks
+        return tasks
 
