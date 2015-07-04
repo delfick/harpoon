@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from tests.helpers import HarpoonCase
 from six import StringIO
 import mock
+import six
 import sys
 import os
 
@@ -28,8 +29,8 @@ describe HarpoonCase, "App":
                     argv = ["list_tasks", "blah"]
                     app = App()
                     args, extra_args, cli_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
-                    self.assertEqual(args.harpoon_config.name, config_location)
-                    self.assertEqual(cli_args["harpoon"]["config"].name, config_location)
+                    self.assertEqual(args.harpoon_config().name, config_location)
+                    self.assertEqual(cli_args["harpoon"]["config"]().name, config_location)
 
         it "defaults image to NotSpecified and tasks to list_tasks":
             with self.a_temp_file() as config_location:
@@ -53,6 +54,9 @@ describe HarpoonCase, "App":
                     self.assertEqual(error.code, 2)
                     fake_stderr.seek(0)
                     self.assertEqual(fake_stderr.read().split('\n')[-2], "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(config_location))
+                except IOError as error:
+                    assert six.PY2
+                    self.assertEqual(str(error), "[Errno 2] No such file or directory: './harpoon.yml'")
                 finally:
                     if old_stderr is not None:
                         sys.stderr = old_stderr

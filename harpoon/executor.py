@@ -8,8 +8,7 @@ from harpoon.collector import Collector
 
 from input_algorithms.spec_base import NotSpecified
 from docker.client import Client as DockerClient
-from delfick_app import App
-import argparse
+from delfick_app import App, DelayedFileType
 import requests
 import logging
 import docker
@@ -55,7 +54,8 @@ class App(App):
     cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified)]
 
     def execute(self, args, extra_args, cli_args, logging_handler, no_docker=False):
-        collector = Collector(configuration_file=args.harpoon_config.name)
+        cli_args["harpoon"]["config"] = cli_args["harpoon"]["config"]()
+        collector = Collector(configuration_file=cli_args["harpoon"]["config"].name)
 
         cli_args["harpoon"]["extra"] = extra_args
 
@@ -79,7 +79,7 @@ class App(App):
     def specify_other_args(self, parser, defaults):
         parser.add_argument("--harpoon-config"
             , help = "The config file specifying what harpoon should care about"
-            , type = argparse.FileType("r")
+            , type = DelayedFileType("r")
             , **defaults["--harpoon-config"]
             )
 

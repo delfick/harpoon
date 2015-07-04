@@ -7,15 +7,20 @@ from harpoon.executor import main
 from tests.helpers import HarpoonCase
 from six import StringIO
 import logging
+import nose
 import uuid
 import json
 import sys
+import six
 import os
 
 mtime = 1431170923
 
 describe HarpoonCase, "Executing harpoon":
     it "executes the given task":
+        if six.PY3:
+            raise nose.SkipTest()
+
         content = str(uuid.uuid1())
         config = { "images":
             { "blah":

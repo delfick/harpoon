@@ -14,6 +14,7 @@ import nose
 import mock
 import six
 import os
+import re
 
 mtime = 1431170923
 
@@ -61,7 +62,8 @@ describe HarpoonCase, "Building docker images":
                     with self.a_built_image({"context": False, "commands": commands}, {"stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}) as (cached, conf):
                         pass
         except FailedImage as error:
-            self.assertEqual(str(error.kwargs["msg"]), "The command [/bin/sh -c exit 1] returned a non-zero code: 1")
+            expected = re.compile("The command [\[']/bin/sh -c exit 1[\]'] returned a non-zero code: 1")
+            assert expected.match(str(error.kwargs["msg"])), "Expected {0} to match {1}".format(str(error.kwargs["msg"]), expected.pattern)
             self.assertEqual(error.kwargs["image"], "awesome_image")
 
         self.assertEqual(called, ["commit_and_run"])
