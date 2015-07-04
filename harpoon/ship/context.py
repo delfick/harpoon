@@ -9,10 +9,10 @@ sent to the server in a zip file.
 Here we define the class that builds this "context" zip file.
 """
 
-from harpoon.processes import command_output
 from harpoon.helpers import a_temp_file
 from harpoon.errors import HarpoonError
 
+from delfick_app import command_output
 from contextlib import contextmanager
 from dulwich.repo import Repo
 import fnmatch

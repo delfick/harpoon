@@ -4,7 +4,6 @@ Collects then parses configuration files and verifies that they are valid.
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.errors import BadConfiguration, BadYaml
-from harpoon.processes import command_output
 from harpoon.task_finder import TaskFinder
 from harpoon.tasks import available_tasks
 
@@ -16,6 +15,7 @@ from option_merge.collector import Collector
 from option_merge import MergedOptions
 from option_merge import Converter
 
+from delfick_app import command_output
 import logging
 import yaml
 import six

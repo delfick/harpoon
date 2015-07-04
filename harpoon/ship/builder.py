@@ -8,13 +8,13 @@ context, and actually building the current image.
 
 from harpoon.errors import NoSuchImage, BadCommand, FailedImage, UserQuit, BadEnvironment, HarpoonError
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
-from harpoon.processes import command_output
 from harpoon.option_spec import command_objs
 from harpoon.ship.runner import Runner
 from harpoon import helpers as hp
 from harpoon.layers import Layers
 
 from input_algorithms.spec_base import NotSpecified
+from delfick_app import command_output
 from contextlib import contextmanager
 from itertools import chain
 import docker.errors

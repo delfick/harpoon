@@ -1,6 +1,6 @@
-from harpoon.processes import command_output
 from harpoon.errors import HarpoonError
 
+from delfick_app import command_output
 from contextlib import contextmanager
 from textwrap import dedent
 import shutil
