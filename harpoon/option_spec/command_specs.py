@@ -25,7 +25,8 @@ class complex_ADD_spec(sb.Spec):
 
             mtime = result["mtime"]
             if mtime is NotSpecified:
-                mtime = meta.everything["mtime"]()
+                ctxt = type("Context", (object, ), {"use_git": True})()
+                mtime = meta.everything["mtime"](ctxt)
             context_name = "{0}-{1}-mtime({2})".format(hashlib.md5(result['content'].encode('utf-8')).hexdigest(), result["dest"].replace("/", "-").replace(" ", "--"), mtime)
             extra_context = (result["content"], context_name)
             if result["context"] is not NotSpecified:

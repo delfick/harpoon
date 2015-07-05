@@ -57,7 +57,7 @@ describe CommandCase, "Complex ADD spec":
             command = {"content": content, "dest": dest}
 
             mtime = mock.Mock(name="mtime")
-            everything = {"mtime": lambda: mtime}
+            everything = {"mtime": lambda ctxt: mtime}
             self.meta.everything = everything
 
             result = self.spec.normalise(self.meta, command)
@@ -191,7 +191,7 @@ describe CommandCase, "command_spec":
         blah_image = self.unique_val()
         md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
 
-        everything = MergedOptions.using({"mtime": lambda: 1430660297, "one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
+        everything = MergedOptions.using({"mtime": lambda ctxt: 1430660297, "one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
         meta = Meta(everything, [('test', "")])
 
         commands = [
