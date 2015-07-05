@@ -84,7 +84,7 @@ describe HarpoonCase, "App":
                                 yield collector, docker_context_maker, docker_context, app, setup_logging_theme, cli_args
                                 app.execute(args, extra_args, cli_args, logging_handler)
 
-            FakeCollector.assert_called_once_with(configuration_file=config_location)
+            FakeCollector.assert_called_once()
 
         it "sets up logging theme if term_colors is in the configuration":
             called = []
@@ -92,18 +92,18 @@ describe HarpoonCase, "App":
 
             def setup_logging_theme_func(logging_handler, colors):
                 self.assertEqual(colors, "light")
-                called.append(0)
+                called.append(1)
 
             def task_runner(task):
                 self.assertEqual(task, default_task)
                 called.append(2)
 
-            def prepare(cli_args):
+            def prepare(filename, cli_args):
                 configuration["harpoon"] = mock.Mock(name='harpoon')
                 for key, val in cli_args["harpoon"].items():
                     setattr(configuration["harpoon"], key, val)
                 configuration["task_runner"] = task_runner
-                called.append(1)
+                called.append(0)
 
             argv = [default_task]
             configuration = {"term_colors": "light"}
@@ -134,7 +134,7 @@ describe HarpoonCase, "App":
                 self.assertEqual(task, default_task)
                 called.append(2)
 
-            def prepare(cli_args):
+            def prepare(filename, cli_args):
                 configuration["harpoon"] = mock.Mock(name='harpoon')
                 for key, val in cli_args["harpoon"].items():
                     setattr(configuration["harpoon"], key, val)

@@ -121,8 +121,8 @@ describe HarpoonCase, "TaskFinder":
 
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 default_tasks = mock.Mock(name="default_tasks", return_value={})
-                collector = Collector(filename)
-                collector.prepare({"harpoon": {}, "bash": None, "command": None})
+                collector = Collector()
+                collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None})
                 task_finder = TaskFinder(collector)
 
                 with mock.patch.object(task_finder, "default_tasks", default_tasks):

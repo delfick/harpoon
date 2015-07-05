@@ -9,7 +9,7 @@ setup(
 
     , install_requires =
       [ "delfick_app==0.6.6"
-      , "option_merge==0.9.8"
+      , "option_merge==0.9.8.1"
       , "input_algorithms==0.4.4.3"
 
       , "docker-py==1.2.2"

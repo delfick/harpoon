@@ -55,8 +55,6 @@ class App(App):
 
     def execute(self, args, extra_args, cli_args, logging_handler, no_docker=False):
         cli_args["harpoon"]["config"] = cli_args["harpoon"]["config"]()
-        collector = Collector(configuration_file=cli_args["harpoon"]["config"].name)
-
         cli_args["harpoon"]["extra"] = extra_args
 
         if not no_docker:
@@ -67,10 +65,11 @@ class App(App):
             if cli_args[key] is None:
                 cli_args[key] = NotSpecified
 
+        collector = Collector()
+        collector.prepare(cli_args["harpoon"]["config"].name, cli_args)
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
 
-        collector.prepare(cli_args)
         collector.configuration["task_runner"](collector.configuration["harpoon"].chosen_task)
 
     def setup_other_logging(self, args, verbose=False, silent=False, debug=False):

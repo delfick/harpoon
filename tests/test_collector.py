@@ -18,8 +18,8 @@ describe HarpoonCase, "Collector":
         it "has a new harpoon object":
             configuration = {"harpoon": {"chosen_image": "blah"}, "images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
-                collector = Collector(filename)
-                collector.prepare({"harpoon": {}, "bash": None, "command": None})
+                collector = Collector()
+                collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None})
                 collector2 = collector.clone({"chosen_image": "other"})
 
                 self.assertNotEqual(collector.configuration["harpoon"], collector2.configuration["harpoon"])
@@ -31,7 +31,7 @@ describe HarpoonCase, "Collector":
             configuration = {}
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 with self.fuzzyAssertRaisesError(Collector.BadConfigurationErrorKls, "Didn't find any images in the configuration"):
-                    Collector(filename).prepare({})
+                    Collector().prepare(filename, {})
 
         it "adds some items to the configuration from the cli_args":
             bash = "bash command"
@@ -40,18 +40,19 @@ describe HarpoonCase, "Collector":
 
             configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
-                collector = Collector(filename)
+                collector = Collector()
+                raw_config = collector.collect_configuration(filename)
                 for thing in ("configuration", "$@", "bash", "command", "harpoon", "collector", "getpass", "cli_args"):
-                    assert thing not in collector.configuration, "expected {0} to not be in configuration".format(thing)
+                    assert thing not in raw_config, "expected {0} to not be in configuration".format(thing)
 
                 cli_args = {"harpoon": {"extra": extra}, "bash": bash, "command": command}
-                collector.prepare(cli_args)
+                collector.prepare(filename, cli_args)
 
                 # Done by option_merge
                 self.assertEqual(collector.configuration["getpass"], getpass)
                 self.assertEqual(collector.configuration["cli_args"].as_dict(), cli_args)
                 self.assertEqual(collector.configuration["collector"], collector)
-                self.assertEqual(collector.configuration["config_root"], collector.configuration_folder)
+                self.assertEqual(collector.configuration["config_root"], os.path.dirname(filename))
 
                 # Done by bespin
                 self.assertEqual(collector.configuration["$@"], extra)
@@ -65,9 +66,9 @@ describe HarpoonCase, "Collector":
             configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 with mock.patch("harpoon.collector.TaskFinder", FakeTaskFinder):
-                    collector = Collector(filename)
+                    collector = Collector()
                     cli_args = {"harpoon": {}, "bash": None, "command": None}
-                    collector.prepare(cli_args)
+                    collector.prepare(filename, cli_args)
                     task_finder.find_tasks.assert_called_once_with({})
 
                     self.assertEqual(len(task_finder.task_runner.mock_calls), 0)
@@ -83,16 +84,14 @@ describe HarpoonCase, "Collector":
                     fields = ["one", "two"]
 
                 thing = Thing(1, 2)
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(json.dumps(configuration)) as filename:
-                    options = Collector(filename).start_configuration()
-                    options.update({"three": {"four": {"5": "6"}}, "seven": thing})
+                options = Collector().start_configuration()
+                options.update({"three": {"four": {"5": "6"}}, "seven": thing})
 
-                    self.assertIs(type(options["three"]), MergedOptions)
-                    self.assertEqual(options["three"].as_dict(), {"four": {"5": "6"}})
+                self.assertIs(type(options["three"]), MergedOptions)
+                self.assertEqual(options["three"].as_dict(), {"four": {"5": "6"}})
 
-                    self.assertIs(type(options["seven"]), Thing)
-                    self.assertEqual(options["seven"], {"one": 1, "two": 2})
+                self.assertIs(type(options["seven"]), Thing)
+                self.assertEqual(options["seven"], {"one": 1, "two": 2})
 
         describe "Reading a file":
             it "reads a yaml file and returns it as a dictionary":
@@ -113,12 +112,10 @@ describe HarpoonCase, "Collector":
                         twelve
                 """).strip()
 
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(config) as filename1:
-                    with self.a_temp_file(json.dumps(configuration)) as filename2:
-                        collector = Collector(filename2)
-                        readed = collector.read_file(filename1)
-                        self.assertEqual(readed, {"one": 1, "two": {"three": 3, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve"})
+                with self.a_temp_file(config) as filename:
+                    collector = Collector()
+                    readed = collector.read_file(filename)
+                    self.assertEqual(readed, {"one": 1, "two": {"three": 3, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve"})
 
             it "complains about scanner errors":
                 config = dedent("""
@@ -130,12 +127,10 @@ describe HarpoonCase, "Collector":
                         eight
                 """).strip()
 
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(config) as filename1:
-                    with self.a_temp_file(json.dumps(configuration)) as filename2:
-                        collector = Collector(filename2)
-                        with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename1, error_type="ScannerError", error="expected chomping or indentation indicators, but found '>'  in \"{0}\", line 3, column 8".format(filename1)):
-                            readed = collector.read_file(filename1)
+                with self.a_temp_file(config) as filename:
+                    collector = Collector()
+                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ScannerError", error="expected chomping or indentation indicators, but found '>'  in \"{0}\", line 3, column 8".format(filename)):
+                        readed = collector.read_file(filename)
 
             it "complains about parser errors":
                 config = dedent("""
@@ -144,12 +139,10 @@ describe HarpoonCase, "Collector":
                     five: {one
                 """).strip()
 
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(config) as filename1:
-                    with self.a_temp_file(json.dumps(configuration)) as filename2:
-                        collector = Collector(filename2)
-                        with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename1, error_type="ParserError", error="expected ',' or '}}', but got '<stream end>'  in \"{0}\", line 3, column 11".format(filename1)):
-                            readed = collector.read_file(filename1)
+                with self.a_temp_file(config) as filename:
+                    collector = Collector()
+                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ParserError", error="expected ',' or '}}', but got '<stream end>'  in \"{0}\", line 3, column 11".format(filename)):
+                        readed = collector.read_file(filename)
 
         describe "Getting committime or mtime":
             it "uses git if context.use_git else just gets mtime":
@@ -165,49 +158,44 @@ describe HarpoonCase, "Collector":
                     expected = int(output[0])
                     self.assertNotEqual(expected, 13456789)
 
-                    configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                    with self.a_temp_file(json.dumps(configuration)) as filename:
-                        collector = Collector(filename)
+                    collector = Collector()
 
-                        ctxt = mock.Mock(name="context")
-                        ctxt.use_git = True
-                        self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), expected)
+                    ctxt = mock.Mock(name="context")
+                    ctxt.use_git = True
+                    self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), expected)
 
-                        # And without git
-                        ctxt.use_git = False
-                        self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), 13456789)
+                    # And without git
+                    ctxt.use_git = False
+                    self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), 13456789)
 
         describe "Adding configuration":
             it "adds in an mtime function":
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(json.dumps(configuration)) as filename:
-                    collector = Collector(filename)
-                    configuration = collector.start_configuration()
-                    collect_another_source = mock.Mock(name="collect_another_source")
-                    src = mock.Mock(name="src")
-                    result = {"one": 1}
+                collector = Collector()
+                configuration = collector.start_configuration()
+                collect_another_source = mock.Mock(name="collect_another_source")
+                src = mock.Mock(name="src")
+                result = {"one": 1}
 
-                    collector.add_configuration(configuration, collect_another_source, {}, result, src)
-                    self.assertEqual(configuration["one"], 1)
-                    self.assertEqual(configuration.storage.data[0][2], src)
+                collector.add_configuration(configuration, collect_another_source, {}, result, src)
+                self.assertEqual(configuration["one"], 1)
+                self.assertEqual(configuration.storage.data[0][2], src)
 
-                    ctxt = mock.Mock(name="context")
-                    get_committime_or_mtime = mock.Mock(name="get_committime_or_mtime", return_value=13456789)
-                    with mock.patch.object(collector, "get_committime_or_mtime", get_committime_or_mtime):
-                        self.assertEqual(configuration["mtime"](ctxt), 13456789)
-                    get_committime_or_mtime.assert_called_once_with(ctxt, src)
+                ctxt = mock.Mock(name="context")
+                get_committime_or_mtime = mock.Mock(name="get_committime_or_mtime", return_value=13456789)
+                with mock.patch.object(collector, "get_committime_or_mtime", get_committime_or_mtime):
+                    self.assertEqual(configuration["mtime"](ctxt), 13456789)
+                get_committime_or_mtime.assert_called_once_with(ctxt, src)
 
             it "collects files in folders specified by images.__images_from__":
                 root, folders = self.setup_directory({"one": {"two": {"three.yml":"", "four.yml":""}, "five": [], "six": {"seven.yml":""}, "eight.yml": ""}, "two": {"notseen.yml":""}})
                 collect_another_source = mock.Mock(name="collect_another_source")
-                configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
-                with self.a_temp_file(json.dumps(configuration)) as filename:
-                    collector = Collector(filename)
-                    configuration = collector.start_configuration()
-                    done = {}
-                    result = {"images": {"__images_from__": [folders["one"]["/folder/"]]}}
-                    src = mock.Mock(name="src")
-                    collector.add_configuration(configuration, collect_another_source, done, result, src)
+
+                collector = Collector()
+                configuration = collector.start_configuration()
+                done = {}
+                result = {"images": {"__images_from__": [folders["one"]["/folder/"]]}}
+                src = mock.Mock(name="src")
+                collector.add_configuration(configuration, collect_another_source, done, result, src)
 
                 self.assertEqual(collect_another_source.mock_calls
                     , [ mock.call(folders["one"]["eight.yml"]["/file/"], prefix=["images", "eight"], extra={"mtime": mock.ANY})
@@ -222,7 +210,16 @@ describe HarpoonCase, "Collector":
                 root, folders = self.setup_directory({"one": {"two": {"three.yml":config, "four.yml":config}, "five": [], "six": {"seven.yml":config}}, "two": {"notseen.yml":config}})
                 configuration = {"images": {"__images_from__": folders["one"]["/folder/"]}}
                 with self.a_temp_file(json.dumps(configuration)) as filename:
-                    collector = Collector(filename)
+                    collector = Collector()
+                    collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None})
                     cfg = json.loads(config)
                     cfg["mtime"] = mock.ANY
-                    self.assertEqual(collector.configuration["images"].as_dict(), {"three": cfg, "four": cfg, "seven": cfg})
+
+                    cfg_three = dict(cfg)
+                    cfg_four = dict(cfg)
+                    cfg_seven = dict(cfg)
+
+                    cfg_three["config_root"] = folders["one"]["two"]["/folder/"]
+                    cfg_four["config_root"] = folders["one"]["two"]["/folder/"]
+                    cfg_seven["config_root"] = folders["one"]["six"]["/folder/"]
+                    self.assertEqual(collector.configuration["images"].as_dict(), {"three": cfg_three, "four": cfg_four, "seven": cfg_seven})
