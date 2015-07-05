@@ -43,7 +43,6 @@ class Collector(Collector):
         """Called before the configuration.converters are activated"""
         harpoon = cli_args.pop("harpoon")
 
-        harpoon["configuration"] = configuration
         self.configuration.update(
             { "$@": harpoon.get("extra", "")
             , "bash": cli_args["bash"] or NotSpecified
@@ -55,15 +54,9 @@ class Collector(Collector):
 
     def extra_prepare_after_activation(self, configuration, cli_args, available_tasks):
         """Called after the configuration.converters are activated"""
-        task_overrides = {}
         task_finder = TaskFinder(self, cli_args)
-        self.configuration.update(
-            { "image_finder": task_finder.image_finder
-            , "task_runner": task_finder.task_runner
-            }
-        , source = "<code>"
-        )
-        task_finder.find_tasks(task_overrides)
+        self.configuration["task_runner"] = task_finder.task_runner
+        task_finder.find_tasks({})
 
     def home_dir_configuration_location(self):
         return os.path.expanduser("~/.harpoon.yml")
@@ -76,7 +69,7 @@ class Collector(Collector):
         """Read in a yaml file and return as a python object"""
         try:
             return yaml.load(open(location))
-        except yaml.parser.ParserError as error:
+        except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
             raise self.BadFileErrorKls("Failed to read yaml", location=location, error_type=error.__class__.__name__, error="{0}{1}".format(error.problem, error.problem_mark))
 
     def get_committime_or_mtime(self, context, location):
@@ -114,12 +107,13 @@ class Collector(Collector):
                     for fle in files:
                         location = os.path.join(root, fle)
                         if fle.endswith(".yml") or fle.endswith(".yaml"):
-                            collect_another_source(location, prefix=["images", os.path.splitext(os.path.basename(fle))[0]])
+                            collect_another_source(location, prefix=["images", os.path.splitext(os.path.basename(fle))[0]], extra={"mtime": make_mtime_func(location)})
 
             del result["images"]["__images_from__"]
 
-        result["mtime"] = make_mtime_func(src)
-        configuration.update(result, dont_prefix=[dictobj], source=src)
+        if "mtime" not in result:
+            result["mtime"] = make_mtime_func(src)
+        configuration.update(result, source=src)
 
     def extra_configuration_collection(self, configuration):
         """Hook to do any extra configuration collection or converter registration"""

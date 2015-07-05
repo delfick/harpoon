@@ -171,7 +171,7 @@ class FilesAssertionsMixin:
             {'one':{'/folder/':'/path/to/one', 'two':{'/folder/':'/path/to/one/two', 'six': '/path/to/one/six'}, 'four':{'/file/':'/path/to/one/four'}, ... etc
         """
         if root is None:
-            root = self.make_tmp_dir()
+            root = self.make_temp_dir()
 
         if record is None:
             record = {'/folder/': root}
