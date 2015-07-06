@@ -7,9 +7,6 @@ yaml files and make things happen.
 .. image:: https://travis-ci.org/realestate-com-au/harpoon.png?branch=master
     :target: https://travis-ci.org/realestate-com-au/harpoon
 
-.. image:: https://circleci.com/gh/realestate-com-au/harpoon/tree/master.svg?style=svg
-    :target: https://circleci.com/gh/realestate-com-au/harpoon/tree/master
-
 See http://harpoon.readthedocs.org for the full documentation.
 
 Installation
