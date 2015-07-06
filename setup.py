@@ -21,7 +21,6 @@ setup(
       , "humanize"
 
       , "pyYaml==3.10"
-      , "rainbow_logging_handler==2.2.2"
       ]
 
     , extras_require =
