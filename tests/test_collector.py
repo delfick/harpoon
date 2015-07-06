@@ -1,5 +1,7 @@
 # coding: spec
 
+from harpoon.option_spec.harpoon_specs import Harpoon, HarpoonSpec
+from harpoon.option_spec import image_objs, command_objs
 from harpoon.collector import Collector
 
 from tests.helpers import HarpoonCase
@@ -197,12 +199,12 @@ describe HarpoonCase, "Collector":
                 src = mock.Mock(name="src")
                 collector.add_configuration(configuration, collect_another_source, done, result, src)
 
-                self.assertEqual(collect_another_source.mock_calls
-                    , [ mock.call(folders["one"]["eight.yml"]["/file/"], prefix=["images", "eight"], extra={"mtime": mock.ANY})
+                self.assertEqual(sorted(collect_another_source.mock_calls)
+                    , sorted([ mock.call(folders["one"]["eight.yml"]["/file/"], prefix=["images", "eight"], extra={"mtime": mock.ANY})
                       , mock.call(folders["one"]["two"]['four.yml']["/file/"], prefix=["images", "four"], extra={"mtime": mock.ANY})
                       , mock.call(folders["one"]["two"]['three.yml']["/file/"], prefix=["images", "three"], extra={"mtime": mock.ANY})
                       , mock.call(folders["one"]["six"]['seven.yml']["/file/"], prefix=["images", "seven"], extra={"mtime": mock.ANY})
-                      ]
+                      ])
                     )
 
             it "successfully prefixes included __images_from__":
@@ -223,3 +225,71 @@ describe HarpoonCase, "Collector":
                     cfg_four["config_root"] = folders["one"]["two"]["/folder/"]
                     cfg_seven["config_root"] = folders["one"]["six"]["/folder/"]
                     self.assertEqual(collector.configuration["images"].as_dict(), {"three": cfg_three, "four": cfg_four, "seven": cfg_seven})
+
+        describe "Converters":
+            it "registers a harpoon converter":
+                collector = Collector()
+                configuration = collector.start_configuration()
+                configuration["harpoon"] = {}
+                configuration.converters.activate()
+                self.assertEqual(configuration["harpoon"].as_dict(), {})
+                self.assertNotEqual(type(configuration["harpoon"]), Harpoon)
+
+                collector.extra_configuration_collection(configuration)
+                self.assertEqual(type(configuration["harpoon"]), Harpoon)
+
+            it "registers image converters for each image":
+                harpoon_spec = mock.Mock(name="harpoon_spec")
+                FakeHarpoonSpec = mock.Mock(name="HarpoonSpec", return_value=harpoon_spec)
+                make_image_converters = mock.Mock(name="make_image_converters")
+
+                collector = Collector()
+                configuration = collector.start_configuration()
+                configuration["images"] = {"blah": {}, "stuff": {}, "other": {}}
+                with mock.patch("harpoon.collector.HarpoonSpec", FakeHarpoonSpec):
+                    with mock.patch.object(collector, "make_image_converters", make_image_converters):
+                        collector.extra_configuration_collection(configuration)
+
+                self.assertEqual(sorted(make_image_converters.mock_calls)
+                    , sorted([ mock.call("blah", configuration, harpoon_spec)
+                      , mock.call("stuff", configuration, harpoon_spec)
+                      , mock.call("other", configuration, harpoon_spec)
+                      ])
+                    )
+
+        describe "Image converters":
+            it "installs a converter for the image itself and for the group of tasks":
+                normalised_image = mock.Mock(name="normalised_image")
+                normalised_tasks = mock.Mock(name="normalised_tasks")
+
+                harpoon_spec = mock.Mock(name="harpoon_spec")
+                harpoon_spec.image_spec = mock.Mock(name="image_spec")
+                harpoon_spec.image_spec.normalise.return_value = normalised_image
+
+                harpoon_spec.tasks_spec = mock.Mock(name="tasks_spec")
+                harpoon_spec.tasks_spec.return_value.normalise.return_value = normalised_tasks
+
+                collector = Collector()
+                configuration = collector.start_configuration()
+                configuration["harpoon"] = {}
+                configuration["images"] = {"blah": {"commands": "FROM ubuntu:14.04", "tasks": {"one": {}}}}
+                configuration.converters.activate()
+
+                collector.make_image_converters("blah", configuration, harpoon_spec)
+                self.assertIs(configuration["images"]["blah"], normalised_image)
+                self.assertIs(configuration[["images", "blah", "tasks"]], normalised_tasks)
+
+            it "uses root of configuration with image as an override for the image converter":
+                collector = Collector()
+                configuration = collector.start_configuration()
+                configuration["harpoon"] = {}
+                configuration["context"] = False
+                configuration["config_root"] = "."
+                configuration["images"] = {"blah": {"commands": [["FROM", "{__image__.vars.blah}-{__image__.vars.stuff}"]], "vars": { "stuff": 2 }}}
+                configuration["vars"] = {"blah": 30, "stuff": 40}
+                configuration.converters.activate()
+                collector.make_image_converters("blah", configuration, HarpoonSpec())
+
+                self.assertEqual(configuration["images"]["blah"].commands.orig_commands, [[command_objs.Command(("FROM", "30-2"))]])
+                self.assertEqual(configuration["images"]["blah"].context.enabled, False)
+

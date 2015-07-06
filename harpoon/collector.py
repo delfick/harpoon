@@ -141,6 +141,9 @@ class Collector(Collector):
             base.update(configuration.as_dict(ignore=["images"]))
             base.update(val.as_dict(ignore=["images"]))
 
+            base["__image__"] = base
+            everything["__image__"] = base
+
             base["harpoon"] = configuration["harpoon"]
             base["configuration"] = configuration
             return harpoon_spec.image_spec.normalise(meta, base)
