@@ -157,6 +157,8 @@ describe HarpoonCase, "Collector":
                     cmd("git init .")
                     cmd("touch blah")
                     cmd("git add blah")
+                    cmd("git config user.email 'blah@blah.com'")
+                    cmd("git config user.name 'my name'")
                     os.utime(os.path.join(directory, "blah"), (13456789, 13456789))
                     cmd("git commit -am 'stuff'")
                     output = cmd("git log --pretty=%at")
