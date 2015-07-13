@@ -59,7 +59,9 @@ class Collector(Collector):
         task_finder.find_tasks({})
 
     def home_dir_configuration_location(self):
-        return os.path.expanduser("~/.harpoon.yml")
+        if os.path.exists(os.path.expanduser("~/.harpoon.yml")):
+            log.warning('~/.harpoon.yml is deprecated, please rename it to "~/.harpoonrc.yml"')
+        return os.path.expanduser("~/.harpoonrc.yml")
 
     def start_configuration(self):
         """Create the base of the configuration"""
