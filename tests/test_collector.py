@@ -149,13 +149,17 @@ describe HarpoonCase, "Collector":
         describe "Getting committime or mtime":
             it "uses git if context.use_git else just gets mtime":
                 with self.a_temp_dir() as directory:
-                    assert command_output("git init .", cwd=directory)[1] is 0
-                    assert command_output("touch blah", cwd=directory)[1] is 0
-                    assert command_output("git add blah", cwd=directory)[1] is 0
+                    def cmd(command):
+                        output, status = command_output(command, cwd=directory)
+                        print(output)
+                        assert status is 0
+                        return output
+                    cmd("git init .")
+                    cmd("touch blah")
+                    cmd("git add blah")
                     os.utime(os.path.join(directory, "blah"), (13456789, 13456789))
-                    assert command_output("git commit -am 'stuff'", cwd=directory)[1] is 0
-                    output, status = command_output("git log --pretty=%at", cwd=directory)
-                    assert status is 0
+                    cmd("git commit -am 'stuff'")
+                    output = cmd("git log --pretty=%at")
 
                     expected = int(output[0])
                     self.assertNotEqual(expected, 13456789)
