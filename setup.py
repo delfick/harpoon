@@ -27,7 +27,7 @@ setup(
       { "tests":
         [ "noseOfYeti>=1.5.0"
         , "nose"
-        , "mock"
+        , "mock==1.0.1"
         , "nose-pattern-exclude"
         , "nose-focus==0.1.2"
         , "tox"
