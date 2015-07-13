@@ -24,7 +24,15 @@ Once harpoon is installed, there will be a new program called ``harpoon``.
 When you call harpoon without any arguments it will print out the tasks you
 have available.
 
-You may invoke these tasks with the ``task`` option.
+Unless you don't have a config file, in which case it'll complain you have no
+configuration file.
+
+The configuration file will default to ``./harpoon.yml`` unless you specify a
+different value via the ``HARPOON_CONFIG`` environment variable or the
+``--harpoon-config`` cli argument.
+
+Once you have a valid configuration file and have chosen a task you wish to
+invoke, you may use the ``--task`` cli option to invoke that task.
 
 Simpler Usage
 -------------
