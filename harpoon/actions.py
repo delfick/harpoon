@@ -14,69 +14,72 @@ from textwrap import dedent
 import itertools
 import logging
 
-log = logging.getLogger("harpoon.tasks")
+log = logging.getLogger("harpoon.actions")
 
 info = {"is_default": True}
-default_tasks = []
-available_tasks = {}
-class a_task(object):
-    """Records a task in the ``available_tasks`` dictionary"""
-    def __init__(self, needs_image=False, needs_images=False):
+default_actions = []
+available_actions = {}
+
+class an_action(object):
+    """Records a task in the ``available_actions`` dictionary"""
+    def __init__(self, needs_image=False):
         self.needs_image = needs_image
-        self.needs_images = needs_image or needs_images
 
     def __call__(self, func):
-        available_tasks[func.__name__] = func
+        available_actions[func.__name__] = func
         func.needs_image = self.needs_image
-        func.needs_images = self.needs_images
         if info["is_default"]:
-            default_tasks.append(func.__name__)
+            default_actions.append(func.__name__)
         return func
 
-@a_task(needs_image=True)
-def push(overview, configuration, images, image, **kwargs):
+@an_action(needs_image=True)
+def push(collector, image, **kwargs):
     """Push an image"""
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
-    Builder().make_image(image, images, pushing=True)
+    Builder().make_image(image, collector.configuration["images"], pushing=True)
     Syncer().push(image)
 
-@a_task(needs_images=True)
-def push_all(overview, configuration, **kwargs):
+@an_action()
+def push_all(collector, **kwargs):
     """Push all the images"""
+    configuration = collector.configuration
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
-    make_all(overview, configuration, **kwargs)
+    make_all(collector, configuration, **kwargs)
 
-@a_task(needs_image=True)
-def pull(overview, configuration, images, image, **kwargs):
+@an_action(needs_image=True)
+def pull(collector, image, **kwargs):
     """Pull an image"""
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
-@a_task(needs_images=True)
-def pull_all(overview, configuration, images, **kwargs):
+@an_action()
+def pull_all(collector, **kwargs):
     """Pull all the images"""
+    images = collector.configuration["images"]
     for layer in Builder().layered(images, only_pushable=True):
         for image_name, image in layer:
             log.info("Pulling %s", image_name)
             Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
-@a_task(needs_image=True)
-def make(overview, configuration, images, image, **kwargs):
+@an_action(needs_image=True)
+def make(collector, image, **kwargs):
     """Just create an image"""
-    Builder().make_image(image, images)
+    Builder().make_image(image, collector.configuration["images"])
     print("Created image {0}".format(image.image_name))
 
-@a_task(needs_images=True)
-def make_all(overview, configuration, images, **kwargs):
+@an_action()
+def make_all(collector, **kwargs):
     """Creates all the images in layered order"""
+    configuration = collector.configuration
     push = configuration["harpoon"].do_push
     only_pushable = configuration["harpoon"].only_pushable
     if push:
         only_pushable = True
 
+    images = configuration["images"]
     for layer in Builder().layered(images, only_pushable=only_pushable):
         for _, image in layer:
             Builder().make_image(image, images, ignore_deps=True, ignore_parent=True)
@@ -84,20 +87,21 @@ def make_all(overview, configuration, images, **kwargs):
             if push and image.image_index:
                 Syncer().push(image)
 
-@a_task(needs_images=True)
-def make_pushable(overview, configuration, **kwargs):
+@an_action()
+def make_pushable(collector, **kwargs):
     """Make only the pushable images and their dependencies"""
+    configuration = collector.configuration
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
-    make_all(overview, configuration, **kwargs)
+    make_all(collector, **kwargs)
 
-@a_task(needs_image=True)
-def run(overview, configuration, images, image, **kwargs):
+@an_action(needs_image=True)
+def run(collector, image, **kwargs):
     """Run specified task in this image"""
-    image.build_and_run(images)
+    image.build_and_run(collector.configuration["images"])
 
-@a_task()
-def list_tasks(collector, configuration, tasks, **kwargs):
+@an_action()
+def list_tasks(collector, tasks, **kwargs):
     """List the available_tasks"""
     print("Available tasks to choose from are:")
     print("Use the --task option to choose one")
@@ -114,9 +118,10 @@ def list_tasks(collector, configuration, tasks, **kwargs):
             print("\t{0}{1} :-: {2}".format(" " * (max_length-len(key)), key, desc))
         print("")
 
-@a_task()
-def delete_untagged(overview, configuration, **kwargs):
+@an_action()
+def delete_untagged(collector, **kwargs):
     """Find the untagged images and remove them"""
+    configuration = collector.configuration
     docker_context = configuration["harpoon"].docker_context
     images = docker_context.images()
     found = False
@@ -133,13 +138,14 @@ def delete_untagged(overview, configuration, **kwargs):
     if not found:
         log.info("Didn't find any untagged images to delete!")
 
-@a_task(needs_images=True)
-def show(overview, configuration, images, **kwargs):
+@an_action()
+def show(collector, **kwargs):
     """Show what images we have"""
+    configuration = collector.configuration
     flat = configuration.get("harpoon.flat", False)
     only_pushable = configuration.get("harpoon.only_pushable", False)
 
-    for index, layer in enumerate(Builder().layered(images, only_pushable=only_pushable)):
+    for index, layer in enumerate(Builder().layered(configuration["images"], only_pushable=only_pushable)):
         if flat:
             for _, image in layer:
                 print(image.image_name)
@@ -149,24 +155,26 @@ def show(overview, configuration, images, **kwargs):
                 print("    {0}".format(image.display_line()))
             print("")
 
-@a_task(needs_images=True)
-def show_pushable(overview, configuration, **kwargs):
+@an_action()
+def show_pushable(collector, **kwargs):
     """Show what images we have"""
+    configuration = collector.configuration
     configuration['harpoon'].only_pushable = True
-    show(overview, configuration, **kwargs)
+    show(collector, configuration, **kwargs)
 
-@a_task(needs_image=True)
-def print_dockerfile(overview, configuration, images, image, **kwargs):
+@an_action(needs_image=True)
+def print_dockerfile(collector, image, **kwargs):
     """Print a dockerfile for the specified image"""
-    print('\n'.join(images[image].docker_file.docker_lines))
+    print('\n'.join(image.docker_file.docker_lines))
 
-@a_task(needs_images=True)
-def print_all_dockerfiles(overview, configuration, images, **kwargs):
+@an_action()
+def print_all_dockerfiles(collector, **kwargs):
     """Print all the dockerfiles"""
-    for image in images:
-        print("{0}".format(image))
-        print("-" * len(image))
-        print_dockerfile(overview, configuration, images, image)
+    for name, image in collector.configuration["images"].items():
+        print("{0}".format(name))
+        print("-" * len(name))
+        kwargs["image"] = image
+        print_dockerfile(collector, **kwargs)
 
-# Make it so future use of @a_task doesn't result in more default tasks
+# Make it so future use of @an_action doesn't result in more default tasks
 info["is_default"] = False

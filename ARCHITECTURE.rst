@@ -7,11 +7,11 @@ it's eventual use are separate concerns.
 The sequence of events are as follows:
 
 executor.py
-  The mainline sets up logging, argument parsing and sets up the ``Overview``
-  object before starting it.
+  The mainline sets up logging, argument parsing and sets up the ``Collector``
+  object before using it to find the chosen task and run it.
 
-overview.py
-  Defines the ``Overview`` object, which will collect configuration from the
+collector.py
+  Defines the ``Collector`` object, which will collect configuration from the
   user's home folder, the specified location of ``harpoon.yml``, as well as any
   extra files specified by ``harpoon.yml``.
 
@@ -22,8 +22,6 @@ overview.py
 
     * The root of the configuration
     * The image options
-
-  Overview will then find the chosen task from the commandline and run it.
 
 option_spec/task_objs.py
   The object representing a task is here. It will layer settings such that we
@@ -36,9 +34,9 @@ option_spec/task_objs.py
 
   The actual task functionality is then executed.
 
-tasks.py
+actions.py
   The functionality of each task (run, make, push, pull, etc) are defined here
-  and are annotated by the ``a_task`` decorator.
+  and are annotated by the ``an_action`` decorator.
 
   The tasks will then make things happen.
 

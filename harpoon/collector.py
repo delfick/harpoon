@@ -4,8 +4,8 @@ Collects then parses configuration files and verifies that they are valid.
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.errors import BadConfiguration, BadYaml
+from harpoon.actions import available_actions
 from harpoon.task_finder import TaskFinder
-from harpoon.tasks import available_tasks
 
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
@@ -39,7 +39,7 @@ class Collector(Collector):
         if "images" not in self.configuration:
             raise self.BadConfigurationErrorKls("Didn't find any images in the configuration")
 
-    def extra_prepare(self, configuration, cli_args, available_tasks):
+    def extra_prepare(self, configuration, cli_args):
         """Called before the configuration.converters are activated"""
         harpoon = cli_args.pop("harpoon")
 
@@ -52,9 +52,9 @@ class Collector(Collector):
         , source = "<cli_args>"
         )
 
-    def extra_prepare_after_activation(self, configuration, cli_args, available_tasks):
+    def extra_prepare_after_activation(self, configuration, cli_args):
         """Called after the configuration.converters are activated"""
-        task_finder = TaskFinder(self, cli_args)
+        task_finder = TaskFinder(self)
         self.configuration["task_runner"] = task_finder.task_runner
         task_finder.find_tasks({})
 
@@ -154,10 +154,13 @@ class Collector(Collector):
         configuration.add_converter(converter)
 
         def convert_tasks(path, val):
-            spec = harpoon_spec.tasks_spec(available_tasks)
+            spec = harpoon_spec.tasks_spec(available_actions)
             meta = Meta(path.configuration.root(), [('images', ""), (image, ""), ('tasks', "")])
             configuration.converters.started(path)
-            return spec.normalise(meta, val)
+            tasks = spec.normalise(meta, val)
+            for task in tasks.values():
+                task.image = image
+            return tasks
 
         converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
         configuration.add_converter(converter)

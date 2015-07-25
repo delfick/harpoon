@@ -1,7 +1,7 @@
 """
 We have here the object representing a task.
 
-Tasks contain a reference to the functionality it provides (in ``harpoon.tasks``)
+Tasks contain a reference to the functionality it provides (in ``harpoon.actions``)
 as well as options that are used to override those in the image it's attached
 to.
 """
@@ -14,7 +14,7 @@ from option_merge import MergedOptions
 class Task(dictobj):
     """
     Used to add extra options associated with the task and to start the action
-    from ``harpoon.tasks``.
+    from ``harpoon.actions``.
 
     Also responsible for complaining if the specified action doesn't exist.
 
@@ -35,16 +35,14 @@ class Task(dictobj):
     def set_description(self, available_actions=None):
         if not self.description:
             if not available_actions:
-                from harpoon.tasks import available_tasks as available_actions
+                from harpoon.actions import available_actions
             if self.action in available_actions:
                 self.description = available_actions[self.action].__doc__
 
-    def run(self, collector, cli_args, image, available_actions=None, tasks=None, **extras):
+    def run(self, collector, image, available_actions, tasks, **extras):
         """Run this task"""
-        if available_actions is None:
-            from harpoon.tasks import available_tasks as available_actions
         task_func = available_actions[self.action]
-        configuration = MergedOptions.using(collector.configuration, dont_prefix=collector.configuration.dont_prefix, converters=collector.configuration.converters)
+        configuration = collector.configuration.wrapped()
 
         if self.options:
             if image:
@@ -52,7 +50,9 @@ class Task(dictobj):
             else:
                 configuration.update(self.options)
 
-        configuration.update(cli_args, source="<cli>")
+        # Cli args like --port and the like should override what's in the options
+        # But themselves be overridden by the overrides
+        configuration.update(configuration["cli_args"].as_dict(), source="<cli_args>")
 
         if self.overrides:
             overrides = {}
@@ -62,37 +62,24 @@ class Task(dictobj):
                     overrides[key] = dict(val.items())
             collector.configuration.update(overrides)
 
-        images = None
-        if task_func.needs_images:
-            images = self.determine_image(image, collector, configuration, needs_image=task_func.needs_image)
-            if image:
-                image = images[image]
-
-        if image:
+        if task_func.needs_image:
+            self.find_image(image, configuration)
+            image = configuration["images"][image]
             image.find_missing_env()
 
-        return task_func(collector, configuration, images=images, image=image, tasks=tasks, **extras)
+        return task_func(collector, image=image, tasks=tasks, **extras)
 
-    def determine_image(self, image, collector, configuration, needs_image=True):
+    def find_image(self, image, configuration):
         """Complain if we don't have an image"""
         images = configuration["images"]
+        available = list(images.keys())
 
-        available = None
-        available = images.keys()
+        if not image:
+            info = {}
+            if available:
+                info["available"] = available
+            raise BadOption("Please use --image to specify an image", **info)
 
-        if needs_image:
-            if not image:
-                info = {}
-                if available:
-                    info["available"] = list(available)
-                raise BadOption("Please use --image to specify an image", **info)
-
-            if image not in images:
-                raise BadOption("No such image", wanted=image, available=list(images.keys()))
-
-        return images
-
-    def specify_image(self, image):
-        """Specify the image this task belongs to"""
-        self.image = image
+        if image not in images:
+            raise BadOption("No such image", wanted=image, available=available)
 
