@@ -77,7 +77,7 @@ describe HarpoonCase, "Collector":
                     collector.configuration["task_runner"]("blah")
                     task_finder.task_runner.assert_called_once_with("blah")
 
-                    FakeTaskFinder.assert_called_once_with(collector, cli_args)
+                    FakeTaskFinder.assert_called_once_with(collector)
 
     describe "Configuration":
         describe "start configuration":
@@ -267,6 +267,9 @@ describe HarpoonCase, "Collector":
             it "installs a converter for the image itself and for the group of tasks":
                 normalised_image = mock.Mock(name="normalised_image")
                 normalised_tasks = mock.Mock(name="normalised_tasks")
+                t1 = mock.Mock(name="t1")
+                t2 = mock.Mock(name="t2")
+                normalised_tasks.values.return_value = [t1, t2]
 
                 harpoon_spec = mock.Mock(name="harpoon_spec")
                 harpoon_spec.image_spec = mock.Mock(name="image_spec")
@@ -284,6 +287,8 @@ describe HarpoonCase, "Collector":
                 collector.make_image_converters("blah", configuration, harpoon_spec)
                 self.assertIs(configuration["images"]["blah"], normalised_image)
                 self.assertIs(configuration[["images", "blah", "tasks"]], normalised_tasks)
+                self.assertEqual(t1.image, "blah")
+                self.assertEqual(t2.image, "blah")
 
             it "uses root of configuration with image as an override for the image converter":
                 collector = Collector()

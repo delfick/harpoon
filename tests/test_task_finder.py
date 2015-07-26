@@ -11,17 +11,14 @@ import mock
 import json
 
 describe HarpoonCase, "TaskFinder":
-    it "takes in a collector and cli_args":
-        cli_args = mock.Mock(name='cli_args')
+    it "takes in a collector":
         collector = mock.Mock(name="collector")
         configuration = mock.Mock(name="configuration")
         collector.configuration = configuration
 
-        task_finder = TaskFinder(collector, cli_args)
+        task_finder = TaskFinder(collector)
         self.assertEqual(task_finder.tasks, {})
-        self.assertIs(task_finder.cli_args, cli_args)
         self.assertIs(task_finder.collector, collector)
-        self.assertIs(task_finder.configuration, configuration)
 
     describe "image_finder":
         it "defaults to the chosen_image":
@@ -55,29 +52,28 @@ describe HarpoonCase, "TaskFinder":
             image = mock.Mock(name="image")
             task = mock.Mock(name="task", image=image)
 
-            cli_args = mock.Mock(name="cli_args")
             collector = mock.Mock(name="collector")
             collector.configuration = {"harpoon": type("Harpoon", (object, ), {"chosen_image": mock.Mock(name="chosen_image")})()}
 
-            task_finder = TaskFinder(collector, cli_args)
+            task_finder = TaskFinder(collector)
             task_finder.tasks = {"blah": task}
 
-            available_tasks = mock.Mock(name="available_tasks")
-            with mock.patch("harpoon.task_finder.available_tasks", available_tasks):
+            available_actions = mock.Mock(name="available_actions")
+            with mock.patch("harpoon.task_finder.available_actions", available_actions):
                 task_finder.task_runner("blah", one=1, two=2)
-                task.run.assert_called_once_with(collector, cli_args, image, available_actions=available_tasks, tasks={"blah": task}, one=1, two=2)
+                task.run.assert_called_once_with(collector, image, available_actions, {"blah": task}, one=1, two=2)
 
     describe "default_tasks":
-        it "returns a dictionary of name to Task object for all the names in default_tasks":
+        it "returns a dictionary of name to Task object for all the names in default_actions":
             def one_func():
                 """le description of stuff"""
             def two_func():
                 """trees and things"""
-            available_tasks = {"one": one_func, "two": two_func}
-            default_tasks = ["one", "two"]
+            available_actions = {"one": one_func, "two": two_func}
+            default_actions = ["one", "two"]
 
-            with mock.patch("harpoon.tasks.available_tasks", available_tasks):
-                with mock.patch("harpoon.task_finder.default_tasks", default_tasks):
+            with mock.patch("harpoon.actions.available_actions", available_actions):
+                with mock.patch("harpoon.task_finder.default_actions", default_actions):
                     base = TaskFinder(mock.Mock(name="collector")).default_tasks()
                     self.assertEqual(base
                         , { "one": Task(action="one", description="le description of stuff", label="Harpoon")
