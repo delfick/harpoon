@@ -9,35 +9,18 @@ from harpoon.collector import Collector
 from input_algorithms.spec_base import NotSpecified
 from docker.client import Client as DockerClient
 from delfick_app import App, DelayedFileType
+from docker.utils import kwargs_from_env
 import requests
 import logging
-import docker
-import ssl
 import os
 
 log = logging.getLogger("harpoon.executor")
 
 def docker_context():
     """Make a docker context"""
-    host = os.environ.get('DOCKER_HOST')
-    cert_path = os.environ.get('DOCKER_CERT_PATH')
-    tls_verify = os.environ.get('DOCKER_TLS_VERIFY')
-
-    if cert_path == '':
-        cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
-
-    options = {"timeout": 180, "version": 'auto'}
-    if host:
-        options['base_url'] = (host.replace('tcp://', 'https://') if tls_verify else host)
-
-    if tls_verify and cert_path:
-        options['tls'] = docker.tls.TLSConfig(
-            verify = True
-            , ca_cert = os.path.join(cert_path, 'ca.pem')
-            , client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
-            , ssl_version = ssl.PROTOCOL_TLSv1
-            , assert_hostname = False
-            )
+    options = kwargs_from_env(assert_hostname=False)
+    options["version"] = "auto"
+    options["timeout"] = int(os.environ.get("DOCKER_CLIENT_TIMEOUT", 180))
 
     client = DockerClient(**options)
     try:
