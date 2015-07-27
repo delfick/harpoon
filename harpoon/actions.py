@@ -46,7 +46,7 @@ def push_all(collector, **kwargs):
     configuration = collector.configuration
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
-    make_all(collector, configuration, **kwargs)
+    make_all(collector, **kwargs)
 
 @an_action(needs_image=True)
 def pull(collector, image, **kwargs):
@@ -160,7 +160,7 @@ def show_pushable(collector, **kwargs):
     """Show what images we have"""
     configuration = collector.configuration
     configuration['harpoon'].only_pushable = True
-    show(collector, configuration, **kwargs)
+    show(collector, **kwargs)
 
 @an_action(needs_image=True)
 def print_dockerfile(collector, image, **kwargs):
