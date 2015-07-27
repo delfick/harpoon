@@ -1,6 +1,5 @@
-from harpoon.tasks import available_tasks
-from harpoon.overview import Overview
-from harpoon import helpers as hp
+from harpoon.task_finder import TaskFinder
+from harpoon.collector import Collector
 
 from docutils.statemachine import ViewList
 from sphinx.util.compat import Directive
@@ -14,14 +13,6 @@ class ShowTasksDirective(Directive):
     def run(self):
         """For each file in noseOfYeti/specs, output nodes to represent each spec file"""
         tokens = []
-        with hp.a_temp_file() as fle:
-            fle.write(dedent("""
-                ---
-                images: { app: {} }
-            """))
-            fle.seek(0)
-            overview = Overview(fle.name)
-
         section = nodes.section()
         section['ids'].append("available-tasks")
 
@@ -29,7 +20,8 @@ class ShowTasksDirective(Directive):
         title += nodes.Text("Default tasks")
         section += title
 
-        for name, task in sorted(overview.find_tasks().items(), key=lambda x: len(x[0])):
+        task_finder = TaskFinder(Collector())
+        for name, task in sorted(task_finder.default_tasks().items(), key=lambda x: len(x[0])):
 
             lines = [name] + ["  {0}".format(line.strip()) for line in task.description.split('\n')]
             viewlist = ViewList()
