@@ -269,6 +269,13 @@ class Runner(object):
 
             , cap_add = conf.cpu.cap_add
             , cap_drop = conf.cpu.cap_drop
+            , mem_limit = conf.cpu.mem_limit
+            , memswap_limit = conf.cpu.memswap_limit
+
+            , ulimits = conf.ulimits
+            , read_only = conf.read_only_rootfs
+            , log_config = conf.log_config
+            , security_opt = conf.security_opt
 
             , **conf.other_options.host_config
             )
@@ -291,9 +298,7 @@ class Runner(object):
             , network_disabled = conf.network.disabled
 
             , cpuset = conf.cpu.cpuset
-            , mem_limit = conf.cpu.mem_limit
             , cpu_shares = conf.cpu.cpu_shares
-            , memswap_limit = conf.cpu.memswap_limit
 
             , host_config = host_config
 

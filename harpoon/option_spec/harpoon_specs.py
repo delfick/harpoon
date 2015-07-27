@@ -195,6 +195,10 @@ class HarpoonSpec(object):
 
             , env = listof(specs.env_spec(), expect=image_objs.Environment)
             , ports = listof(specs.port_spec(), expect=image_objs.Port)
+            , ulimits = defaulted(listof(dictionary_spec()), None)
+            , log_config = defaulted(listof(dictionary_spec()), None)
+            , security_opt = defaulted(listof(string_spec()), None)
+            , read_only_rootfs = defaulted(boolean(), False)
 
             , other_options = create_spec(other_options
                 , start = dictionary_spec()
@@ -224,7 +228,7 @@ class HarpoonSpec(object):
                 , memswap_limit = defaulted(integer_spec(), 0)
                 )
 
-            , devices = defaulted(listof(string_spec()), None)
+            , devices = defaulted(listof(dictionary_spec()), None)
             , privileged = defaulted(boolean(), False)
             , restart_policy = defaulted(string_spec(), None)
             )
