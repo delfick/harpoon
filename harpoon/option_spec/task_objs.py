@@ -60,14 +60,18 @@ class Task(dictobj):
                 overrides[key] = val
                 if isinstance(val, MergedOptions):
                     overrides[key] = dict(val.items())
-            collector.configuration.update(overrides)
+            configuration.update(overrides)
 
         if task_func.needs_image:
             self.find_image(image, configuration)
             image = configuration["images"][image]
             image.find_missing_env()
 
-        return task_func(collector, image=image, tasks=tasks, **extras)
+        from harpoon.collector import Collector
+        new_collector = Collector()
+        new_collector.configuration = configuration
+        new_collector.configuration_file = collector.configuration_file
+        return task_func(new_collector, image=image, tasks=tasks, **extras)
 
     def find_image(self, image, configuration):
         """Complain if we don't have an image"""

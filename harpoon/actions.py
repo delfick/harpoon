@@ -158,8 +158,7 @@ def show(collector, **kwargs):
 @an_action()
 def show_pushable(collector, **kwargs):
     """Show what images we have"""
-    configuration = collector.configuration
-    configuration['harpoon'].only_pushable = True
+    collector.configuration['harpoon'].only_pushable = True
     show(collector, **kwargs)
 
 @an_action(needs_image=True)
