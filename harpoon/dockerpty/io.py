@@ -147,10 +147,14 @@ class Stream(object):
             try:
                 written = 0
 
-                if hasattr(self.fd, 'send'):
-                    written = self.fd.send(self.buffer)
+                socket = self.fd
+                if hasattr(socket, 'connection'):
+                    socket = socket.connection
+
+                if hasattr(socket, 'send'):
+                    written = socket.send(self.buffer)
                 else:
-                    written = os.write(self.fd.fileno(), self.buffer)
+                    written = os.write(socket.fileno(), self.buffer)
 
                 self.buffer = self.buffer[written:]
 
