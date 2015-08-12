@@ -139,7 +139,7 @@ Let's start with getting the arguments passed into our program:
     def main():
         print(sys.argv)
 
-Now execute the following and observe the output: ``./harpoon.sh hello there these are arguments``
+Now execute the following and observe the output: ``./harpoon.py hello there these are arguments``
 
 This time, let's introduce a for loop.
 
@@ -150,7 +150,7 @@ This time, let's introduce a for loop.
             print("---")
             print(item)
 
-``./harpoon.sh I understand what is happening``
+``./harpoon.py I understand what is happening``
 
 And enumerate:
 
@@ -179,7 +179,7 @@ Let's introduce an if statement:
             else:
                 print("Not a tick")
 
-``./harpoon.sh clock tock tick``
+``./harpoon.py clock tock tick``
 
 And, finally, popping an array:
 
@@ -197,7 +197,7 @@ And, finally, popping an array:
             # Hint: it's something to do with sys.argv
             print("I have no arguments :(")
 
-``./harpoon.sh one two three four``
+``./harpoon.py one two three four``
 
 Now you should have enough information to implement ``main`` to satisfy the
 following:
