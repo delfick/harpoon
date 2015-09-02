@@ -68,7 +68,7 @@ class Image(dictobj):
         return "<Image {0}>".format(self.image_name)
 
     def __str__(self):
-        return "{IMAGE:{0}}".format(self.image_name)
+        return "{{IMAGE:{0}}}".format(self.image_name)
 
     def post_setup(self):
         for key in ('bash', 'command'):
