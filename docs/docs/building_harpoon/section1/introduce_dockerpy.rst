@@ -134,7 +134,7 @@ Well, that was fun. Now let's do something a bit more interesting:
         client = make_client()
         dockerfile_commands = [
           "FROM gliderlabs/alpine:3.1"
-        , "RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/"
+        , "RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/"
         , "CMD figlet lolz"
         ]
 

@@ -15,7 +15,7 @@ So now we should have something like the following:
 
         commands:
             - FROM gliderlabs/alpine:3.1
-            - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/
+            - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/
             - CMD figlet lolz
 
 ``setup.py``

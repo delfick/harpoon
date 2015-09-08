@@ -77,7 +77,7 @@ Your output should look something like::
 
     {"stream":" ---\u003e 0114fb636191\n"}
 
-    {"stream":"Step 1 : RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/\n"}
+    {"stream":"Step 1 : RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/\n"}
 
     {"stream":" ---\u003e Using cache\n"}
 

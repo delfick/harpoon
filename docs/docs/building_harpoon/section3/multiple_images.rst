@@ -13,7 +13,7 @@ Let's make our config look like this:
 
             commands:
                 - FROM gliderlabs/alpine:3.1
-                - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/
+                - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/
                 - CMD figlet lolz
 
 And let's add an image cli argument in ``executor.py``:

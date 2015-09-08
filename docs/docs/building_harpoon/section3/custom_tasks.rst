@@ -418,7 +418,7 @@ Excellent, now let's change our config.yml:
 
             commands:
                 - FROM gliderlabs/alpine:3.1
-                - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/
+                - RUN apk-install figlet --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/
                 - CMD figlet lolz
 
             tasks:
