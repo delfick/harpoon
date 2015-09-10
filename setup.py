@@ -21,7 +21,6 @@ setup(
       , "humanize"
 
       , "pyYaml==3.10"
-      , "requests[security]"
       ]
 
     , extras_require =
