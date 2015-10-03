@@ -65,7 +65,7 @@ configuration a MergedOptions object and then just accessing strings against it.
 
 The initial version of option_merge would split the key by dot to determine what
 to access, but this meant keys couldn't have dots in them, so after a rewrite,
-access is now done via shortest match.
+access is now done via longest match.
 
 I'll demonstrate the implications of this below:
 
@@ -76,6 +76,7 @@ I'll demonstrate the implications of this below:
           { "trusty":
             { "14":
               { "04": 1
+	      , "06": 4
               }
             }
           }
@@ -84,10 +85,13 @@ I'll demonstrate the implications of this below:
         })
 
     print(options["ubuntu.trusty.14.04"])
-    # prints 1
+    # prints 2
 
     print(options["ubuntu.trusty.14.05"])
     # prints 3
+
+    print(options["ubuntu.trusty.14.06"])
+    # prints 4
 
 This means whenever you set a key in a ``MergedOptions`` object you must use the
 array syntax to seperate the key otherwise it'll make a dotted key:
