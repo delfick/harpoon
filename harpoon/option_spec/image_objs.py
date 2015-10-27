@@ -16,12 +16,12 @@ from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 from contextlib import contextmanager
+from six.moves import shlex_quote
 import logging
 import uuid
 import time
 import six
 import os
-import pipes
 
 log = logging.getLogger("harpoon.option_spec.image_objs")
 
@@ -164,7 +164,7 @@ class Image(dictobj):
         if bash is not NotSpecified and callable(bash):
             bash = bash()
         if bash is not NotSpecified:
-            return "/bin/bash -c {0}".format(pipes.quote(bash))
+            return "/bin/bash -c {0}".format(shlex_quote(bash))
 
         command = self.command
         if command is not NotSpecified and callable(command):
@@ -339,7 +339,7 @@ class Recursive(dictobj):
     def make_first_dockerfile(self, docker_file):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "RUN bash -c {0}".format(pipes.quote(self.action))
+              "RUN bash -c {0}".format(shlex_quote(self.action))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
@@ -348,7 +348,7 @@ class Recursive(dictobj):
         docker_lines = [
               "FROM {0}".format(image_name)
             , "VOLUME /{0}".format(self.shared_name)
-            , "CMD /bin/bash -c {0}".format(pipes.quote(self.copy_and_stay_cmd))
+            , "CMD /bin/bash -c {0}".format(shlex_quote(self.copy_and_stay_cmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
@@ -357,16 +357,16 @@ class Recursive(dictobj):
         docker_lines = [
               "FROM {0}".format(image_name)
             ] + [line for line in docker_file.docker_lines if not line.startswith("FROM")] + [
-              "RUN bash -c {0}".format(pipes.quote(self.action))
+              "RUN bash -c {0}".format(shlex_quote(self.action))
             , "VOLUME /{0}".format(self.shared_name)
-            , "CMD /bin/bash -c {0}".format(pipes.quote(self.copy_and_stay_cmd))
+            , "CMD /bin/bash -c {0}".format(shlex_quote(self.copy_and_stay_cmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
     def make_builder_dockerfile(self, docker_file):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "CMD /bin/bash -c {0}' && '{1}' && '{2}".format(pipes.quote(self.waiter_line), pipes.quote(self.copy_line), pipes.quote(self.rmcmd))
+              "CMD /bin/bash -c {0}' && '{1}' && '{2}".format(shlex_quote(self.waiter_line), shlex_quote(self.copy_line), shlex_quote(self.rmcmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
