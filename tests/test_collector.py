@@ -242,6 +242,7 @@ describe HarpoonCase, "Collector":
                 self.assertNotEqual(type(configuration["harpoon"]), Harpoon)
 
                 collector.extra_configuration_collection(configuration)
+                configuration.converters.activate()
                 self.assertEqual(type(configuration["harpoon"]), Harpoon)
 
             it "registers image converters for each image":

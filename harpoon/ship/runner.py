@@ -366,6 +366,7 @@ class Runner(object):
     def wait_till_stopped(self, conf, container_id, timeout=10, message=None, waiting=True):
         """Wait till a container is stopped"""
         stopped = False
+        inspection = None
         for _ in until(timeout=timeout, action=message):
             try:
                 inspection = conf.harpoon.docker_context.inspect_container(container_id)
@@ -386,7 +387,12 @@ class Runner(object):
                 else:
                     break
 
-        exit_code = inspection["State"]["ExitCode"]
+        if not inspection:
+            log.warning("Failed to inspect the container!")
+            stopped = True
+            exit_code = 1
+        else:
+            exit_code = inspection["State"]["ExitCode"]
         return stopped, exit_code
 
     def is_stopped(self, *args, **kwargs):
