@@ -20,7 +20,7 @@ env:
     - DOCKER_VERSION=1.7
 
 before_install:
-  - sudo sh -c "wget -qO- https://get.docker.io/gpg | apt-key add -"
+  - sudo sh -c "apt-key adv --recv-keys --keyserver keyserver.ubuntu.com D8576A8BA88D21E9"
   - sudo sh -c "echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list"
   - echo exit 101 | sudo tee /usr/sbin/policy-rc.d
   - sudo chmod +x /usr/sbin/policy-rc.d
