@@ -77,7 +77,7 @@ describe HarpoonCase, "Building docker images":
 
         expected = """
          Step 1 : FROM busybox:buildroot-2014.02
-          ---> 8c2e06607696
+          ---> [a-zA-Z0-9]{12}
          Step 2 : RUN exit 1
           ---> Running in .+
          !!!!
@@ -123,7 +123,7 @@ describe HarpoonCase, "Building docker images":
 
         expected = """
          Step 1 : FROM busybox:buildroot-2014.02
-          ---> 8c2e06607696
+          ---> [a-zA-Z0-9]{12}
          Step 2 : CMD ['/bin/sh', '-c', 'exit 1']
           ---> Running in .+
           --->
@@ -173,7 +173,7 @@ describe HarpoonCase, "Building docker images":
 
         expected = """
          Step 1 : FROM busybox:buildroot-2014.02
-          ---> 8c2e06607696
+          ---> [a-zA-Z0-9]{12}
          Step 2 : CMD echo 'hi'; sleep 1; exit 1
           ---> Running in .+
           ---> .+
