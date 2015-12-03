@@ -16,8 +16,7 @@ env:
     - SLIRP_PORTS=$(seq 2375 2500)
     - CI_SERVER=true
   matrix:
-    - DOCKER_VERSION=1.6.2
-    - DOCKER_VERSION=1.7
+    - DOCKER_VERSION=1.9.0
 
 before_install:
   - sudo sh -c "apt-key adv --recv-keys --keyserver keyserver.ubuntu.com D8576A8BA88D21E9"
