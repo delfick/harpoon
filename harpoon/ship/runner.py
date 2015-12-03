@@ -250,7 +250,7 @@ class Runner(object):
         if volumes_from:
             log.info("\tVolumes from: %s", volumes_from)
 
-        host_config = utils.create_host_config(
+        host_config = conf.harpoon.docker_context.create_host_config(
               links = links
             , binds = binds
             , volumes_from = volumes_from
