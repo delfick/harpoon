@@ -20,6 +20,7 @@ import fnmatch
 import logging
 import tarfile
 import shutil
+import json
 import six
 import os
 import re
@@ -219,6 +220,7 @@ class ContextBuilder(object):
         all_files = set(git.open_index())
 
         use_files = set()
+        use_files_relpaths = set()
         for filename in all_files:
             relpath = os.path.relpath(os.path.join(root_folder, filename.decode('utf-8')), context.parent_dir)
 
@@ -257,9 +259,22 @@ class ContextBuilder(object):
             # Either didn't match any exclude or matched an include
             if matched:
                 use_files.add(filename)
+                use_files_relpaths.add(relpath)
 
         if not silent_build: log.info("Finding modified times for %s/%s git controlled files in %s", len(use_files), len(all_files), root_folder)
-        for entry in git.get_walker(paths=use_files):
+
+        first_commit = None
+        cached_commit, cached_mtimes = self.get_cached_mtimes(root_folder, use_files_relpaths)
+        for entry in git.get_walker():
+            if first_commit is None:
+                first_commit = entry.commit.id.decode('utf-8')
+
+            if cached_commit and entry.commit.id.decode('utf-8') == cached_commit:
+                new_mtimes = cached_mtimes
+                new_mtimes.update(mtimes)
+                mtimes = new_mtimes
+                break
+
             date = entry.commit.author_time
             added = False
             for changes in entry.changes():
@@ -279,7 +294,56 @@ class ContextBuilder(object):
                 if len(use_files - set(mtimes)) == 0:
                     break
 
-        return dict((fn.decode('utf-8'), mtime) for fn, mtime in mtimes.items())
+        mtimes = dict((fn.decode('utf-8') if hasattr(fn, "decode") else fn, mtime) for fn, mtime in mtimes.items())
+        if first_commit != cached_commit:
+            self.set_cached_mtimes(root_folder, first_commit, mtimes, use_files_relpaths)
+        return mtimes
+
+    def get_cached_mtimes(self, root_folder, use_files_relpaths, get_all=False):
+        location = os.path.join(root_folder, ".git", "harpoon_cached_mtimes.json")
+        sorted_use_files_relpaths = sorted(use_files_relpaths)
+        result = []
+        if os.path.exists(location):
+            try:
+                result = json.load(open(location))
+            except (TypeError, ValueError) as error:
+                log.warning("Failed to open harpoon cached mtimes\tlocation=%s\terror=%s", location, error)
+            else:
+                if type(result) is not list or not all(type(item) is dict for item in result):
+                    log.warning("Harpoon cached mtimes needs to be a list of dictionaries\tlocation=%s\tgot=%s", location, type(result))
+                    result = []
+
+        if get_all:
+            return result
+
+        for item in result:
+            if sorted(item.get("use_files_relpaths", [])) == sorted_use_files_relpaths:
+                return item.get("commit"), item.get("mtimes")
+
+        return None, {}
+
+    def set_cached_mtimes(self, root_folder, first_commit, mtimes, use_files_relpaths):
+        location = os.path.join(root_folder, ".git", "harpoon_cached_mtimes.json")
+        sorted_use_files_relpaths = sorted(use_files_relpaths)
+        current = self.get_cached_mtimes(root_folder, use_files_relpaths, get_all=True)
+
+        found = False
+        for item in current:
+            if sorted(item.get("use_files_relpaths", [])) == sorted_use_files_relpaths:
+                item["mtimes"] = mtimes
+                item["commit"] = first_commit
+                found = True
+                break
+
+        if not found:
+            current.append({"commit": first_commit, "mtimes": mtimes, "use_files_relpaths": sorted_use_files_relpaths})
+
+        try:
+            log.info("Writing harpoon cached mtimes\tlocation=%s", location)
+            with open(location, "w") as fle:
+                json.dump(current, fle)
+        except (TypeError, ValueError, IOError) as error:
+            log.warning("Failed to dump harpoon mtime cache\tlocation=%s\terror=%s", location, error)
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""
