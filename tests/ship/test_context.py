@@ -45,12 +45,11 @@ describe HarpoonCase, "Context Wrapper":
     describe "clone_with_new_dockerfile":
         it "copies over files from the old tar file into a new tarfile and returns a new wrapper":
             tmpfile = self.make_temp_file()
-            old_tar = tarfile.open(tmpfile.name, "w:gz")
+            old_tar = tarfile.open(tmpfile.name, "w")
             old_tar.add(self.make_temp_file("blah").name, "./one")
             old_tar.add(self.make_temp_file("meh").name, "./two")
             old_tar.add(self.make_temp_file("Dockerfile_lines").name, "./Dockerfile")
             wrapper = ContextWrapper(old_tar, tmpfile)
-            wrapper.close()
 
             conf = HarpoonSpec().image_spec.normalise(
                   Meta({"_key_name_1": "awesome", "config_root": self.make_temp_dir()}, [])

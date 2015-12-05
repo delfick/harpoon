@@ -15,9 +15,11 @@ from harpoon.errors import HarpoonError
 from delfick_app import command_output
 from contextlib import contextmanager
 from dulwich.repo import Repo
+import tempfile
 import fnmatch
 import logging
 import tarfile
+import shutil
 import six
 import os
 import re
@@ -32,6 +34,7 @@ class ContextWrapper(object):
 
     def close(self):
         self.t.close()
+        self.tmpfile.flush()
         self.tmpfile.seek(0)
 
     @property
@@ -41,17 +44,14 @@ class ContextWrapper(object):
     @contextmanager
     def clone_with_new_dockerfile(self, conf, docker_file):
         """Clone this tarfile and add in another filename before closing the new tar and returning"""
-        with open(self.tmpfile.name, 'rb') as old_tmpfile:
-            old_t = None
-            if os.stat(old_tmpfile.name).st_size > 0:
-                old_t = tarfile.open(mode='r:gz', fileobj=old_tmpfile)
+        log.info("Copying context to add a different dockerfile")
+        self.close()
+        with a_temp_file() as tmpfile:
+            old_t = os.stat(self.tmpfile.name).st_size > 0
+            if old_t:
+                shutil.copy(self.tmpfile.name, tmpfile.name)
 
-            with a_temp_file() as tmpfile:
-                t = tarfile.open(mode='w:gz', fileobj=tmpfile)
-                if old_t:
-                    for member in old_t:
-                        t.addfile(member, old_t.extractfile(member.name))
-
+            with tarfile.open(tmpfile.name, mode="a") as t:
                 conf.add_docker_file_to_tarfile(docker_file, t)
                 yield ContextWrapper(t, tmpfile)
 
@@ -62,7 +62,7 @@ class ContextBuilder(object):
     Can take into account git to determine what to include and exclude.
     """
     @contextmanager
-    def make_context(self, context, silent_build=False, use_gzip=True, extra_context=None):
+    def make_context(self, context, silent_build=False, extra_context=None):
         """
         Context manager for creating the context of the image
 
@@ -82,8 +82,7 @@ class ContextBuilder(object):
             string represents where in the context this extra file should go
         """
         with a_temp_file() as tmpfile:
-            mode = "w:gz" if use_gzip else "w"
-            t = tarfile.open(mode=mode, fileobj=tmpfile)
+            t = tarfile.open(mode='w', fileobj=tmpfile)
             for thing, mtime, arcname in self.find_mtimes(context, silent_build):
                 if mtime:
                     os.utime(thing, (mtime, mtime))
@@ -115,7 +114,7 @@ class ContextBuilder(object):
                 fle.seek(0)
                 yield fle
         else:
-            with ContextBuilder().make_context(content["context"], silent_build=silent_build, use_gzip=False) as wrapper:
+            with ContextBuilder().make_context(content["context"], silent_build=silent_build) as wrapper:
                 wrapper.close()
                 yield wrapper.tmpfile
 
