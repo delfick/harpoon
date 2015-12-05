@@ -18,9 +18,6 @@ mtime = 1431170923
 
 describe HarpoonCase, "Executing harpoon":
     it "executes the given task":
-        if six.PY3:
-            raise nose.SkipTest()
-
         content = str(uuid.uuid1())
         config = { "images":
             { "blah":

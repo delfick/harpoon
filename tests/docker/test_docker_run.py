@@ -41,9 +41,6 @@ describe HarpoonCase, "Building docker images":
         return HarpoonSpec().image_spec.normalise(Meta(everything, []), options)
 
     it "can intervene a broken build":
-        if six.PY3:
-            raise nose.SkipTest()
-
         called = []
         original_commit_and_run = Runner.commit_and_run
         def commit_and_run(*args, **kwargs):
@@ -89,9 +86,6 @@ describe HarpoonCase, "Building docker images":
         self.assertReMatchLines(expected, output)
 
     it "can intervene a broken container":
-        if six.PY3:
-            raise nose.SkipTest()
-
         called = []
         original_commit_and_run = Runner.commit_and_run
         def commit_and_run(*args, **kwargs):
@@ -138,9 +132,6 @@ describe HarpoonCase, "Building docker images":
         self.assertReMatchLines(expected, output)
 
     it "can intervene a broken container with the tty starting":
-        if six.PY3:
-            raise nose.SkipTest()
-
         called = []
         original_commit_and_run = Runner.commit_and_run
         def commit_and_run(*args, **kwargs):

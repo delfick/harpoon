@@ -41,10 +41,10 @@ class ContextWrapper(object):
     @contextmanager
     def clone_with_new_dockerfile(self, conf, docker_file):
         """Clone this tarfile and add in another filename before closing the new tar and returning"""
-        with open(self.tmpfile.name) as old_tmpfile:
+        with open(self.tmpfile.name, 'rb') as old_tmpfile:
             old_t = None
             if os.stat(old_tmpfile.name).st_size > 0:
-                old_t = tarfile.open(mode='r:gz', fileobj=open(old_tmpfile.name))
+                old_t = tarfile.open(mode='r:gz', fileobj=old_tmpfile)
 
             with a_temp_file() as tmpfile:
                 t = tarfile.open(mode='w:gz', fileobj=tmpfile)
@@ -221,7 +221,7 @@ class ContextBuilder(object):
 
         use_files = set()
         for filename in all_files:
-            relpath = os.path.relpath(os.path.join(root_folder, filename), context.parent_dir)
+            relpath = os.path.relpath(os.path.join(root_folder, filename.decode('utf-8')), context.parent_dir)
 
             # Only include files under the parent_dir
             if relpath.startswith("../"):
@@ -268,7 +268,7 @@ class ContextBuilder(object):
                 for change in changes:
                     path = change.new.path
                     if root_folder and change.new.path and context.parent_dir:
-                        new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path), context.parent_dir)
+                        new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path.decode('utf-8')), context.parent_dir)
                         if path in use_files and mtimes.get(new_relpath, 0) < date and not new_relpath.startswith("../"):
                             mtimes[new_relpath] = date
 

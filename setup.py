@@ -17,10 +17,10 @@ setup(
 
       , "six"
       , "glob2"
-      , "dulwich"
       , "humanize"
 
       , "pyYaml==3.10"
+      , "dulwich==0.11.2"
       ]
 
     , extras_require =

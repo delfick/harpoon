@@ -44,9 +44,6 @@ describe HarpoonCase, "Context Wrapper":
 
     describe "clone_with_new_dockerfile":
         it "copies over files from the old tar file into a new tarfile and returns a new wrapper":
-            if six.PY3:
-                raise nose.SkipTest()
-
             tmpfile = self.make_temp_file()
             old_tar = tarfile.open(tmpfile.name, "w:gz")
             old_tar.add(self.make_temp_file("blah").name, "./one")
@@ -330,11 +327,6 @@ describe HarpoonCase, "Context builder":
             self.assertEqual(found_mtime_ignoreable, set())
 
     describe "find_git_mtimes":
-        before_each:
-            # Dulwich doesn't seem to work well in python3
-            # That work seems to be ongoing, will re-enable these tests in the future
-            if six.PY3:
-                raise nose.SkipTest()
 
         it "is able to find all the files owned by git and get their last commit modified time":
             with self.cloned_repo_example() as root_folder:
