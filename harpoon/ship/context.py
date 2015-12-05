@@ -270,8 +270,8 @@ class ContextBuilder(object):
                     path = change.new.path
                     if root_folder and change.new.path and context.parent_dir:
                         if path in use_files:
-                            new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path.decode('utf-8')), context.parent_dir)
-                            if not new_relpath.startswith("../"):
+                            new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path.decode('utf-8')), context.parent_dir).encode('utf-8')
+                            if not new_relpath.decode('utf-8').startswith("../"):
                                 if mtimes.get(new_relpath, 0) < date:
                                     mtimes[new_relpath] = date
                                     added = True
@@ -280,7 +280,7 @@ class ContextBuilder(object):
                 if len(use_files - set(mtimes)) == 0:
                     break
 
-        return mtimes
+        return dict((fn.decode('utf-8'), mtime) for fn, mtime in mtimes.items())
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""
