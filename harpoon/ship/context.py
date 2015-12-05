@@ -262,18 +262,23 @@ class ContextBuilder(object):
         if not silent_build: log.info("Finding modified times for %s/%s git controlled files in %s", len(use_files), len(all_files), root_folder)
         for entry in git.get_walker(paths=use_files):
             date = entry.commit.author_time
+            added = False
             for changes in entry.changes():
                 if type(changes) is not list:
                     changes = [changes]
                 for change in changes:
                     path = change.new.path
                     if root_folder and change.new.path and context.parent_dir:
-                        new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path.decode('utf-8')), context.parent_dir)
-                        if path in use_files and mtimes.get(new_relpath, 0) < date and not new_relpath.startswith("../"):
-                            mtimes[new_relpath] = date
+                        if path in use_files:
+                            new_relpath = os.path.relpath(os.path.join(root_folder, change.new.path.decode('utf-8')), context.parent_dir)
+                            if not new_relpath.startswith("../"):
+                                if mtimes.get(new_relpath, 0) < date:
+                                    mtimes[new_relpath] = date
+                                    added = True
 
-            if len(use_files - set(mtimes)) == 0:
-                break
+            if added:
+                if len(use_files - set(mtimes)) == 0:
+                    break
 
         return mtimes
 
