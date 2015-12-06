@@ -4,7 +4,7 @@
     docs/configuration
     docs/tasks
     docs/functionality
-    docs/recursive_containers
+    docs/persistence
     docs/building_harpoon/index
 
 .. _harpoon
