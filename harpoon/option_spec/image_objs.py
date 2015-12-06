@@ -292,8 +292,16 @@ class Persistence(dictobj):
           "action": "The action that we are repeating"
         , "folders": "The folders to persist between builds"
         , "image_name": "A function that returns the image name of the persistence container"
-        , ("cmd", "/bin/bash"): "The default CMD to give the final image"
+        , "cmd": "The default CMD to give the final image"
+        , ("shell", "/bin/bash"): "The default shell to use"
         }
+
+    @property
+    def default_cmd(self):
+        if self.cmd in (None, "", NotSpecified):
+            return self.shell
+        else:
+            return self.cmd
 
     def setup_lines(self):
         """
@@ -339,8 +347,8 @@ class Persistence(dictobj):
         """
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "RUN /bin/bash -c {0}".format(shlex_quote(self.action))
-            , "CMD {0}".format(shlex_quote(self.cmd))
+              "RUN {0} -c {1}".format(shlex_quote(self.shell), shlex_quote(self.action))
+            , "CMD {0}".format(shlex_quote(self.default_cmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 

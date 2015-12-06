@@ -173,7 +173,8 @@ class HarpoonSpec(object):
                 , validators.deprecated_key("persist", "Use ``folders``")
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
                 , folders = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
-                , cmd = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
+                , cmd = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
+                , shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
                 , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))
 
