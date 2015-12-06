@@ -389,7 +389,7 @@ class Persistence(dictobj):
         self.setup_lines()
         docker_lines = [
               "FROM {0}".format(second_image)
-            , "CMD {0}".format(self.cmd)
+            , "CMD {0}".format(self.default_cmd)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 

@@ -340,7 +340,7 @@ class Runner(object):
         if inspection and not no_intervention:
             if not inspection["State"]["Running"] and inspection["State"]["ExitCode"] != 0:
                 self.stage_run_intervention(conf)
-                raise BadImage("Failed to run container", container_id=container_id, container_name=container_name)
+                raise BadImage("Failed to run container", container_id=container_id, container_name=container_name, reason="nonzero exit code after launch")
 
         if not is_dependency and conf.harpoon.intervene_afterwards and not no_intervention:
             self.stage_run_intervention(conf, just_do_it=True)
