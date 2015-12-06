@@ -440,7 +440,9 @@ class Runner(object):
         if tag:
             log.info("Tagging a container\tcontainer_id=%s\ttag=%s", container_id, tag)
             new_id = conf.harpoon.docker_context.commit(container_id)["Id"]
-            conf.harpoon.docker_context.tag(new_id, repository=tag, tag="latest", force=True)
+            conf["committed"] = new_id
+            if tag is not True:
+                conf.harpoon.docker_context.tag(new_id, repository=tag, tag="latest", force=True)
 
         mounts = []
         if remove_volumes:

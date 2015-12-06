@@ -6,7 +6,7 @@ Building an image requires building all dependent images, creating the necessary
 context, and actually building the current image.
 """
 
-from harpoon.ship.builders.persistence import RecursiveBuilder
+from harpoon.ship.builders.persistence import PersistenceBuilder
 from harpoon.ship.builders.squashed import SquashedBuilder
 from harpoon.ship.builders.normal import NormalBuilder
 from harpoon.ship.builders.base import BuilderBase
@@ -129,7 +129,7 @@ class Builder(BuilderBase):
                     if conf.persistence is NotSpecified:
                         cached = NormalBuilder().build(conf, context, stream)
                     else:
-                        cached = RecursiveBuilder().build(conf, context, stream)
+                        cached = PersistenceBuilder().build(conf, context, stream)
                     info['cached'] = cached
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()

@@ -45,10 +45,10 @@ class Image(dictobj):
         , "commands": "The commands that make up the Dockerfile for this image"
         , "lxc_conf": "The location to an lxc_conf file"
         , "key_name": "The name of the key this image was defined with in the configuration"
-        , "recursive": "Options to allow this container be built recursively on itself"
         , "log_config": "Log configuration for the container"
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
+        , "persistence": "Options to allow certain folders to persist a particular command"
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
         , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "security_opt": "A list of string values to customize labels for MLS systems, such as SELinux."
@@ -74,8 +74,6 @@ class Image(dictobj):
         for key in ('bash', 'command'):
             if getattr(self, key, NotSpecified) is not NotSpecified:
                 setattr(self, key, getattr(self, key)())
-        if getattr(self, 'recursive', NotSpecified) is not NotSpecified:
-            self.recursive.setup_lines()
 
     @property
     def from_name(self):
@@ -288,12 +286,13 @@ class Image(dictobj):
             self.add_docker_file_to_tarfile(docker_file, ctxt.t)
             yield ctxt
 
-class Recursive(dictobj):
-    """Options to make an image be built recursively"""
+class Persistence(dictobj):
+    """Options to make an image be built with persisting folders"""
     fields = {
           "action": "The action that we are repeating"
-        , "persist": "The folders to persist between builds"
-        , "image_name": "A function that returns the image name of the recursive container"
+        , "folders": "The folders to persist between builds"
+        , "image_name": "A function that returns the image name of the persistence container"
+        , ("cmd", "/bin/bash"): "The default CMD to give the final image"
         }
 
     def setup_lines(self):
@@ -307,68 +306,82 @@ class Recursive(dictobj):
         # Make the shared volume name same as this image name so it doesn't change every time
         shared_name = self["shared_name"] = self.image_name().replace('/', '__')
 
-        # Excuse the $(echo $volume), it's to avoid problems
-        self["copy_line"] = '''
-            for volume in {0}; do
-                 echo "\r$(date) - Recursive: untarring $volume ($(du -sh /{1}/$(echo $volume).tar | cut -f1))";
+        # underscored names for our folders
+        def without_last_slash(val):
+            while val and val.endswith("/"):
+                val = val[:-1]
+            return val
+        folders_underscored = self["folders_underscored"] = [(shlex_quote(name.replace("_", "__").replace("/", "_")), shlex_quote(without_last_slash(name))) for name in self.folders]
 
-                 mkdir -p "/{1}/$volume" "$volume"
-              && tar xPf "/{1}/$(echo $volume).tar" "$volume/"
-            ;done
-        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.persist), shared_name)
+        self["move_from_volume"] = " ; ".join(
+              "echo {0} && rm -rf {0} && mkdir -p $(dirname {0}) && mv /{1}/{2} {0}".format(name, self.shared_name, underscored)
+              for underscored, name in self.folders_underscored
+            )
 
-        self["copy_to_shared_line"] = '''
-            for volume in {0}; do
-                 echo "\r$(date) - Recursive: Copying $volume ($(du -sh $volume | cut -f1))";
+        self["move_into_volume"] = " ; ".join(
+              "echo {0} && mkdir -p {0} && mv {0} /{1}/{2}".format(name, self.shared_name, underscored)
+              for underscored, name in self.folders_underscored
+            )
 
-                 mkdir -p "$volume/" "/{1}/$volume"
-              && tar cPf "/{1}/$(echo $volume).tar" "$volume/"
-            ;done
-        '''.replace("\n", "").format(' '.join('"{0}"'.format(v) for v in self.persist), shared_name)
-
-        self["waiter_line"] = '''
-            echo "\r$(date) - Recursive: Waiting for /{0}/__harpoon_provider_done__";
-            export START=$(expr $(date +%s) - 5);
-            while [[ ! -e /{0}/__harpoon_provider_done__ ]]; do
-              (( $(expr $(date +%s) - $START) > 600 )) && exit 1 || sleep 1
-            ;done
-        '''.replace("\n", "").format(shared_name)
-
-        self["precmd"] = "{0} && {1}".format(self["waiter_line"], self["copy_line"])
-        self["rmcmd"] = '''echo "\r$(date) - Recursive: Removing /{0} because docker does not" && rm -rf /{0}/*'''.format(shared_name)
-        self["copy_and_stay_cmd"] = "{0} && touch /{1}/__harpoon_provider_done__ && echo \"$(date) - Recursive: made /{1}/__harpoon_provider_done__\" && while true; do sleep 1; done".format(self.copy_to_shared_line, self.shared_name)
+    def make_test_dockerfile(self, docker_file):
+        """Used to determine if we need to rebuild the image"""
+        self.setup_lines()
+        docker_lines = docker_file.docker_lines + [
+            "RUN echo {0}".format(shlex_quote(self.action))
+          , "RUN echo {0}".format(" ".join(self.folders))
+          ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
     def make_first_dockerfile(self, docker_file):
+        """
+        Makes the dockerfile for when we don't already have this image
+        It will just perform the action after the normal docker lines.
+        """
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "RUN bash -c {0}".format(shlex_quote(self.action))
+              "RUN /bin/bash -c {0}".format(shlex_quote(self.action))
+            , "CMD {0}".format(shlex_quote(self.cmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
-    def make_provider_dockerfile(self, docker_file, image_name):
+    def make_rerunner_prep_dockerfile(self, docker_file, existing_image):
+        """
+        Given an existing image:
+            * Create a VOLUME (happens last to capture the data)
+            * mv each folder from image into volume from folders
+
+        This will then get used as a provider for make_second_dockerfile
+        """
         self.setup_lines()
         docker_lines = [
-              "FROM {0}".format(image_name)
+              "FROM {0}".format(existing_image)
+            , "RUN mkdir -p /{0}".format(self.shared_name)
+            , "RUN {0}".format(self["move_into_volume"])
             , "VOLUME /{0}".format(self.shared_name)
-            , "CMD /bin/bash -c {0}".format(shlex_quote(self.copy_and_stay_cmd))
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
-    def make_changed_dockerfile(self, docker_file, image_name):
-        self.setup_lines()
-        docker_lines = [
-              "FROM {0}".format(image_name)
-            ] + [line for line in docker_file.docker_lines if not line.startswith("FROM")] + [
-              "RUN bash -c {0}".format(shlex_quote(self.action))
-            , "VOLUME /{0}".format(self.shared_name)
-            , "CMD /bin/bash -c {0}".format(shlex_quote(self.copy_and_stay_cmd))
-            ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
+    def make_second_dockerfile(self, docker_file):
+        """
+        Assumes volumes-from an image with a volume of the same name as self.shared_name
 
-    def make_builder_dockerfile(self, docker_file):
+        Will steal from that volume into place on this image before rerunning the action.
+        """
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "CMD /bin/bash -c {0}' && '{1}' && '{2}".format(shlex_quote(self.waiter_line), shlex_quote(self.copy_line), shlex_quote(self.rmcmd))
+              "CMD {0} && {1}".format(self["move_from_volume"], self.action)
+            ]
+        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
+
+    def make_final_dockerfile(self, docker_file, second_image):
+        """
+        Takes the committed image from second_dockerfile and adds a CMD to it
+        with the value of self.command
+        """
+        self.setup_lines()
+        docker_lines = [
+              "FROM {0}".format(second_image)
+            , "CMD {0}".format(self.cmd)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 

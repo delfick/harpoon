@@ -137,6 +137,7 @@ class HarpoonSpec(object):
             , validators.deprecated_key("use_git_timestamps", "Use ``context.use_git_timestamps``")
             , validators.deprecated_key("respect_gitignore", "Use ``context.use_gitignore``")
             , validators.deprecated_key("parent_dir", "Use ``context.parent_dir``")
+            , validators.deprecated_key("recursive", "Use ``persistence``")
 
             # Changed how volumes_from works
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
@@ -168,9 +169,11 @@ class HarpoonSpec(object):
             , commands = required(container_spec(Commands, listof(command_spec())))
             , squash_after = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
             , squash_before_push = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
-            , recursive = optional_spec(create_spec(image_objs.Recursive
+            , persistence = optional_spec(create_spec(image_objs.Persistence
+                , validators.deprecated_key("persist", "Use ``folders``")
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-                , persist = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+                , folders = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
+                , cmd = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
                 , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))
 
