@@ -7,7 +7,6 @@ use of these options.
 
 from harpoon.errors import BadImage, HarpoonError
 from harpoon.ship.context import ContextBuilder
-from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
 from harpoon.errors import BadOption
 from harpoon import helpers as hp
@@ -98,10 +97,7 @@ class Image(dictobj):
         Also, if $EXTRA_IMAGE_NAME is defined, that is appended
         """
         if getattr(self, "_image_name", NotSpecified) is NotSpecified:
-            if self.image_name_prefix:
-                self._image_name = "{0}-{1}".format(self.image_name_prefix, self.name)
-            else:
-                self._image_name = self.name
+            self._image_name = self.prefixed_image_name
 
             if self.image_index:
                 self._image_name = "{0}{1}".format(self.image_index, self._image_name)
@@ -109,6 +105,13 @@ class Image(dictobj):
             if "EXTRA_IMAGE_NAME" in os.environ:
                 self._image_name = "{0}{1}".format(self._image_name, os.environ["EXTRA_IMAGE_NAME"])
         return self._image_name
+
+    @property
+    def prefixed_image_name(self):
+        if self.image_name_prefix not in (NotSpecified, "", None):
+            return "{0}-{1}".format(self.image_name_prefix, self.name)
+        else:
+            return self.name
 
     @image_name.setter
     def image_name(self, val):
@@ -248,6 +251,7 @@ class Image(dictobj):
 
     def build_and_run(self, images):
         """Make this image and run it"""
+        from harpoon.ship.builder import Builder
         Builder().make_image(self, images)
 
         try:
@@ -295,8 +299,6 @@ class Recursive(dictobj):
     def setup_lines(self):
         """
         Setup convenience lines for copying and waiting for copying
-        This setup_lines gets called by Image.post_setup, which gets called by OptionMerge conversion magic
-        We also call it in the dockerfile makers for good measure
         """
         if getattr(self, "_setup_lines", None):
             return
