@@ -400,7 +400,7 @@ class Runner(object):
         kwargs["waiting"] = False
         return self.wait_till_stopped(*args, **kwargs)
 
-    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None, tag=None):
+    def stop_container(self, conf, fail_on_bad_exit=False, fail_reason=None, tag=None, remove_volumes=False):
         """Stop some container"""
         stopped = False
         container_id = conf.container_id
@@ -442,6 +442,11 @@ class Runner(object):
             new_id = conf.harpoon.docker_context.commit(container_id)["Id"]
             conf.harpoon.docker_context.tag(new_id, repository=tag, tag="latest", force=True)
 
+        mounts = []
+        if remove_volumes:
+            for m in conf.harpoon.docker_context.inspect_container(container_id)["Mounts"]:
+                mounts.append(m['Name'])
+
         if not conf.harpoon.no_cleanup:
             log.info("Removing container %s:%s", container_name, container_id)
             for _ in until(timeout=10, action="removing container\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id)):
@@ -452,6 +457,13 @@ class Runner(object):
                     break
                 except (ValueError, DockerAPIError) as error:
                     log.warning("Failed to remove container\tcontainer_id=%s\terror=%s", container_id, error)
+
+        for mount in mounts:
+            try:
+                log.info("Cleaning up volume {0}".format(mount))
+                conf.harpoon.docker_context.remove_volume(mount)
+            except DockerAPIError as error:
+                log.warning("Failed to cleanup volume\tvolume=%s\terror=%s", mount, error)
 
     ########################
     ###   UTILITY
