@@ -87,18 +87,11 @@ class BuildProgressStream(ProgressStream):
 class Builder(BuilderBase):
     """Build an image from Image configuration"""
 
-    ########################
-    ###   USAGE
-    ########################
-
-    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, share_with_deps=None, pushing=False):
+    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, pushing=False):
         """Make us an image"""
         made = {} if made is None else made
         chain = [] if chain is None else chain
         parent_chain = [] if parent_chain is None else parent_chain
-
-        if share_with_deps is None:
-            share_with_deps = self.determine_share_with_deps(images, conf)
 
         if conf.name in made:
             return
@@ -114,24 +107,21 @@ class Builder(BuilderBase):
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, share_with_deps=share_with_deps, pushing=pushing)
+                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, pushing=pushing)
 
         if not ignore_parent:
             parent_image = conf.commands.parent_image
             if not isinstance(parent_image, six.string_types):
-                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, share_with_deps=share_with_deps, pushing=pushing)
+                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, pushing=pushing)
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
-        cached = self.build_image(conf, share_with_deps, pushing=pushing)
+        cached = self.build_image(conf, pushing=pushing)
         made[conf.name] = True
         return cached
 
-    def build_image(self, conf, share_with_deps=None, pushing=False):
+    def build_image(self, conf, pushing=False):
         """Build this image"""
-        if share_with_deps is None:
-            share_with_deps = []
-
         with conf.make_context() as context:
             try:
                 stream = BuildProgressStream(conf.harpoon.silent_build)
@@ -177,19 +167,4 @@ class Builder(BuilderBase):
         layers = Layers(operate_on, all_images=images)
         layers.add_all_to_layers()
         return layers.layered
-
-    ########################
-    ###   UTILITY
-    ########################
-
-    def determine_share_with_deps(self, images, root_conf, share_with=None):
-        """Determine all the containers that are in a volumes.share_with"""
-        if share_with is None:
-            share_with = []
-
-        share_with.extend(root_conf.shared_volume_containers())
-        for dependency, image in root_conf.dependency_images():
-            self.determine_share_with_deps(images, images[dependency], share_with=share_with)
-
-        return set(share_with)
 
