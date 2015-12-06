@@ -155,7 +155,7 @@ class ContextBuilder(object):
         output, status = command_output("find {0} -type f -print".format(' '.join(first_layer)), cwd=context.parent_dir)
         if status != 0:
             raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
-        all_files = set(filename for filename in self.convert_nonascii(output) if os.path.exists(os.path.join(context.parent_dir, filename)))
+        all_files = set(self.convert_nonascii(output))
         total_files = set(all_files)
 
         combined = set(all_files)
