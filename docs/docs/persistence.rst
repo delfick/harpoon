@@ -3,6 +3,10 @@
 Persistence
 ===========
 
+.. raw:: html
+
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/Rka_DAQQNro" frameborder="0" allowfullscreen></iframe>
+
 One of the things you lose out on when you start using docker containers is the
 caching systems that come with our package management software.
 
