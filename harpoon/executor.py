@@ -5,6 +5,7 @@ the argument parsing and for starting up Harpoon.
 
 from harpoon.errors import BadDockerConnection
 from harpoon.collector import Collector
+from harpoon import VERSION
 
 from input_algorithms.spec_base import NotSpecified
 from docker.client import Client as DockerClient
@@ -37,6 +38,10 @@ class App(App):
     cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified)]
 
     def execute(self, args, extra_args, cli_args, logging_handler, no_docker=False):
+        if args.version:
+            print(VERSION)
+            return
+
         cli_args["harpoon"]["config"] = cli_args["harpoon"]["config"]()
         cli_args["harpoon"]["extra"] = extra_args
 
@@ -63,6 +68,11 @@ class App(App):
             , help = "The config file specifying what harpoon should care about"
             , type = DelayedFileType("r")
             , **defaults["--harpoon-config"]
+            )
+
+        parser.add_argument("--version"
+            , help = "Print out the version of harpoon"
+            , action = "store_true"
             )
 
         parser.add_argument("--dry-run"
