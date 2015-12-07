@@ -140,7 +140,7 @@ class PersistenceBuilder(BuilderBase):
             # Don't have an existing image to steal from
             # Just have to make it, no volumes or trickery involved!
             docker_file = conf.persistence.make_first_dockerfile(conf.docker_file)
-            with self.build_with_altered_context(None, conf, None, stream, docker_file):
+            with self.build_with_altered_context(None, conf, context, stream, docker_file):
                 pass
 
             # Make the test image so the next time we run this, it's already cached
