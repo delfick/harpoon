@@ -349,7 +349,7 @@ class Persistence(dictobj):
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
               "RUN {0} -c {1}".format(shlex_quote(self.shell), shlex_quote(self.action))
-            , "CMD {0}".format(shlex_quote(self.default_cmd))
+            , "CMD {0}".format(self.default_cmd)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
