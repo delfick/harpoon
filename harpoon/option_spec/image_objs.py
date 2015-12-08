@@ -337,7 +337,7 @@ class Persistence(dictobj):
         docker_lines = docker_file.docker_lines + [
             "RUN echo {0}".format(shlex_quote(self.action))
           , "RUN echo {0}".format(" ".join(self.folders))
-          , "RUN echo {0}".format(shlex_quote(self.cmd))
+          , "RUN echo {0}".format(shlex_quote(self.default_cmd))
           ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
