@@ -18,8 +18,8 @@ describe HarpoonCase, "App":
                 argv = ["list_tasks", "blah", "--harpoon-config", config_location]
                 app = App()
                 args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
-                self.assertEqual(args.harpoon_chosen_task, "list_tasks")
-                self.assertEqual(args.harpoon_chosen_image, "blah")
+                self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
+                self.assertEqual(args_obj.harpoon_chosen_image, "blah")
                 self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
                 self.assertEqual(args_dict["harpoon"]["chosen_image"], "blah")
 
@@ -29,7 +29,7 @@ describe HarpoonCase, "App":
                     argv = ["list_tasks", "blah"]
                     app = App()
                     args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
-                    self.assertEqual(args.harpoon_config().name, config_location)
+                    self.assertEqual(args_obj.harpoon_config().name, config_location)
                     self.assertEqual(args_dict["harpoon"]["config"]().name, config_location)
 
         it "defaults image to NotSpecified and tasks to list_tasks":

@@ -190,7 +190,8 @@ describe HarpoonCase, "Persistence builds":
 
             assert found, "Tester wasn't based on the first image!"
             self.assertEqual(tester_commands
-                , [ '/bin/sh -c echo /tmp'
+                , [ '/bin/sh -c echo /bin/sh'
+                  , '/bin/sh -c echo /tmp'
                   , '/bin/sh -c echo \'cat /tmp/lines > /tmp/lines2; echo \'"\'"\'another_line\'"\'"\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines\''
                   ]
                 )
@@ -208,7 +209,7 @@ describe HarpoonCase, "Persistence builds":
                 log.exception(error)
 
             with open(fake_sys_stdout.name) as fle:
-                output = fle.read().strip()
+                output = fle.read().strip().replace("\r", "")
 
             with open(fake_sys_stderr.name) as fle:
                 self.assertEqual(fle.read().strip(), '')
@@ -258,7 +259,7 @@ describe HarpoonCase, "Persistence builds":
                 log.exception(error)
 
             with open(fake_sys_stdout.name) as fle:
-                output = fle.read().strip()
+                output = fle.read().strip().replace('\r', '')
 
             with open(fake_sys_stderr.name) as fle:
                 self.assertEqual(fle.read().strip(), '')
