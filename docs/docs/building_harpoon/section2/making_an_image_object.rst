@@ -70,16 +70,16 @@ I hope you see where I'm going with this:
     from harpoon.option_spec.image_objs import Image
 
     class Collector(App):
-        def start(self, cli_args):
+        def start(self, args_dict):
             self.configuration["image"] = Image(**self.configuration)
-            available_tasks[cli_args['harpoon']['task']](self, cli_args)
+            available_tasks[args_dict['harpoon']['task']](self, args_dict)
 
 And now in our ``build_and_run`` task:
 
 .. code-block:: python
 
     @a_task
-    def build_and_run(collector, cli_args):
+    def build_and_run(collector, args_dict):
         tag = collector.configuration["image"].tag
         dockerfile_commands = collector.configuration["image"].commands
 
@@ -100,9 +100,9 @@ Change ``build_and_run``:
 .. code-block:: python
 
     @a_task
-    def build_and_run(collector, cli_args):
+    def build_and_run(collector, args_dict):
         image = collector.configuration['image']
-        harpoon = cli_args["harpoon"]
+        harpoon = args_dict["harpoon"]
 
         image.build(harpoon)
         image.run(harpoon)

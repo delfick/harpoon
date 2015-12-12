@@ -279,12 +279,12 @@ So let's validate the input for our Image object, first inside ``image_objs.py``
     class Collector(object):
         [..]
 
-        def start(self, cli_args):
+        def start(self, args_dict):
             meta = Meta(self.configuration, [])
             self.configuration["image"] = image_spec.normalise(meta, self.configuration)
 
             chosen_task = self.configuration["harpoon"]["task"]
-            available_actions[chosen_task](self, cli_args)
+            available_actions[chosen_task](self, args_dict)
 
 Now put bad data in your config and run ``harpoon build_and_run``.
 

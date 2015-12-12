@@ -72,15 +72,15 @@ So now we should have something like the following:
                 return func
 
             @an_action
-            def list_tasks(collector, cli_args):
+            def list_tasks(collector, args_dict):
                 """Tasks themselves don't get introduced till section3, so let's just list the actions"""
                 print('\n'.join("{0}: {1}".format(name, func.__doc__) for name, func in available_actions.items()))
 
             @an_action
-            def build_and_run(collector, cli_args):
+            def build_and_run(collector, args_dict):
                 """Build and run an image"""
                 image = collector.configuration["image"]
-                harpoon = cli_args["harpoon"]
+                harpoon = args_dict["harpoon"]
 
                 image.build(harpoon)
                 image.run(harpoon)
@@ -107,10 +107,10 @@ So now we should have something like the following:
                 def add_configuration(self, configuration, collect_another_source, done, result, src):
                     configuration.update(result)
 
-                def extra_prepare(self, configuration, cli_args):
+                def extra_prepare(self, configuration, args_dict):
                     configuration.update(
-                          { "harpoon": cli_args["harpoon"]
-                          , "cli_args": cli_args
+                          { "harpoon": args_dict["harpoon"]
+                          , "args_dict": args_dict
                           }
                         )
 
@@ -120,7 +120,7 @@ So now we should have something like the following:
 
                 def start(self):
                     chosen_task = self.configuration["harpoon"]["task"]
-                    available_actions[chosen_task](self, self.configuration["cli_args"])
+                    available_actions[chosen_task](self, self.configuration["args_dict"])
 
     ``executor.py``
 
@@ -137,11 +137,11 @@ So now we should have something like the following:
                 cli_categories = ['harpoon']
                 cli_positional_replacements = [('--task', 'list_tasks')]
 
-                def execute(self, args, extra_args, cli_args, logging_handler):
-                    cli_args['harpoon']['make_client'] = make_client
+                def execute(self, args_obj, args_dict, extra_args, logging_handler):
+                    args_dict['harpoon']['make_client'] = make_client
 
                     collector = Collector()
-                    collector.prepare(args.config.name, cli_args)
+                    collector.prepare(args_obj.config.name, args_dict)
                     collector.start()
 
                 def specify_other_args(self, parser, defaults):
@@ -157,7 +157,7 @@ So now we should have something like the following:
                         , **defaults['--task']
                         )
 
-                def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
+                def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
                     logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
 
             def make_client():

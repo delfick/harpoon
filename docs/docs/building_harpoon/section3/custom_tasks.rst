@@ -18,10 +18,10 @@ First, let's create an object to represent tasks:
                 available_actions[self.action](collector, image, tasks)
 
 Eagle eyed viewers may notice that the signature for our ``actions`` in
-``actions.py`` is actually (collector, cli_args) and not this
+``actions.py`` is actually (collector, args_dict) and not this
 (collector, image, tasks) I'm passing in.
 
-You may remember that we put cli_args inside the configuration in the
+You may remember that we put args_dict inside the configuration in the
 ``extra_prepare`` step, so passing it around is no longer that necessary and we
 need to tell the action what image to access. So let's change everything to use
 this new object and signature:
@@ -61,7 +61,7 @@ this new object and signature:
             image.build(harpoon)
             image.run(harpoon)
 
-Oh, look at that! Don't even need cli_args anyways!
+Oh, look at that! Don't even need args_dict anyways!
 
 So, let's improve on this a bit by making an object just for finding tasks:
 
@@ -127,7 +127,7 @@ choose to put the ``task_runner`` function in the configuration and use it from
             [..]
 
             # Instead of the start function
-            def extra_prepare_after_activation(self, configuration, cli_args):
+            def extra_prepare_after_activation(self, configuration, args_dict):
                 """Called after the configuration.converters are activated"""
                 task_finder = TaskFinder(self)
                 configuration["task_runner"] = task_finder.task_runner
@@ -141,11 +141,11 @@ choose to put the ``task_runner`` function in the configuration and use it from
 
             [..]
 
-            def execute(self, args, extra_args, cli_args, logging_handler):
-                cli_args['harpoon']['make_client'] = make_client
+            def execute(self, args_obj, args_dict, extra_args, logging_handler):
+                args_dict['harpoon']['make_client'] = make_client
 
                 collector = Collector()
-                collector.prepare(args.config.name, cli_args)
+                collector.prepare(args_obj.config.name, args_dict)
                 collector.configuration["task_runner"](collector.configuration["harpoon"]["task"])
 
 Whilst we're at it, let's update our list_tasks action to take into account

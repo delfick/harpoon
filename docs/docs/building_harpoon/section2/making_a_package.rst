@@ -130,9 +130,9 @@ Next remove those from ``executor.py`` and whilst there, make it have:
     [..]
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
             collector = Collector()
-            collector.prepare(args.config)
+            collector.prepare(args_obj.config)
             collector.start(make_client)
 
     [..]

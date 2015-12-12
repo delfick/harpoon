@@ -35,7 +35,7 @@ describe HarpoonCase, "Collector":
                 with self.fuzzyAssertRaisesError(Collector.BadConfigurationErrorKls, "Didn't find any images in the configuration"):
                     Collector().prepare(filename, {})
 
-        it "adds some items to the configuration from the cli_args":
+        it "adds some items to the configuration from the args_dict":
             bash = "bash command"
             extra = "extra commands after the --"
             command = "Command command"
@@ -44,15 +44,15 @@ describe HarpoonCase, "Collector":
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 collector = Collector()
                 raw_config = collector.collect_configuration(filename)
-                for thing in ("configuration", "$@", "bash", "command", "harpoon", "collector", "getpass", "cli_args"):
+                for thing in ("configuration", "$@", "bash", "command", "harpoon", "collector", "getpass", "args_dict"):
                     assert thing not in raw_config, "expected {0} to not be in configuration".format(thing)
 
-                cli_args = {"harpoon": {"extra": extra}, "bash": bash, "command": command}
-                collector.prepare(filename, cli_args)
+                args_dict = {"harpoon": {"extra": extra}, "bash": bash, "command": command}
+                collector.prepare(filename, args_dict)
 
                 # Done by option_merge
                 self.assertEqual(collector.configuration["getpass"], getpass)
-                self.assertEqual(collector.configuration["cli_args"].as_dict(), cli_args)
+                self.assertEqual(collector.configuration["args_dict"].as_dict(), args_dict)
                 self.assertEqual(collector.configuration["collector"], collector)
                 self.assertEqual(collector.configuration["config_root"], os.path.dirname(filename))
 
@@ -69,8 +69,8 @@ describe HarpoonCase, "Collector":
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 with mock.patch("harpoon.collector.TaskFinder", FakeTaskFinder):
                     collector = Collector()
-                    cli_args = {"harpoon": {}, "bash": None, "command": None}
-                    collector.prepare(filename, cli_args)
+                    args_dict = {"harpoon": {}, "bash": None, "command": None}
+                    collector.prepare(filename, args_dict)
                     task_finder.find_tasks.assert_called_once_with({})
 
                     self.assertEqual(len(task_finder.task_runner.mock_calls), 0)

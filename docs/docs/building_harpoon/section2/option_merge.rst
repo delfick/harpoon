@@ -257,10 +257,10 @@ So, let's replace ``collector.py`` with this:
         def add_configuration(self, configuration, collect_another_source, done, result, src):
             configuration.update(result)
 
-        def extra_prepare(self, configuration, cli_args):
+        def extra_prepare(self, configuration, args_dict):
             configuration.update(
-                  { "harpoon": cli_args["harpoon"]
-				  , "cli_args": cli_args
+                  { "harpoon": args_dict["harpoon"]
+		  , "args_dict": args_dict
                   }
                 )
 
@@ -269,9 +269,9 @@ So, let's replace ``collector.py`` with this:
             configuration["image"] = image_spec.normalise(meta, self.configuration)
 
         def start(self):
-            cli_args = self.configuration["cli_args"]
+            args_dict = self.configuration["args_dict"]
             chosen_task = self.configuration["harpoon"]["task"]
-            available_actions[chosen_task](self, cli_args)
+            available_actions[chosen_task](self, args_dict)
 
 And let's replace ``execute`` in ``executor.py`` with this:
 
@@ -280,11 +280,11 @@ And let's replace ``execute`` in ``executor.py`` with this:
     class Harpoon(App):
         [..]
 
-        def execute(self, args, extra_args, cli_args, logging_handler):
-            cli_args['harpoon']['make_client'] = make_client
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
+            args_dict['harpoon']['make_client'] = make_client
 
             collector = Collector()
-            collector.prepare(args.config.name, cli_args)
+            collector.prepare(args_obj.config.name, args_dict)
             collector.start()
 
 The ``Collector`` class in ``option_merge.collector`` is a helper class that

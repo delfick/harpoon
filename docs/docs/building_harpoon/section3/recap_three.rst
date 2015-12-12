@@ -190,10 +190,10 @@ tasks and the ability to format parts of the configuration with itself.
             def add_configuration(self, configuration, collect_another_source, done, result, src):
                 configuration.update(result)
 
-            def extra_prepare(self, configuration, cli_args):
+            def extra_prepare(self, configuration, args_dict):
                 configuration.update(
-                    { "harpoon": cli_args["harpoon"]
-                    , "cli_args": cli_args
+                    { "harpoon": args_dict["harpoon"]
+                    , "args_dict": args_dict
                     }
                   )
 
@@ -227,7 +227,7 @@ tasks and the ability to format parts of the configuration with itself.
                 converter = Converter(convert=convert_tasks, convert_path=["images", image, "tasks"])
                 configuration.add_converter(converter)
 
-            def extra_prepare_after_activation(self, configuration, cli_args):
+            def extra_prepare_after_activation(self, configuration, args_dict):
                 task_finder = TaskFinder(self)
                 configuration["task_runner"] = task_finder.task_runner
                 task_finder.find_tasks()
@@ -268,11 +268,11 @@ tasks and the ability to format parts of the configuration with itself.
             cli_categories = ['harpoon']
             cli_positional_replacements = [('--task', 'list_tasks'), "--image"]
 
-            def execute(self, args, extra_args, cli_args, logging_handler):
-                cli_args['harpoon']['make_client'] = make_client
+            def execute(self, args_obj, args_dict, extra_args, logging_handler):
+                args_dict['harpoon']['make_client'] = make_client
 
                 collector = Collector()
-                collector.prepare(args.config.name, cli_args)
+                collector.prepare(args_obj.config.name, args_dict)
                 collector.configuration["task_runner"](collector.configuration["harpoon"]["task"])
 
             def specify_other_args(self, parser, defaults):
@@ -294,7 +294,7 @@ tasks and the ability to format parts of the configuration with itself.
                     , **defaults["--image"]
                     )
 
-            def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
+            def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
                 logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
 
         def make_client():

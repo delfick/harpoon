@@ -77,8 +77,8 @@ Instead, we'll use the ``argparse`` module:
             , type = argparse.FileType('r')
             , default = "./config.yml"
             )
-        args = parser.parse_args()
-        config_file = args.config
+        args_obj = parser.parse_args()
+        config_file = args_obj.config
         config = yaml.load(config_file)
 
         [..]

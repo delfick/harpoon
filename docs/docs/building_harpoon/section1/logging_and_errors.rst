@@ -122,12 +122,12 @@ First, let's add a ``--debug`` option:
             , help = "Whether to show more information"
             , action = "store_true"
             )
-        args = parser.parse_args()
+        args_obj = parser.parse_args()
 
         [..]
 
 So here we've added the ``--debug`` parameter with an ``action`` of ``store_true``.
-This means the argument takes no value and if specified will make ``args.debug``
+This means the argument takes no value and if specified will make ``args_obj.debug``
 equal to ``True``. Otherwise it will default to ``False``.
 
 Now we've setup that up, let's turn off requests logging:
@@ -137,8 +137,8 @@ Now we've setup that up, let's turn off requests logging:
     def main()
         [..]
 
-        args = parser.parse_args()
-        if not args.debug:
+        args_obj = parser.parse_args()
+        if not args_obj.debug:
             logging.getLogger("requests").setLevel(logging.ERROR)
 
         [..]
@@ -166,7 +166,7 @@ Let's make that go away:
         [..]
 
         try:
-            config = yaml.load(args.config_file)
+            config = yaml.load(args_obj.config_file)
 
             [..]
 
@@ -188,7 +188,7 @@ debugging purposes:
 .. code-block:: python
 
     except Exception as error:
-        if args.debug:
+        if args_obj.debug:
             raise
         else:
             [..]

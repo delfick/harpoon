@@ -38,7 +38,7 @@ So, now in our empty file, let's add:
     log = logging.getLogger("harpoon")
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
             log.info("Hello world!")
 
     main = Harpoon.main
@@ -63,9 +63,9 @@ Now let's add back our configuration:
     log = logging.getLogger("harpoon")
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
-            log.info("Loading configuration from %s", args.config)
-            config = yaml.load(args.config)
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
+            log.info("Loading configuration from %s", args_obj.config)
+            config = yaml.load(args_obj.config)
             tag = config["tag"]
             dockerfile_commands = config["commands"]
 
@@ -91,7 +91,7 @@ And let's add the rest of our docker stuff:
         [..]
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
             [..]
 
             client = make_client()
@@ -134,7 +134,7 @@ Finally, let's make requests shut up again:
 .. code-block:: python
 
     class Harpoon(App):
-        def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
+        def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
             logging.getLogger("requests").setLevel([logging.ERROR, logging.INFO][verbose or debug])
 
 In DelfickApp, verbose and debug are two distinct options where tracebacks are

@@ -56,8 +56,8 @@ And finally, in ``actions.py``:
 .. code-block:: python
 
     @an_action
-    def build_and_run(collector, cli_args):
-        image = collector.configuration["images"][cli_args["harpoon"]["image"]]
+    def build_and_run(collector, args_dict):
+        image = collector.configuration["images"][args_dict["harpoon"]["image"]]
 
         [..]
 
@@ -108,15 +108,15 @@ And finally, in ``actions.py``:
     from harpoon.errors import BadImage
 
     @an_action
-    def build_and_run(collector, cli_args):
-        chosen_image = cli_args["harpoon"]["image"]
+    def build_and_run(collector, args_dict):
+        chosen_image = args_dict["harpoon"]["image"]
         if not chosen_image:
             raise BadImage("Please specify an image to work with!")
         if chosen_image not in collector.configuration["images"]:
             raise BadImage("No such image", wanted=chosen_image, available=list(collector.configuration["images"].keys()))
         image = collector.configuration["images"][chosen_image]
 
-        harpoon = cli_args["harpoon"]
+        harpoon = args_dict["harpoon"]
         image.build(harpoon)
         image.run(harpoon)
 

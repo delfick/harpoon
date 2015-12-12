@@ -34,8 +34,8 @@ The next step is to do something with the task:
 
 .. code-block:: python
 
-    def execute(self, args, extra_args, cli_args, logging_handler):
-        print(args.task)
+    def execute(self, args_obj, args_dict, extra_args, logging_handler):
+        print(args_obj.task)
 
 Before we continue, we're gonna make use of some features of DelfickApp that we
 are currently ignoring.
@@ -59,7 +59,7 @@ The good news is all you have to do is the following:
                 , help = "The task to execute"
                 )
 
-And now you can do something like ``harpoon something`` and ``args.task`` will
+And now you can do something like ``harpoon something`` and ``args_obj.task`` will
 equal "something" :)
 
 We can even do defaults:
@@ -93,9 +93,9 @@ One last change before we do something useful with this information:
 
         [..]
 
-        def execute(self, args, extra_args, cli_args, logging_handler):
-            print(args.harpoon_task)
-            print(cli_args["harpoon"]["task"])
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
+            print(args_obj.harpoon_task)
+            print(args_dict["harpoon"]["task"])
 
         def specify_other_args(self, parser, defaults):
             [..]
@@ -106,9 +106,9 @@ One last change before we do something useful with this information:
                 , **defaults['--task']
                 )
 
-Here we've namespaced ``task`` by ``harpoon`` by making it go onto ``args`` as
+Here we've namespaced ``task`` by ``harpoon`` by making it go onto ``args_obj`` as
 ``harpoon_task`` and then because we've defined the ``harpoon`` cli_category,
-``cli_args`` has broken out the ``harpoon`` options into a sub dictionary.
+``args_dict`` has broken out the ``harpoon`` options into a sub dictionary.
 
 This will be more useful to us later on, but we might as well namespace it from
 the start.
@@ -138,8 +138,8 @@ And in ``harpoon/executor.py``:
     from harpoon.actions import available_actions
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
-            available_actions[cli_args["harpoon"]["task"]]()
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
+            available_actions[args_dict["harpoon"]["task"]]()
 
 Now let's just run ``harpoon``.
 
@@ -173,7 +173,7 @@ in ``execute``:
     @an_action
     def build_and_run():
         collector = Collector()
-        # Oh wait! we need a reference to cli_args here!
+        # Oh wait! we need a reference to args_dict here!
 
 Well, we have two problems. Firstly we need reference to data we have in
 ``executor`` and secondly later on we want to already have collected our
@@ -186,15 +186,15 @@ So, in ``executor.py`` return it to:
 
 .. code-block:: python
 
-    def execute(self, args, extra_args, cli_args, logging_handler):
-        cli_args['harpoon']['make_client'] = make_client
+    def execute(self, args_obj, args_dict, extra_args, logging_handler):
+        args_dict['harpoon']['make_client'] = make_client
 
         collector = Collector()
-        collector.prepare(args.config)
-        collector.start(cli_args)
+        collector.prepare(args_obj.config)
+        collector.start(args_dict)
 
 Note two changes here. Firstly we're adding our ``make_client`` helper to the
-``harpoon`` namespace in ``cli_args`` and we're passing all of ``cli_args`` into
+``harpoon`` namespace in ``args_dict`` and we're passing all of ``args_dict`` into
 ``Collector.start``.
 
 and then in ``collector.py``:
@@ -206,16 +206,16 @@ and then in ``collector.py``:
     class Collector(object):
         [..]
 
-        def start(self, cli_args):
-            available_actions[cli_args['harpoon']['task']](self, cli_args)
+        def start(self, args_dict):
+            available_actions[args_dict['harpoon']['task']](self, args_dict)
 
-So now our start method finds the task and calls it with itself and the cli_args.
+So now our start method finds the task and calls it with itself and the args_dict.
 Hence we must change the signature of our list_tasks task:
 
 .. code-block:: python
 
     @an_action
-    def list_tasks(collector, cli_args):
+    def list_tasks(collector, args_dict):
         [..]
 
 Now, we can add a build_and_run task!
@@ -232,11 +232,11 @@ Now, we can add a build_and_run task!
     log = logging.getLogger("harpoon.actions")
 
     @an_action
-    def build_and_run(collector, cli_args):
+    def build_and_run(collector, args_dict):
         tag = collector.configuration["tag"]
         dockerfile_commands = collector.configuration["commands"]
 
-        client = cli_args['harpoon']['make_client']()
+        client = args_dict['harpoon']['make_client']()
 
         dockerfile = tempfile.NamedTemporaryFile(delete=True)
         dockerfile.write("\n".join(dockerfile_commands))

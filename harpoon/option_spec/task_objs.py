@@ -50,9 +50,9 @@ class Task(dictobj):
             else:
                 configuration.update(self.options)
 
-        # Cli args like --port and the like should override what's in the options
+        # args like --port and the like should override what's in the options
         # But themselves be overridden by the overrides
-        configuration.update(configuration["cli_args"].as_dict(), source="<cli_args>")
+        configuration.update(configuration["args_dict"].as_dict(), source="<args_dict>")
 
         if self.overrides:
             overrides = {}

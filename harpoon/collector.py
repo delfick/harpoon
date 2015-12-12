@@ -28,31 +28,31 @@ class Collector(Collector):
     BadFileErrorKls = BadYaml
     BadConfigurationErrorKls = BadConfiguration
 
-    def alter_clone_cli_args(self, new_collector, new_cli_args, new_harpoon_options=None):
+    def alter_clone_args_dict(self, new_collector, new_args_dict, new_harpoon_options=None):
         new_harpoon = self.configuration["harpoon"].clone()
         if new_harpoon_options:
             new_harpoon.update(new_harpoon_options)
-        new_cli_args["harpoon"] = new_harpoon
+        new_args_dict["harpoon"] = new_harpoon
 
     def find_missing_config(self, configuration):
         """Used to make sure we have images before doing anything"""
         if "images" not in self.configuration:
             raise self.BadConfigurationErrorKls("Didn't find any images in the configuration")
 
-    def extra_prepare(self, configuration, cli_args):
+    def extra_prepare(self, configuration, args_dict):
         """Called before the configuration.converters are activated"""
-        harpoon = cli_args.pop("harpoon")
+        harpoon = args_dict.pop("harpoon")
 
         self.configuration.update(
             { "$@": harpoon.get("extra", "")
-            , "bash": cli_args["bash"] or NotSpecified
+            , "bash": args_dict["bash"] or NotSpecified
             , "harpoon": harpoon
-            , "command": cli_args['command'] or NotSpecified
+            , "command": args_dict['command'] or NotSpecified
             }
-        , source = "<cli_args>"
+        , source = "<args_dict>"
         )
 
-    def extra_prepare_after_activation(self, configuration, cli_args):
+    def extra_prepare_after_activation(self, configuration, args_dict):
         """Called after the configuration.converters are activated"""
         task_finder = TaskFinder(self)
         self.configuration["task_runner"] = task_finder.task_runner

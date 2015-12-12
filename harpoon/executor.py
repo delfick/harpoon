@@ -38,22 +38,22 @@ class App(App):
     cli_environment_defaults = {"HARPOON_CONFIG": ("--harpoon-config", './harpoon.yml')}
     cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified)]
 
-    def execute(self, args, extra_args, cli_args, logging_handler, no_docker=False):
-        cli_args["harpoon"]["config"] = cli_args["harpoon"]["config"]()
-        cli_args["harpoon"]["extra"] = extra_args
+    def execute(self, args_obj, args_dict, extra_args, logging_handler, no_docker=False):
+        args_dict["harpoon"]["config"] = args_dict["harpoon"]["config"]()
+        args_dict["harpoon"]["extra"] = extra_args
 
         if not no_docker:
-            cli_args["harpoon"]["docker_context"] = docker_context()
-        cli_args["harpoon"]["docker_context_maker"] = docker_context
+            args_dict["harpoon"]["docker_context"] = docker_context()
+        args_dict["harpoon"]["docker_context_maker"] = docker_context
 
         collector = Collector()
-        collector.prepare(cli_args["harpoon"]["config"].name, cli_args)
+        collector.prepare(args_dict["harpoon"]["config"].name, args_dict)
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
 
         collector.configuration["task_runner"](collector.configuration["harpoon"].chosen_task)
 
-    def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
+    def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
         logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
 
     def specify_other_args(self, parser, defaults):

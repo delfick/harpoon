@@ -37,9 +37,9 @@ You should have something like:
         return docker.Client(**docker.utils.kwargs_from_env(assert_hostname=False))
 
     class Harpoon(App):
-        def execute(self, args, extra_args, cli_args, logging_handler):
-            log.info("Reading configuration from %s", args.config.name)
-            config = yaml.load(args.config)
+        def execute(self, args_obj, args_dict, extra_args, logging_handler):
+            log.info("Reading configuration from %s", args_obj.config.name)
+            config = yaml.load(args_obj.config)
             tag = config["tag"]
             dockerfile_commands = config["commands"]
 
@@ -82,7 +82,7 @@ You should have something like:
                 , default = "./config.yml"
                 )
 
-        def setup_other_logging(self, args, verbose=False, silent=False, debug=False):
+        def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
             logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
 
     main = Harpoon.main
