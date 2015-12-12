@@ -162,15 +162,15 @@ class Image(dictobj):
         if the ``command`` is set, then we just return that.
         """
         bash = self.bash
-        if bash is not NotSpecified and callable(bash):
+        if bash not in (None, "", NotSpecified) and callable(bash):
             bash = bash()
-        if bash is not NotSpecified:
+        if bash not in (None, "", NotSpecified):
             return "/bin/bash -c {0}".format(shlex_quote(bash))
 
         command = self.command
-        if command is not NotSpecified and callable(command):
+        if command not in (None, "", NotSpecified) and callable(command):
             command = command()
-        if command is not NotSpecified:
+        if command not in (None, "", NotSpecified):
             return command
 
         return None
@@ -453,7 +453,7 @@ class WaitCondition(dictobj):
             for path in self.file_exists:
                 yield 'cat {0} > /dev/null'.format(path)
 
-        if self.command is not NotSpecified:
+        if self.command not in (None, "", NotSpecified):
             for command in self.command:
                 yield command
 

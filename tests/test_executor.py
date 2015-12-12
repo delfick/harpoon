@@ -124,8 +124,6 @@ describe HarpoonCase, "App":
 
             def task_runner(task):
                 cli_args = configuration["cli_args"]
-                self.assertIs(cli_args["bash"], NotSpecified)
-                self.assertIs(cli_args["command"], NotSpecified)
                 self.assertEqual(cli_args["harpoon"]["extra"], "one two --three")
                 assert "docker_context_maker" in cli_args["harpoon"]
                 assert "docker_context" in cli_args["harpoon"]

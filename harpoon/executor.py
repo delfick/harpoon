@@ -49,10 +49,6 @@ class App(App):
             cli_args["harpoon"]["docker_context"] = docker_context()
         cli_args["harpoon"]["docker_context_maker"] = docker_context
 
-        for key in ('bash', 'command'):
-            if cli_args[key] is None:
-                cli_args[key] = NotSpecified
-
         collector = Collector()
         collector.prepare(cli_args["harpoon"]["config"].name, cli_args)
         if "term_colors" in collector.configuration:
