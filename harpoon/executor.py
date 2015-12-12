@@ -32,16 +32,13 @@ def docker_context():
     return client
 
 class App(App):
+    VERSION = VERSION
     cli_categories = ['harpoon']
     cli_description = "Docker client that reads yaml"
     cli_environment_defaults = {"HARPOON_CONFIG": ("--harpoon-config", './harpoon.yml')}
     cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified)]
 
     def execute(self, args, extra_args, cli_args, logging_handler, no_docker=False):
-        if args.version:
-            print(VERSION)
-            return
-
         cli_args["harpoon"]["config"] = cli_args["harpoon"]["config"]()
         cli_args["harpoon"]["extra"] = extra_args
 
@@ -64,11 +61,6 @@ class App(App):
             , help = "The config file specifying what harpoon should care about"
             , type = DelayedFileType("r")
             , **defaults["--harpoon-config"]
-            )
-
-        parser.add_argument("--version"
-            , help = "Print out the version of harpoon"
-            , action = "store_true"
             )
 
         parser.add_argument("--dry-run"
