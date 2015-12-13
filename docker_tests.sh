@@ -10,9 +10,11 @@ fi
 
 if [[ -z $CI_SERVER ]]; then
   if docker-machine ls | grep harpoon-tests; then
-    if ! docker-machine start harpoon-tests; then
-      echo "Couldn't start harpoon-tests"
-      exit 1
+    if [[ $(docker-machine status harpoon-tests) != "Running" ]]; then
+      if ! docker-machine start harpoon-tests; then
+        echo "Couldn't start harpoon-tests"
+        exit 1
+      fi
     fi
     captured=$(docker-machine env harpoon-tests)
     if [[ $? != 0 ]]; then
