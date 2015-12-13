@@ -6,6 +6,7 @@
     docs/functionality
     docs/persistence
     docs/building_harpoon/index
+    docs/code_swimming
 
 .. _harpoon
 
