@@ -25,3 +25,12 @@ the code path it takes in setting up Harpoon and running the tasks.
 
 	<iframe width="560" height="315" src="https://www.youtube.com/embed/Y7P76BIU1IA" frameborder="0" allowfullscreen></iframe>
 
+The Collector
+-------------
+
+Configuration is like the spine of Harpoon and the Collector is responsible
+for finding all of it and setting it up.
+
+.. raw:: html
+
+	<iframe width="560" height="315" src="https://www.youtube.com/embed/pYF_DD6KOgM" frameborder="0" allowfullscreen></iframe>
