@@ -60,7 +60,7 @@ overkill for our example at the moment, so we'll just use a ``requirements.txt``
 
 .. code-block:: text
 
-    docker-py==1.2.2
+    docker-py==1.6.0
     dockerpty==0.3.4
     requests[security]
 
