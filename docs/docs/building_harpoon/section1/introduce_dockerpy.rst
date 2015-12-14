@@ -139,7 +139,7 @@ Well, that was fun. Now let's do something a bit more interesting:
         ]
 
         dockerfile = tempfile.NamedTemporaryFile(delete=True)
-        dockerfile.write("\n".join(dockerfile_commands))
+        dockerfile.write("\n".join(dockerfile_commands).encode("utf-8"))
         dockerfile.flush()
         dockerfile.seek(0)
 
