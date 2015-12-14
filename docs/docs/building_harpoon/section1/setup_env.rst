@@ -30,7 +30,7 @@ Next, let's create a virtualenv somewhere::
 
     $ mkdir harpoon-clone
     $ cd harpoon-clone
-    $ virtualenv -p $(which python) venv
+    $ virtualenv -p $(which python3) venv
     $ source venv/bin/activate
 
 The ``venv`` will contain your ``virtualenv``. This is essentially a namespace
