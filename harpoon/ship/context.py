@@ -138,14 +138,13 @@ class ContextBuilder(object):
         files, mtime_ignoreable = self.find_files(context, silent_build)
 
         for path in files:
+            relname = os.path.relpath(path, context.parent_dir)
+            arcname = "./{0}".format(relname.encode('utf-8').decode('ascii', 'ignore'))
             if os.path.exists(path):
-                relname = os.path.relpath(path, context.parent_dir)
-                arcname = "./{0}".format(relname.encode('utf-8').decode('ascii', 'ignore'))
-                if os.path.exists(path):
-                    if not context.use_git_timestamps or relname in mtime_ignoreable:
-                        yield path, None, arcname
-                    else:
-                        yield path, mtimes.get(relname), arcname
+                if not context.use_git_timestamps or relname in mtime_ignoreable:
+                    yield path, None, arcname
+                else:
+                    yield path, mtimes.get(relname), arcname
 
     def find_files(self, context, silent_build):
         """
