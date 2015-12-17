@@ -151,7 +151,7 @@ class ContextBuilder(object):
         Find the set of files from our parent_dir that we care about
         """
         first_layer = ["'{0}'".format(thing) for thing in os.listdir(context.parent_dir)]
-        output, status = command_output("find {0} -type f -print".format(' '.join(first_layer)), cwd=context.parent_dir)
+        output, status = command_output("find {0} -type l -or -type f -follow -print".format(' '.join(first_layer)), cwd=context.parent_dir)
         if status != 0:
             raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
         all_files = set(self.convert_nonascii(output))
