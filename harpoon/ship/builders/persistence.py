@@ -3,6 +3,7 @@ from harpoon.ship.builders.normal import NormalBuilder
 from harpoon.ship.builders.base import BuilderBase
 from harpoon.ship.runner import Runner
 
+from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 import logging
@@ -171,5 +172,8 @@ class PersistenceBuilder(BuilderBase):
         finally:
             if first_conf:
                 Runner().stop_container(first_conf, remove_volumes=True)
-                conf.harpoon.docker_context.remove_image(first_conf.image_name)
+                try:
+                    conf.harpoon.docker_context.remove_image(first_conf.image_name)
+                except DockerAPIError as error:
+                    log.error(error)
 
