@@ -450,7 +450,8 @@ class Runner(object):
         mounts = []
         if remove_volumes:
             for m in conf.harpoon.docker_context.inspect_container(container_id)["Mounts"]:
-                mounts.append(m['Name'])
+                if "Name" in m:
+                    mounts.append(m['Name'])
 
         if not conf.harpoon.no_cleanup:
             log.info("Removing container %s:%s", container_name, container_id)
