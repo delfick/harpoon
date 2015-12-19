@@ -52,6 +52,7 @@ class Image(dictobj):
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
         , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "security_opt": "A list of string values to customize labels for MLS systems, such as SELinux."
+        , "no_tty_option": "Say False for tty when making the image but still use dockerpty"
         , "configuration": "The root configuration"
         , "other_options": "Other options to use in docker commands"
         , "wait_condition": "Wait for this condition to resolve before starting other containers"

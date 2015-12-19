@@ -38,6 +38,7 @@ class Harpoon(dictobj):
         , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
         , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
         , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
+        , "tty_stdin": "The stdin to use for a tty"
         , "tty_stdout": "The stdout to use for a tty"
         , "tty_stderr": "The stderr to use for a tty"
         , "chosen_task": "The task to run"
@@ -156,6 +157,8 @@ class HarpoonSpec(object):
             , container_name = optional_spec(string_spec())
             , image_name_prefix = defaulted(string_spec(), "")
 
+            , no_tty_option = defaulted(formatted(boolean(), formatter=MergedOptionStringFormatter), False)
+
             , user = defaulted(string_spec(), None)
             , mtime = defaulted(any_spec(), time.time())
             , configuration = any_spec()
@@ -266,6 +269,7 @@ class HarpoonSpec(object):
             , docker_context_maker = any_spec()
 
             , stdout = defaulted(any_spec(), sys.stdout)
+            , tty_stdin = defaulted(any_spec(), None)
             , tty_stdout = defaulted(any_spec(), lambda: sys.stdout)
             , tty_stderr = defaulted(any_spec(), lambda: sys.stderr)
             )

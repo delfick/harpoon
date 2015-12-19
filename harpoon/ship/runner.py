@@ -224,6 +224,7 @@ class Runner(object):
         volume_names = conf.volumes.volume_names
         volumes_from = list(conf.volumes.share_with_names)
         port_bindings = dict([port.pair for port in conf.ports])
+        no_tty_option = conf.no_tty_option
 
         uncreated = []
         for name in binds:
@@ -287,7 +288,7 @@ class Runner(object):
             , volumes=volume_names
             , environment=env
 
-            , tty = tty
+            , tty = False if no_tty_option else tty
             , user = conf.user
             , ports = ports
             , stdin_open = tty
@@ -351,11 +352,13 @@ class Runner(object):
             ctxt = conf.harpoon.docker_context_maker()
             container_id = conf.container_id
 
+            stdin = conf.harpoon.tty_stdin
             stdout = conf.harpoon.tty_stdout
             stderr = conf.harpoon.tty_stderr
+            if callable(stdin): stdin = stdin()
             if callable(stdout): stdout = stdout()
             if callable(stderr): stderr = stderr()
-            dockerpty.start(ctxt, container_id, interactive=interactive, stdout=stdout, stderr=stderr)
+            dockerpty.start(ctxt, container_id, interactive=interactive, stdout=stdout, stderr=stderr, stdin=stdin)
         except KeyboardInterrupt:
             pass
 
