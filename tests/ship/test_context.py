@@ -249,7 +249,7 @@ describe HarpoonCase, "Context builder":
                 self.assertEqual(found_files, expected_files)
                 self.assertEqual(found_mtime_ignoreable, set())
 
-        it "ignores files specified as ignored":
+        it "ignores files not specified as valid":
             _, files = self.setup_directory(
                   {".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}}, "one": self.one_val, "two": self.two_val, "three": {"four": self.four_val}, "five": self.five_val}
                 , root=self.folder
@@ -261,11 +261,11 @@ describe HarpoonCase, "Context builder":
                   files["two"]["/file/"], files["three"]["four"]["/file/"], files["five"]["/file/"]
                 ])
 
-            self.find_ignored_git_files.return_value = (set(), set(["five"]), set(["one"]))
+            self.find_ignored_git_files.return_value = (set(), set(["five"]), set(["two", "three/four", "five"]))
             with mock.patch.object(ContextBuilder, "find_ignored_git_files", self.find_ignored_git_files):
                 found_files, found_mtime_ignoreable = ContextBuilder().find_files(self.context, False)
                 self.assertEqual(found_files, expected_files)
-                self.assertEqual(found_mtime_ignoreable, set(["one", "five"]))
+                self.assertEqual(found_mtime_ignoreable, set(["five"]))
 
         it "includes ignored files if use_git is True but use_gitignore is False":
             _, files = self.setup_directory(
@@ -391,30 +391,28 @@ describe HarpoonCase, "Context builder":
 
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_git_timestamps=True, use_gitignore=True)
-                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set()))
+                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set([".gitignore", ".hidden", "one", "three/five", "three/four/seven", "three/four/six", "two", "three/.hidden2"])))
 
         it "returns the changed and untracked files as mtime_ignoreable":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True)
                 self.touch_files(root_folder, [("one", "blah"), ("eight", "stuff"), ("three/nine", "meh"), ("fifty.pyc", "another")])
-                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(["one"]), set(["eight", "three/nine"]), set(["fifty.pyc"])))
+                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(["one"]), set(["eight", "three/nine"]), set([".gitignore", ".hidden", "one", "three/five", "three/four/seven", "three/four/six", "two", "three/.hidden2", "eight", "three/nine"])))
                 self.assertExampleRepoStatus(root_folder, """
                     M one
                     ?? eight
                     ?? three/nine
                 """)
 
-        it "returns ignored files in ignored":
+        it "returns valid files":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True)
-                self.touch_files(root_folder, [("one.pyc", "")])
-                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set(["one.pyc"])))
+                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set([".gitignore", ".hidden", "one", "three/five", "three/four/seven", "three/four/six", "two", "three/.hidden2"])))
                 self.assertExampleRepoStatus(root_folder, "")
 
-        it "doesn't return ignored files in ignored if not use_gitignore":
+        it "doesn't return valid files if not use_gitignore":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=False)
-                self.touch_files(root_folder, [("one.pyc", "")])
                 self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set()))
                 self.assertExampleRepoStatus(root_folder, "")
 

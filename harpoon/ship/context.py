@@ -165,13 +165,14 @@ class ContextBuilder(object):
                 all_files = set([path for path in all_files if not path.startswith(".git")])
 
             combined = set(all_files)
-            changed_files, untracked_files, ignored_files = self.find_ignored_git_files(context, silent_build)
-            mtime_ignoreable = set(list(changed_files) + list(untracked_files) + list(ignored_files))
+            changed_files, untracked_files, valid_files = self.find_ignored_git_files(context, silent_build)
+            mtime_ignoreable = set(list(changed_files) + list(untracked_files))
 
             removed = set()
-            for fle in ignored_files:
-                if fle in combined:
-                    removed.add(fle)
+            if valid_files:
+                for fle in combined:
+                    if fle not in valid_files:
+                        removed.add(fle)
             if removed and not silent_build: log.info("Ignoring %s/%s files", len(removed), len(combined))
             combined -= removed
 
@@ -355,13 +356,13 @@ class ContextBuilder(object):
 
     def find_ignored_git_files(self, context, silent_build):
         """
-        Find all the files that are ignored by git
-
         And all the files that are untracked
 
         And all the files that have been changed
 
-        return (changed_files, untracked_files, ignored_files)
+        And find the files that are either under source control or untracked
+
+        return (changed_files, untracked_files, valid_files)
         """
         def git(args, error_message, **error_kwargs):
             output, status = command_output("git {0}".format(args), cwd=context.parent_dir)
@@ -376,10 +377,11 @@ class ContextBuilder(object):
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
         untracked_files = git("ls-files --others --exclude-standard", "Failed to find untracked files")
 
-        ignored_files = set()
+        valid = set()
         if context.use_gitignore:
-            ignored_files = git("ls-files --others", "Failed to find ignored files")
+            under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
+            valid = under_source_control + untracked_files
 
         to_set = lambda lst: set(self.convert_nonascii(lst))
-        return to_set(changed_files), to_set(untracked_files), to_set(ignored_files) - to_set(untracked_files)
+        return to_set(changed_files), to_set(untracked_files), to_set(valid)
 
