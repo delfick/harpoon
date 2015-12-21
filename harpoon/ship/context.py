@@ -363,9 +363,8 @@ class ContextBuilder(object):
 
         return (changed_files, untracked_files, ignored_files)
         """
-        root_folder = context.git_root
         def git(args, error_message, **error_kwargs):
-            output, status = command_output("git {0}".format(args), cwd=root_folder)
+            output, status = command_output("git {0}".format(args), cwd=context.parent_dir)
             if status != 0:
                 error_kwargs['output'] = output
                 error_kwargs['directory'] = context.parent_dir
