@@ -14,11 +14,13 @@ from input_algorithms.spec_base import (
     , integer_spec, dictof, dict_from_bool_spec
     , container_spec, many_format, delayed
     , string_or_int_as_string_spec, float_spec
+    , Spec, set_options
     )
 
 from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Commands
+from harpoon.option_spec import authentication_objs
 from harpoon.helpers import memoized_property
 from harpoon.option_spec import task_objs
 
@@ -61,6 +63,25 @@ class other_options(dictobj):
         , "build": "Extra options to pass into docker.build"
         , "host_config": "extra options to pass into docker.utils.host_config"
         }
+
+class authentication_spec(Spec):
+    def normalise_filled(self, meta, value):
+        # Make sure the value is a dictionary with a 'use' option
+        set_options(use=required(string_choice_spec(["kms", "plain", "s3_slip"]))).normalise(meta, value)
+
+        use = value["use"]
+        formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
+
+        if use == "kms" or use == "plain" :
+            kls = authentication_objs.PlainAuthentication if use == "plain" else authentication_objs.KmsAuthentication
+            spec = dict(username=required(formatted_string), password=required(formatted_string))
+            if use == "kms":
+                spec.update(role=required(formatted_string), region=required(formatted_string))
+        elif use == "s3_slip":
+            kls = authentication_objs.S3SlipAuthentication
+            spec = dict(role=required(formatted_string), location=required(formatted_string))
+
+        return create_spec(kls, **spec).normalise(meta, value)
 
 class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""
@@ -165,6 +186,14 @@ class HarpoonSpec(object):
 
             , vars = dictionary_spec()
             , deleteable_image = defaulted(boolean(), False)
+
+            , authentication = optional_spec(container_spec(authentication_objs.Authentication
+                , dictof(string_spec(), set_options(
+                      reading = optional_spec(authentication_spec())
+                    , writing = optional_spec(authentication_spec())
+                    )
+                ))
+            )
 
             # The spec itself
             , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))

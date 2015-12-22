@@ -19,6 +19,7 @@ setup(
       , "glob2"
       , "humanize"
 
+      , "boto3==1.2.3"
       , "pyYaml==3.10"
       , "dulwich==0.11.2"
       ]

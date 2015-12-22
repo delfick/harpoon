@@ -3,6 +3,7 @@ from harpoon.ship.builders.base import BuilderBase
 from harpoon.errors import FailedImage
 from harpoon import helpers as hp
 
+from itertools import chain
 import logging
 
 log = logging.getLogger("harpoon.ship.builders.normal")
@@ -18,6 +19,9 @@ class NormalBuilder(BuilderBase):
 
         context.close()
         self.log_context_size(context, conf)
+
+        # Login into the correct registry
+        conf.login(image_name, is_pushing=False)
 
         lines = conf.harpoon.docker_context.build(
               tag = image_name

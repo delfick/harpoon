@@ -55,6 +55,7 @@ class Image(dictobj):
         , "no_tty_option": "Say False for tty when making the image but still use dockerpty"
         , "configuration": "The root configuration"
         , "other_options": "Other options to use in docker commands"
+        , "authentication": "Authentication options for specific registries"
         , "wait_condition": "Wait for this condition to resolve before starting other containers"
         , "restart_policy": "The behaviour to apply when the container exists"
         , "container_name": "The name to give to the running container"
@@ -286,6 +287,9 @@ class Image(dictobj):
         with ContextBuilder().make_context(self.context, **kwargs) as ctxt:
             self.add_docker_file_to_tarfile(docker_file, ctxt.t)
             yield ctxt
+
+    def login(self, image_name, is_pushing):
+        return self.authentication.login(self.harpoon.docker_context, image_name, is_pushing=is_pushing)
 
 class Persistence(dictobj):
     """Options to make an image be built with persisting folders"""

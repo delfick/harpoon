@@ -694,6 +694,45 @@ those dependencies:
 Wait conditions specified this way will overwrite any wait_conditions set by the
 dependency itself.
 
+Authentication
+--------------
+
+Harpoon supports authentication for registries via plain credentials, Kms
+encrypted credentials or via a "slip" in an S3 bucket.
+
+.. code-block:: yaml
+
+  authentication:
+    registry.my-amazing-company.com.au
+      reading:
+        use: plain
+        username: bob
+        password: super_s3cr3t
+      writing:
+        use: kms
+        role: arn:aws:iam::1234544232:role/kms-reader
+        region: ap-southeast-2
+        username: bob
+        password: CiB1pqppldpSEDooCLKBYvCRHy/qWPs9+yJ0eUJ0MKRHsxKLAQEBAgB4daaqaZXaUhA6KAiygWLwkR8v6lj7PfsidHlCdDCkR7MAAABiMGAGCSqGSIb3DQEHBqBTMFECAQAwTAYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAzo+RPkrpz3+4riJkQCARCAH7NXjqqu0OSmYtiNXK7SrUw3mzWa8NYy5KfC4RKGFTQ=
+
+    registry.my-other-amazing-company.com.au
+      reading:
+        use: s3_slip
+        role: arn:aws:iam::124879330703/role/s3_reader
+        location: s3://my-amazing-slips/the-slip.txt
+
+Plain authentication is what it says, just plain text and use as is. Kms encrypted
+means that the password is a base64 encoded encrypted string that is decrypted
+with kms after assuming the specified role.
+
+S3 Slips are a special construct where there is a file in s3 containing a string
+of "username:password" and harpoon will assume the specified role and use that to
+get the slip and extract the username and password from it.
+
+S3 slips are nice in that they can be rotated and the client doesn't need to know
+that it's been rotated (so long as it gets the new creds each time it interacts
+with the registry)
+
 Squashing containers
 --------------------
 
