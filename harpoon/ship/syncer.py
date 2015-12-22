@@ -74,6 +74,10 @@ class Syncer(object):
             raise BadImage("Can't push without an image_index configuration", image=conf.name)
 
         sync_stream = SyncProgressStream()
+
+        # Login before pulling or pushing
+        conf.login(conf.image_name, is_pushing=action=='push')
+
         for line in getattr(conf.harpoon.docker_context, action)(conf.image_name, stream=True):
             try:
                 sync_stream.feed(line)

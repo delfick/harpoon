@@ -54,6 +54,8 @@ class App(App):
         collector.configuration["task_runner"](collector.configuration["harpoon"].chosen_task)
 
     def setup_other_logging(self, args_obj, verbose=False, silent=False, debug=False):
+        logging.getLogger("boto3").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
+        logging.getLogger("botocore").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
         logging.getLogger("requests").setLevel([logging.CRITICAL, logging.ERROR][verbose or debug])
 
     def specify_other_args(self, parser, defaults):

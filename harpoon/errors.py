@@ -65,3 +65,6 @@ class DeprecatedFeature(BadSpecValue):
 class BadEnvironment(HarpoonError):
     desc = "Something bad in the environment"
 
+class BadAmazon(HarpoonError):
+    desc = "Something wrong with amazon"
+
