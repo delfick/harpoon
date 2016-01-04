@@ -382,6 +382,17 @@ class ContextBuilder(object):
             under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
             valid = under_source_control + untracked_files
 
+            for filename in valid:
+                location = os.path.join(context.parent_dir, filename)
+                if os.path.islink(location) and os.path.isdir(location):
+                    actual_path = os.path.abspath(os.path.realpath(location))
+                    parent_dir = os.path.abspath(os.path.realpath(context.parent_dir))
+                    include_from = os.path.relpath(actual_path, parent_dir)
+
+                    to_include = git("ls-files --exclude-standard -- {0}".format(include_from), "Failed to find files under a symlink")
+                    for found in to_include:
+                        valid += [os.path.join(filename, os.path.relpath(found, include_from))]
+
         to_set = lambda lst: set(self.convert_nonascii(lst))
         return to_set(changed_files), to_set(untracked_files), to_set(valid)
 
