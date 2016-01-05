@@ -7,6 +7,7 @@ use of these options.
 
 from harpoon.errors import BadImage, HarpoonError
 from harpoon.ship.context import ContextBuilder
+from harpoon.amazon import assumed_role
 from harpoon.ship.runner import Runner
 from harpoon.errors import BadOption
 from harpoon import helpers as hp
@@ -49,6 +50,7 @@ class Image(dictobj):
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
         , "persistence": "Options to allow certain folders to persist a particular command"
+        , "assume_role": "An aws iam role to assume for running the container"
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
         , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "security_opt": "A list of string values to customize labels for MLS systems, such as SELinux."
@@ -290,6 +292,14 @@ class Image(dictobj):
 
     def login(self, image_name, is_pushing):
         return self.authentication.login(self.harpoon.docker_context, image_name, is_pushing=is_pushing)
+
+    @contextmanager
+    def assumed_role(self):
+        if self.assume_role is NotSpecified:
+            yield
+        else:
+            with assumed_role(self.assume_role):
+                yield
 
 class Persistence(dictobj):
     """Options to make an image be built with persisting folders"""

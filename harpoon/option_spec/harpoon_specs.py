@@ -185,6 +185,7 @@ class HarpoonSpec(object):
             , configuration = any_spec()
 
             , vars = dictionary_spec()
+            , assume_role = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , deleteable_image = defaulted(boolean(), False)
 
             , authentication = optional_spec(container_spec(authentication_objs.Authentication

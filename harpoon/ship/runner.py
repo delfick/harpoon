@@ -216,7 +216,9 @@ class Runner(object):
         image_name = conf.image_name
         container_name = conf.container_name
 
-        env = dict(e.pair for e in conf.env)
+        with conf.assumed_role():
+            env = dict(e.pair for e in conf.env)
+
         ports = [port.host_port for port in conf.ports]
         links = [link.pair for link in conf.links]
         binds = conf.volumes.binds

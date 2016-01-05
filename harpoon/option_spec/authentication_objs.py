@@ -43,4 +43,4 @@ class S3SlipAuthentication(dictobj):
     def creds(self):
         session = assume_role(self.role)
         slip = get_s3_slip(session, self.location)
-        return slip.split(":", 1)
+        return slip.decode('utf-8').split(":", 1)
