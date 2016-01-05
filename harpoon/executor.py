@@ -83,6 +83,10 @@ class App(App):
             , **defaults["--image"]
             )
 
+        parser.add_argument("--assume-role"
+            , help = "Role to assume before running the container"
+            )
+
         parser.add_argument("--non-interactive"
             , help = "Make this non interactive"
             , dest = "harpoon_interactive"

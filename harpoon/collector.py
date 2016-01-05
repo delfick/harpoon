@@ -52,6 +52,9 @@ class Collector(Collector):
         , source = "<args_dict>"
         )
 
+        if args_dict["assume_role"]:
+            self.configuration["assume_role"] = args_dict["assume_role"]
+
     def extra_prepare_after_activation(self, configuration, args_dict):
         """Called after the configuration.converters are activated"""
         task_finder = TaskFinder(self)
