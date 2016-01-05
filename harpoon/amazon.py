@@ -62,26 +62,26 @@ def assume_role(arn):
 
 @contextmanager
 def assumed_role(arn):
-	session = assume_role(arn)
+    session = assume_role(arn)
 
-	old_aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", NotSpecified)
-	old_aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", NotSpecified)
-	old_aws_security_token = os.environ.get("AWS_SECURITY_TOKEN", NotSpecified)
+    old_aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", NotSpecified)
+    old_aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", NotSpecified)
+    old_aws_security_token = os.environ.get("AWS_SECURITY_TOKEN", NotSpecified)
 
-	try:
-		creds = session._session.get_credentials()
-		os.environ['AWS_ACCESS_KEY_ID'] = creds.access_key
-		os.environ['AWS_SECURITY_TOKEN'] = creds.token
-		os.environ['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
-		yield
-	finally:
-		for key, val in (
-			  ("AWS_ACCESS_KEY_ID", old_aws_access_key_id)
-			, ("AWS_SECRET_ACCESS_KEY", old_aws_secret_access_key)
-			, ("AWS_SECURITY_TOKEN", old_aws_security_token)
-			):
-			if val is not NotSpecified:
-				os.environ[key] = val
+    try:
+        creds = session._session.get_credentials()
+        os.environ['AWS_ACCESS_KEY_ID'] = creds.access_key
+        os.environ['AWS_SECURITY_TOKEN'] = creds.token
+        os.environ['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
+        yield
+    finally:
+        for key, val in (
+              ("AWS_ACCESS_KEY_ID", old_aws_access_key_id)
+            , ("AWS_SECRET_ACCESS_KEY", old_aws_secret_access_key)
+            , ("AWS_SECURITY_TOKEN", old_aws_security_token)
+            ):
+            if val is not NotSpecified:
+                os.environ[key] = val
 
 def get_s3_slip(session, location):
     parsed = urlparse(location)
