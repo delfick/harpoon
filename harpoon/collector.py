@@ -48,12 +48,10 @@ class Collector(Collector):
             , "bash": args_dict["bash"] or NotSpecified
             , "harpoon": harpoon
             , "command": args_dict['command'] or NotSpecified
+            , "assume_role": args_dict["assume_role"] or NotSpecified
             }
         , source = "<args_dict>"
         )
-
-        if args_dict["assume_role"]:
-            self.configuration["assume_role"] = args_dict["assume_role"]
 
     def extra_prepare_after_activation(self, configuration, args_dict):
         """Called after the configuration.converters are activated"""
