@@ -194,5 +194,17 @@ def print_all_dockerfiles(collector, **kwargs):
         kwargs["image"] = image
         print_dockerfile(collector, **kwargs)
 
+@an_action()
+def read_login(collector, image, **kwargs):
+    """Login to a docker registry with read permissions"""
+    docker_context = collector.configuration["harpoon"].docker_context
+    collector.configuration["authentication"].login(docker_context, image, is_pushing=False, global_docker=True)
+
+@an_action()
+def write_login(collector, image, **kwargs):
+    """Login to a docker registry with write permissions"""
+    docker_context = collector.configuration["harpoon"].docker_context
+    collector.configuration["authentication"].login(docker_context, image, is_pushing=True, global_docker=True)
+
 # Make it so future use of @an_action doesn't result in more default tasks
 info["is_default"] = False

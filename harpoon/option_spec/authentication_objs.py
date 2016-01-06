@@ -4,11 +4,12 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 
 from six.moves.urllib.parse import urlparse
+import os
 
 class Authentication(dictobj):
      fields = ["registries"]
 
-     def login(self, docker_context, image_name, is_pushing=False):
+     def login(self, docker_context, image_name, is_pushing=False, global_docker=False):
          registry = urlparse("https://{0}".format(image_name)).netloc
          if registry in self.registries:
             if is_pushing:
@@ -18,7 +19,11 @@ class Authentication(dictobj):
 
             if authenticator is not NotSpecified:
                 username, password = authenticator.creds
-                docker_context.login(username, password, registry=registry)
+                if global_docker:
+                    cmd = "docker login -u {0} -p {1} -e {2} {3}".format(username, password, "emailnotneeded@goawaydocker.com", registry)
+                    os.system(cmd)
+                else:
+                    docker_context.login(username, password, registry=registry)
 
 class PlainAuthentication(dictobj):
     fields = ["username", "password"]

@@ -132,6 +132,13 @@ class Collector(Collector):
             return harpoon_spec.harpoon_spec.normalise(meta, v)
         configuration.add_converter(Converter(convert=harpoon_converter, convert_path=["harpoon"]))
 
+        def authentication_converter(p, v):
+            log.info("Converting %s", p)
+            meta = Meta(p.configuration, [("harpoon", "")])
+            configuration.converters.started(p)
+            return harpoon_spec.authentications_spec.normalise(meta, v)
+        configuration.add_converter(Converter(convert=authentication_converter, convert_path=["authentication"]))
+
     def make_image_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):

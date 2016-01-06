@@ -115,6 +115,17 @@ class HarpoonSpec(object):
             )
 
     @memoized_property
+    def authentications_spec(self):
+        """Spec for a group of authentication options"""
+        return optional_spec(container_spec(authentication_objs.Authentication
+                , dictof(string_spec(), set_options(
+                      reading = optional_spec(authentication_spec())
+                    , writing = optional_spec(authentication_spec())
+                    )
+                ))
+            )
+
+    @memoized_property
     def wait_condition_spec(self):
         """Spec for a wait_condition block"""
         from harpoon.option_spec import image_objs
@@ -188,13 +199,7 @@ class HarpoonSpec(object):
             , assume_role = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , deleteable_image = defaulted(boolean(), False)
 
-            , authentication = optional_spec(container_spec(authentication_objs.Authentication
-                , dictof(string_spec(), set_options(
-                      reading = optional_spec(authentication_spec())
-                    , writing = optional_spec(authentication_spec())
-                    )
-                ))
-            )
+            , authentication = self.authentications_spec
 
             # The spec itself
             , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
