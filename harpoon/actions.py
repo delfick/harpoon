@@ -18,6 +18,7 @@ from input_algorithms.meta import Meta
 from textwrap import dedent
 import itertools
 import logging
+import six
 
 log = logging.getLogger("harpoon.actions")
 
@@ -73,6 +74,14 @@ def pull(collector, image, **kwargs):
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
+
+@an_action(needs_image=True)
+def pull_parent(collector, image, **kwargs):
+    """Pull an image's parent image"""
+    parent_image = image.commands.parent_image
+    if not isinstance(parent_image, six.string_types):
+        parent_image = parent_image.image_name
+    pull_arbitrary(collector, parent_image, **kwargs)
 
 @an_action()
 def pull_all(collector, **kwargs):
