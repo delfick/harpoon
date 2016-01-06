@@ -9,6 +9,7 @@ from harpoon.errors import BadImage, ProgrammerError, FailedImage
 
 import logging
 import json
+import six
 import sys
 
 log = logging.getLogger("harpoon.ship.syncer")
@@ -91,6 +92,9 @@ class Syncer(object):
                 log.warning("Unknown line\tline=%s", error)
 
             for part in sync_stream.printable():
-                conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
+                if six.PY3:
+                    conf.harpoon.stdout.write(part)
+                else:
+                    conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
             conf.harpoon.stdout.flush()
 

@@ -5,11 +5,16 @@ Each task is specified with the ``a_task`` decorator and indicates whether it's
 necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.ship.builder import Builder
 from harpoon.ship.syncer import Syncer
 from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
+from input_algorithms.spec_base import NotSpecified
+from input_algorithms import spec_base as sb
+from six.moves.urllib.parse import urlparse
+from input_algorithms.meta import Meta
 from textwrap import dedent
 import itertools
 import logging
@@ -47,6 +52,20 @@ def push_all(collector, **kwargs):
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
     make_all(collector, **kwargs)
+
+@an_action()
+def pull_arbitrary(collector, image, **kwargs):
+    image_index = urlparse("https://{0}".format(image)).netloc
+    image = {
+          "image_name": image
+        , "harpoon": collector.configuration["harpoon"]
+        , "commands": ["FROM scratch"]
+        , "image_index": image_index
+        , "assume_role": NotSpecified
+        , "authentication": collector.configuration.get("authentication", ignore_converters=True).as_dict()
+        }
+    image = HarpoonSpec().image_spec.normalise(Meta(collector.configuration, []).at("images").at("__arbitrary__"), image)
+    Syncer().pull(image)
 
 @an_action(needs_image=True)
 def pull(collector, image, **kwargs):
