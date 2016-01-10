@@ -1,3 +1,4 @@
+from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 import docker.errors
 import humanize
@@ -13,10 +14,13 @@ class BuilderBase(object):
 
     @contextmanager
     def remove_replaced_images(self, conf):
+        tag = "latest" if conf.tag is NotSpecified else conf.tag
+        image_name = "{0}:{1}".format(conf.image_name, tag)
+
         current_ids = None
         if not conf.harpoon.keep_replaced:
             try:
-                current_id = conf.harpoon.docker_context.inspect_image("{0}:latest".format(conf.image_name))["Id"]
+                current_id = conf.harpoon.docker_context.inspect_image(image_name)["Id"]
             except docker.errors.APIError as error:
                 if str(error).startswith("404 Client Error: Not Found"):
                     current_id = None
@@ -30,7 +34,7 @@ class BuilderBase(object):
             log.info("Looking for replaced images to remove")
             untagged = [image["Id"] for image in conf.harpoon.docker_context.images(filters={"dangling": True})]
             if current_id in untagged:
-                log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}:latest".format(conf.image_name), current_id)
+                log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}".format(image_name), current_id)
                 try:
                     conf.harpoon.docker_context.remove_image(current_id)
                 except Exception as error:

@@ -7,6 +7,7 @@ from __future__ import print_function
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.errors import BadImage, ProgrammerError, FailedImage
 
+from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 import logging
 import json
@@ -81,7 +82,11 @@ class Syncer(object):
         conf.login(conf.image_name, is_pushing=action=='push')
 
         with self.retry_pulls(action):
-            for line in getattr(conf.harpoon.docker_context, action)(conf.image_name, stream=True):
+            for line in getattr(conf.harpoon.docker_context, action)(
+                      conf.image_name
+                    , tag = None if conf.tag is NotSpecified else conf.tag
+                    , stream = True
+                    ):
                 try:
                     sync_stream.feed(line)
                 except Failure as error:

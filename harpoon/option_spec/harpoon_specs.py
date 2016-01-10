@@ -183,6 +183,7 @@ class HarpoonSpec(object):
             , harpoon = any_spec()
 
             # default the name to the key of the image
+            , tag = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
             , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
             , image_name = optional_spec(string_spec())

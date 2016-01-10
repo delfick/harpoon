@@ -29,6 +29,7 @@ class Image(dictobj):
     fields = {
           "env": "Environment options"
         , "cpu": "CPU options"
+        , "tag": "defaults to 'latest'"
         , "vars": "Arbritrary dictionary of values"
         , "name": "The name of the image"
         , "bash": "A command to run, will transform into ``bash -c '<bash>'``"
