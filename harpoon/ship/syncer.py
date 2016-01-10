@@ -7,6 +7,7 @@ from __future__ import print_function
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.errors import BadImage, ProgrammerError, FailedImage
 
+from contextlib import contextmanager
 import logging
 import json
 import six
@@ -79,22 +80,40 @@ class Syncer(object):
         # Login before pulling or pushing
         conf.login(conf.image_name, is_pushing=action=='push')
 
-        for line in getattr(conf.harpoon.docker_context, action)(conf.image_name, stream=True):
-            try:
-                sync_stream.feed(line)
-            except Failure as error:
-                if ignore_missing and action == "pull":
-                    log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
-                    break
-                else:
-                    raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
-            except Unknown as error:
-                log.warning("Unknown line\tline=%s", error)
+        with self.retry_pulls(action):
+            for line in getattr(conf.harpoon.docker_context, action)(conf.image_name, stream=True):
+                try:
+                    sync_stream.feed(line)
+                except Failure as error:
+                    if ignore_missing and action == "pull":
+                        log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
+                        break
+                    else:
+                        raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
+                except Unknown as error:
+                    log.warning("Unknown line\tline=%s", error)
 
-            for part in sync_stream.printable():
-                if six.PY3:
-                    conf.harpoon.stdout.write(part)
-                else:
-                    conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
-            conf.harpoon.stdout.flush()
+                for part in sync_stream.printable():
+                    if six.PY3:
+                        conf.harpoon.stdout.write(part)
+                    else:
+                        conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
+                conf.harpoon.stdout.flush()
+
+    @contextmanager
+    def retry_pulls(self, action):
+        if action == "push":
+            yield
+            return
+
+        for attempt in range(3):
+            try:
+                yield
+                break
+            except KeyboardInterrupt:
+                raise
+            except FailedImage as error:
+                log.exception(error)
+                if attempt == 2:
+                    raise
 
