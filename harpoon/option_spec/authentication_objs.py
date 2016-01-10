@@ -24,7 +24,7 @@ class Authentication(dictobj):
                     cmd = "docker login -u {0} -p {1} -e {2} {3}".format(username, password, "emailnotneeded@goawaydocker.com", registry)
                     os.system(cmd)
                 else:
-                    docker_context.login(username, password, registry=registry)
+                    docker_context.login(username, password, registry=registry, reauth=True)
 
 class PlainAuthentication(dictobj):
     fields = ["username", "password"]
