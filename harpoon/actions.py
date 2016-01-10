@@ -16,6 +16,7 @@ from input_algorithms import spec_base as sb
 from six.moves.urllib.parse import urlparse
 from input_algorithms.meta import Meta
 from textwrap import dedent
+from itertools import chain
 import itertools
 import logging
 import six
@@ -229,6 +230,35 @@ def write_login(collector, image, **kwargs):
     """Login to a docker registry with write permissions"""
     docker_context = collector.configuration["harpoon"].docker_context
     collector.configuration["authentication"].login(docker_context, image, is_pushing=True, global_docker=True)
+
+@an_action(needs_image=True)
+def tag(collector, image, artifact, **kwargs):
+    """Tag an image!"""
+    if artifact in (None, "", NotSpecified):
+        raise BadOption("Please specify a tag using the artifact option")
+
+    if image.image_index in (None, "", NotSpecified):
+        raise BadOption("Please specify an image with an image_index option")
+
+    tag = image.image_name
+    if image.tag is NotSpecified:
+        tag = "{0}:latest".format(tag)
+
+    images = image.harpoon.docker_context.images()
+    current_tags = chain.from_iterable(image_conf["RepoTags"] for image_conf in images)
+    if tag not in current_tags:
+        raise BadOption("Please build or pull the image down to your local cache before tagging it")
+
+    for image_conf in images:
+        if tag in image_conf["RepoTags"]:
+            image_id = image_conf["Id"]
+            break
+
+    log.info("Tagging {0} ({1}) as {2}".format(image_id, image.image_name, artifact))
+    image.harpoon.docker_context.tag(image_id, repository=image.image_name, tag=artifact, force=True)
+
+    image.tag = artifact
+    Syncer().push(image)
 
 # Make it so future use of @an_action doesn't result in more default tasks
 info["is_default"] = False
