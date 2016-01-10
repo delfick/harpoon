@@ -69,14 +69,15 @@ def pull_arbitrary(collector, image, **kwargs):
     else:
         image_indexes = [(image, image_index_of(image))]
 
+    authentication = collector.configuration.get("authentication")
     for index, (image, image_index) in enumerate(image_indexes):
         image = {
-            "image_name": image
+              "image_name": image
             , "harpoon": collector.configuration["harpoon"]
             , "commands": ["FROM scratch"]
             , "image_index": image_index
             , "assume_role": NotSpecified
-            , "authentication": collector.configuration.get("authentication", ignore_converters=True).as_dict()
+            , "authentication": authentication
             }
         meta = Meta(collector.configuration, []).at("images").at("__arbitrary_{0}__".format(index))
         image = HarpoonSpec().image_spec.normalise(meta, image)

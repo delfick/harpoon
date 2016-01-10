@@ -4,6 +4,7 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 
 from six.moves.urllib.parse import urlparse
+import time
 import os
 
 class Authentication(dictobj):
@@ -46,6 +47,17 @@ class S3SlipAuthentication(dictobj):
 
     @property
     def creds(self):
+        if not hasattr(self, "_store"):
+            self._store = None
+
+        if self._store is not None:
+            tm, stored = self._store
+            if time.time() - tm > 3000:
+                self.store = None
+            else:
+                return stored
+
         session = assume_role(self.role)
         slip = get_s3_slip(session, self.location)
-        return slip.decode('utf-8').split(":", 1)
+        self._store = (time.time(), slip.decode('utf-8').split(":", 1))
+        return self._store[1]
