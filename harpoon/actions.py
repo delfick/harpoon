@@ -19,6 +19,7 @@ from textwrap import dedent
 import itertools
 import logging
 import six
+import os
 
 log = logging.getLogger("harpoon.actions")
 
@@ -56,17 +57,30 @@ def push_all(collector, **kwargs):
 
 @an_action()
 def pull_arbitrary(collector, image, **kwargs):
-    image_index = urlparse("https://{0}".format(image)).netloc
-    image = {
-          "image_name": image
-        , "harpoon": collector.configuration["harpoon"]
-        , "commands": ["FROM scratch"]
-        , "image_index": image_index
-        , "assume_role": NotSpecified
-        , "authentication": collector.configuration.get("authentication", ignore_converters=True).as_dict()
-        }
-    image = HarpoonSpec().image_spec.normalise(Meta(collector.configuration, []).at("images").at("__arbitrary__"), image)
-    Syncer().pull(image)
+    image_index_of = lambda image: urlparse("https://{0}".format(image)).netloc
+
+    if image.startswith("file://"):
+        parsed = urlparse(image)
+        filename = parsed.netloc + parsed.path
+        if not os.path.exists(filename):
+            raise HarpoonError("Provided file doesn't exist!", wanted=image)
+        with open(filename) as fle:
+            image_indexes = [(line.strip(), image_index_of(line.strip())) for line in fle]
+    else:
+        image_indexes = [(image, image_index_of(image))]
+
+    for index, (image, image_index) in enumerate(image_indexes):
+        image = {
+            "image_name": image
+            , "harpoon": collector.configuration["harpoon"]
+            , "commands": ["FROM scratch"]
+            , "image_index": image_index
+            , "assume_role": NotSpecified
+            , "authentication": collector.configuration.get("authentication", ignore_converters=True).as_dict()
+            }
+        meta = Meta(collector.configuration, []).at("images").at("__arbitrary_{0}__".format(index))
+        image = HarpoonSpec().image_spec.normalise(meta, image)
+        Syncer().pull(image)
 
 @an_action(needs_image=True)
 def pull(collector, image, **kwargs):
