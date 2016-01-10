@@ -36,7 +36,7 @@ class App(App):
     cli_categories = ['harpoon']
     cli_description = "Docker client that reads yaml"
     cli_environment_defaults = {"HARPOON_CONFIG": ("--harpoon-config", './harpoon.yml')}
-    cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified)]
+    cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified), ('--artifact', NotSpecified)]
 
     def execute(self, args_obj, args_dict, extra_args, logging_handler, no_docker=False):
         args_dict["harpoon"]["config"] = args_dict["harpoon"]["config"]()
@@ -75,6 +75,12 @@ class App(App):
             , help = "The task to run"
             , dest = "harpoon_chosen_task"
             , **defaults["--task"]
+            )
+
+        parser.add_argument("--artifact"
+            , help = "Extra information"
+            , dest = "harpoon_artifact"
+            , **defaults["--artifact"]
             )
 
         parser.add_argument("--image"

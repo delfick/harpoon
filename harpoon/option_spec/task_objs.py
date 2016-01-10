@@ -71,7 +71,8 @@ class Task(dictobj):
         new_collector = Collector()
         new_collector.configuration = configuration
         new_collector.configuration_file = collector.configuration_file
-        return task_func(new_collector, image=image, tasks=tasks, **extras)
+        artifact = configuration["harpoon"].artifact
+        return task_func(new_collector, image=image, tasks=tasks, artifact=artifact, **extras)
 
     def find_image(self, image, configuration):
         """Complain if we don't have an image"""

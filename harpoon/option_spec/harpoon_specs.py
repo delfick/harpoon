@@ -39,6 +39,7 @@ class Harpoon(dictobj):
         , "stdout": "The stdout to use for printing"
         , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
         , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
+        , "artifact": "Extra information for actions"
         , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
         , "tty_stdin": "The stdin to use for a tty"
         , "tty_stdout": "The stdout to use for a tty"
@@ -286,6 +287,7 @@ class HarpoonSpec(object):
 
             , extra = defaulted(formatted_string, "")
             , debug = defaulted(boolean(), False)
+            , artifact = optional_spec(formatted_string)
             , chosen_task = defaulted(formatted_string, "list_tasks")
             , chosen_image = defaulted(formatted_string, "")
 
