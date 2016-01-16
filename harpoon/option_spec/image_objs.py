@@ -292,7 +292,8 @@ class Image(dictobj):
             yield ctxt
 
     def login(self, image_name, is_pushing):
-        return self.authentication.login(self.harpoon.docker_context, image_name, is_pushing=is_pushing)
+        if self.authentication is not NotSpecified:
+            return self.authentication.login(self.harpoon.docker_context, image_name, is_pushing=is_pushing)
 
     @contextmanager
     def assumed_role(self):
