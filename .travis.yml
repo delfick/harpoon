@@ -25,7 +25,7 @@ before_install:
 
 install:
   - sudo apt-get -qqy update
-  - sudo apt-get -qqy install lxc lxc-docker-$DOCKER_VERSION slirp
+  - sudo apt-get -qqy install lxc-docker-$DOCKER_VERSION slirp
   - sudo sudo usermod -aG docker "$USER"
   - git clone git://github.com/cptactionhank/sekexe
   - pip install pip --upgrade
