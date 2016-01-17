@@ -58,6 +58,7 @@ def push_all(collector, **kwargs):
 
 @an_action()
 def pull_arbitrary(collector, image, **kwargs):
+    """Pull an arbitrary image"""
     image_index_of = lambda image: urlparse("https://{0}".format(image)).netloc
 
     if image.startswith("file://"):
