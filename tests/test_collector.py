@@ -21,7 +21,7 @@ describe HarpoonCase, "Collector":
             configuration = {"harpoon": {"chosen_image": "blah"}, "images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 collector = Collector()
-                collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None})
+                collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None, "assume_role": None})
                 collector2 = collector.clone({"chosen_image": "other"})
 
                 self.assertNotEqual(collector.configuration["harpoon"], collector2.configuration["harpoon"])
@@ -47,7 +47,7 @@ describe HarpoonCase, "Collector":
                 for thing in ("configuration", "$@", "bash", "command", "harpoon", "collector", "getpass", "args_dict"):
                     assert thing not in raw_config, "expected {0} to not be in configuration".format(thing)
 
-                args_dict = {"harpoon": {"extra": extra}, "bash": bash, "command": command}
+                args_dict = {"harpoon": {"extra": extra}, "bash": bash, "command": command, "assume_role": None}
                 collector.prepare(filename, args_dict)
 
                 # Done by option_merge
@@ -69,7 +69,7 @@ describe HarpoonCase, "Collector":
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 with mock.patch("harpoon.collector.TaskFinder", FakeTaskFinder):
                     collector = Collector()
-                    args_dict = {"harpoon": {}, "bash": None, "command": None}
+                    args_dict = {"harpoon": {}, "bash": None, "command": None, "assume_role": None}
                     collector.prepare(filename, args_dict)
                     task_finder.find_tasks.assert_called_once_with({})
 
@@ -219,7 +219,7 @@ describe HarpoonCase, "Collector":
                 configuration = {"images": {"__images_from__": folders["one"]["/folder/"]}}
                 with self.a_temp_file(json.dumps(configuration)) as filename:
                     collector = Collector()
-                    collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None})
+                    collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None, "assume_role": None})
                     cfg = json.loads(config)
                     cfg["mtime"] = mock.ANY
 
