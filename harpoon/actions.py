@@ -93,12 +93,16 @@ def pull(collector, image, **kwargs):
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
 @an_action(needs_image=True)
-def pull_parent(collector, image, **kwargs):
+def pull_parent(collector, image, ignore_defined=False, **kwargs):
     """Pull an image's parent image"""
     parent_image = image.commands.parent_image
+    defined = False
     if not isinstance(parent_image, six.string_types):
+        defined = True
         parent_image = parent_image.image_name
-    pull_arbitrary(collector, parent_image, **kwargs)
+
+    if not ignore_defined or not defined:
+        pull_arbitrary(collector, parent_image, **kwargs)
 
 @an_action()
 def pull_all(collector, **kwargs):
@@ -108,6 +112,14 @@ def pull_all(collector, **kwargs):
         for image_name, image in layer:
             log.info("Pulling %s", image_name)
             Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
+
+@an_action()
+def pull_parents(collector, **kwargs):
+    """Pull all the parents of the images"""
+    images = collector.configuration["images"]
+    for layer in Builder().layered(images, only_pushable=True):
+        for image_name, image in layer:
+            pull_parent(collector, image, ignore_defined=True)
 
 @an_action(needs_image=True)
 def make(collector, image, **kwargs):
