@@ -195,7 +195,7 @@ class Runner(object):
                 log.error("Failed to run condition\tcondition=%s\tdependency=%s\terror=%s", condition, conf.name, error)
                 return False
 
-            output = ctxt.exec_start(exec_id)
+            output = ctxt.exec_start(exec_id).decode('utf-8')
             inspection = ctxt.exec_inspect(exec_id)
             exit_code = inspection["ExitCode"]
             if exit_code != 0:
