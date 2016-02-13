@@ -6,6 +6,7 @@ from __future__ import print_function
 
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.errors import BadImage, ProgrammerError, FailedImage
+from harpoon.ship.builder import Builder
 
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
@@ -66,7 +67,8 @@ class Syncer(object):
 
     def pull(self, conf, ignore_missing=False):
         """Push this image"""
-        self.push_or_pull(conf, "pull", ignore_missing=ignore_missing)
+        with Builder().remove_replaced_images(conf):
+            self.push_or_pull(conf, "pull", ignore_missing=ignore_missing)
 
     def push_or_pull(self, conf, action=None, ignore_missing=False):
         """Push or pull this image"""
