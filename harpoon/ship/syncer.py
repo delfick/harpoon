@@ -81,7 +81,7 @@ class Syncer(object):
         # Login before pulling or pushing
         conf.login(conf.image_name, is_pushing=action=='push')
 
-        with self.retry_pulls(action):
+        for _ in self.retry_pulls(action):
             for line in getattr(conf.harpoon.docker_context, action)(
                       conf.image_name
                     , tag = None if conf.tag is NotSpecified else conf.tag
@@ -105,7 +105,6 @@ class Syncer(object):
                         conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
                 conf.harpoon.stdout.flush()
 
-    @contextmanager
     def retry_pulls(self, action):
         if action == "push":
             yield
