@@ -108,8 +108,8 @@ class Syncer(object):
                             conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
                     conf.harpoon.stdout.flush()
 
-                    # And stop the loop!
-                    break
+                # And stop the loop!
+                break
 
             except KeyboardInterrupt:
                 raise
