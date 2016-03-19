@@ -199,7 +199,16 @@ class ContextBuilder(object):
         return files, mtime_ignoreable
 
     def find_git_mtimes(self, context, silent_build):
-        return GitMtimes().find_mtimes(context, silent_build)
+        if not context.use_git_timestamps:
+            return {}
+        else:
+            # Can't use git timestamps if it's just a shallow clone
+            # Otherwise all the files get the timestamp of the latest commit
+            if context.use_git_timestamps and os.path.exists(os.path.join(context.git_root, ".git", "shallow")):
+                raise HarpoonError("Can't get git timestamps from a shallow clone", directory=context.parent_dir)
+
+            git_mtimes = GitMtimes(context.git_root, context.parent_dir, context.use_git_timestamps, include=context.include, exclude=context.exclude)
+            return git_mtimes.find_for()
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""

@@ -211,6 +211,13 @@ describe HarpoonCase, "Context builder":
                     , [(one_path, self.one_mtime, "./one/1"), (two_path, None, "./two/three/four")]
                     )
 
+    describe "find_git_mtimes":
+        it "complains if the git repo is a shallow clone":
+            with self.cloned_repo_example(shallow=True) as root_folder:
+                with self.fuzzyAssertRaisesError(HarpoonError, "Can't get git timestamps from a shallow clone", directory=root_folder):
+                    ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True)
+                    ContextBuilder().find_git_mtimes(ctxt, False)
+
     describe "find_files":
         before_each:
             self.find_ignored_git_files = mock.Mock(name="find_ignored_git_files")
