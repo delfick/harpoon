@@ -19,10 +19,11 @@ Path = namedtuple("Path", ["path", "relpath"])
 SymlinkdPath = namedtuple("Path", ["path", "relpath", "real_relpath"])
 
 class GitMtimes(object):
-    def __init__(self, root_folder, parent_dir, timestamps_for=None, include=None, exclude=None, silent=False):
+    def __init__(self, root_folder, parent_dir, timestamps_for=None, include=None, exclude=None, silent=False, with_cache=True):
         self.silent = silent
         self.include = include
         self.exclude = exclude
+        self.with_cache = with_cache
         self.parent_dir = parent_dir
         self.root_folder = root_folder
         self.timestamps_for = timestamps_for
@@ -53,7 +54,7 @@ class GitMtimes(object):
         # Finally get the dates from git!
         return self.commit_dates_for(git, use_files)
 
-    def commit_dates_for(self, git, use_files, with_cache=True):
+    def commit_dates_for(self, git, use_files):
         mtimes = {}
         first_commit = None
         cached_commit = None
@@ -66,7 +67,7 @@ class GitMtimes(object):
         # to calcualte the mtimes for these symlinkd files that weren't excluded
         use_files_paths = set([getattr(p, "real_relpath", p.path) for p in use_files])
 
-        if with_cache:
+        if self.with_cache:
             cached_commit, cached_mtimes = self.get_cached_mtimes(use_files)
 
         for entry in git.get_walker():
@@ -90,7 +91,7 @@ class GitMtimes(object):
             if hasattr(path, "real_relpath"):
                 mtimes[path.relpath] = mtimes[path.real_relpath]
 
-        if first_commit != cached_commit:
+        if self.with_cache and first_commit != cached_commit:
             self.set_cached_mtimes(first_commit, mtimes, use_files)
 
         return mtimes
