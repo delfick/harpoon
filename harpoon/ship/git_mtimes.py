@@ -28,7 +28,7 @@ class GitMtimes(object):
         self.root_folder = root_folder
         self.timestamps_for = timestamps_for
 
-    def find_for(self):
+    def find(self):
         """
         Use git to find the mtimes of the files we care about
         """

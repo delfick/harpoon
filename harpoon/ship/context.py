@@ -208,7 +208,7 @@ class ContextBuilder(object):
                 raise HarpoonError("Can't get git timestamps from a shallow clone", directory=context.parent_dir)
 
             git_mtimes = GitMtimes(context.git_root, context.parent_dir, context.use_git_timestamps, include=context.include, exclude=context.exclude)
-            return git_mtimes.find_for()
+            return git_mtimes.find()
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""
