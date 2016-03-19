@@ -71,21 +71,21 @@ describe HarpoonCase, "GitMtimes":
                 self.assertEqual(GitMtimes().find_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
-                ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**"])
+                ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**", "symlinkd"])
                 mp = self.repo_example_map()
-                expected_map = {"symlinkd": mp["symlinkd"], "three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], ".hidden": mp[".hidden"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], ".hidden": mp[".hidden"]}
                 self.assertEqual(GitMtimes().find_mtimes(ctxt, False), expected_map)
 
         it "includes files in context.include after context.exclude":
             with self.cloned_repo_example() as root_folder:
-                ctxt = objs.Context(enabled=True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**"], include=["four/seven"])
+                ctxt = objs.Context(enabled=True, parent_dir=os.path.join(root_folder, "three"), use_gitignore=True, use_git_timestamps=True, exclude=["four/**", "symlinkd"], include=["four/seven"])
                 mp = self.repo_example_map()
                 expected_map = {".hidden2": mp["three/.hidden2"], "five": mp["three/five"], "four/seven": mp["three/four/seven"]}
                 self.assertEqual(GitMtimes().find_mtimes(ctxt, False), expected_map)
 
             with self.cloned_repo_example() as root_folder:
-                ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**"], include=["three/four/seven"])
+                ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True, use_git_timestamps=True, exclude=["three/four/**", "symlinkd"], include=["three/four/seven"])
                 mp = self.repo_example_map()
-                expected_map = {"symlinkd": mp["symlinkd"], "three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], "three/four/seven": mp["three/four/seven"], ".hidden": mp[".hidden"]}
+                expected_map = {"three/.hidden2": mp["three/.hidden2"], "three/five": mp["three/five"], "one": mp["one"], "two": mp["two"], ".gitignore": mp[".gitignore"], "three/four/seven": mp["three/four/seven"], ".hidden": mp[".hidden"]}
                 self.assertEqual(GitMtimes().find_mtimes(ctxt, False), expected_map)
 

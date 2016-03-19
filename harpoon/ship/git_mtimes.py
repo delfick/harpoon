@@ -41,6 +41,15 @@ class GitMtimes(object):
         all_files = set([fn.decode('utf-8') for fn in git.open_index()])
         use_files = self.find_files_for_use(context, all_files)
 
+        # the git index won't find the files under a symlink :(
+        # And we include files under a symlink as seperate copies of the files
+        # So we still want to generate modified times for those files
+        extras = self.extra_symlinked_files(context, use_files)
+
+        # Combine use_files and extras
+        for path in extras:
+            use_files.add(path)
+
         # Tell the user something
         if not silent_build:
             log.info("Finding modified times for %s/%s git controlled files in %s", len(use_files), len(all_files), root_folder)
@@ -108,6 +117,34 @@ class GitMtimes(object):
                         if not new_relpath.startswith("../"):
                             if mtimes.get(new_relpath, 0) < date:
                                 yield new_relpath, date
+
+    def extra_symlinked_files(self, context, potential_symlinks):
+        root_folder = context.git_root
+        parent_dir = context.parent_dir
+
+        for path in list(potential_symlinks):
+            relpath = path.relpath
+            location = os.path.join(root_folder, relpath)
+            real_location = os.path.realpath(location)
+
+            if os.path.islink(location) and os.path.isdir(real_location):
+                for root, dirs, files in os.walk(real_location, followlinks=True):
+                    for name in files:
+                        full_path = os.path.join(root, name)
+                        rel_location = os.path.relpath(full_path, real_location)
+
+                        # So this is joining the name of the symlink
+                        # With the name of the file, relative to the real location of the symlink
+                        # Not complex at all!
+                        symlinkd_path = os.path.join(relpath, rel_location)
+
+                        # We then get that relative to the parent dir
+                        symlinkd_relpath = os.path.relpath(os.path.realpath(full_path), os.path.realpath(parent_dir))
+
+                        # And we need to original file location so we can get a commit time for the symlinkd path
+                        real_relpath = os.path.relpath(full_path, os.path.realpath(parent_dir))
+
+                        yield SymlinkdPath(symlinkd_path, symlinkd_relpath, root_folder, parent_dir, real_relpath)
 
     def find_files_for_use(self, context, all_files):
         use_files = set()
