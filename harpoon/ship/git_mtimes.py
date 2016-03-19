@@ -198,7 +198,7 @@ class GitMtimes(object):
             return result
 
         for item in result:
-            if sorted(item.get("use_files_relpaths", [])) == sorted_use_files_relpaths:
+            if sorted(item.get("use_files_relpaths", [])) == sorted_use_files_relpaths and item.get("parent_dir") == self.parent_dir:
                 return item.get("commit"), item.get("mtimes")
 
         return None, {}
@@ -217,7 +217,7 @@ class GitMtimes(object):
                 break
 
         if not found:
-            current.append({"commit": first_commit, "mtimes": mtimes, "use_files_relpaths": sorted_use_files_relpaths})
+            current.append({"commit": first_commit, "parent_dir": self.parent_dir, "mtimes": mtimes, "use_files_relpaths": sorted_use_files_relpaths})
 
         try:
             log.info("Writing harpoon cached mtimes\tlocation=%s", location)
