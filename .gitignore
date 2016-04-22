@@ -6,3 +6,4 @@ dist/
 .tox/
 docs/sphinx/_build
 docs/sphinx/venv
+venv

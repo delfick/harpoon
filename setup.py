@@ -44,7 +44,7 @@ setup(
     # metadata for upload to PyPI
     , url = "https://github.com/realestate-com-au/harpoon"
     , author = "Stephen Moore"
-    , author_email = "stephen.moore@rea-group.com"
+    , author_email = "delfick755@gmail.com"
     , description = "Opinionated wrapper around docker"
     , license = "MIT"
     , keywords = "docker"
