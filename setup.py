@@ -19,9 +19,9 @@ setup(
       , "glob2"
       , "humanize"
 
+      , "gitmit==0.1"
       , "boto3==1.2.3"
       , "pyYaml==3.10"
-      , "dulwich==0.11.2"
       ]
 
     , extras_require =
