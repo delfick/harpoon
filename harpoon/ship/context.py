@@ -216,7 +216,8 @@ class ContextBuilder(object):
         if context.use_git_timestamps and os.path.exists(os.path.join(root_folder, ".git", "shallow")):
             raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
 
-        return dict(GitTimes(root_folder, os.path.relpath(parent_dir, root_folder)).find())
+        options = {"include": context.include, "exclude": context.exclude, "timestamps_for": context.use_git_timestamps, "silent": silent_build}
+        return dict(GitTimes(root_folder, os.path.relpath(parent_dir, root_folder), **options).find())
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""
