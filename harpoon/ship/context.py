@@ -15,7 +15,6 @@ from harpoon.errors import HarpoonError
 from delfick_app import command_output
 from contextlib import contextmanager
 from gitmit.mit import GitTimes
-from dulwich.repo import Repo
 import tempfile
 import fnmatch
 import logging
