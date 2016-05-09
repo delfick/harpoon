@@ -694,6 +694,62 @@ those dependencies:
 Wait conditions specified this way will overwrite any wait_conditions set by the
 dependency itself.
 
+Port bound detection
+--------------------
+
+One of the more annoying errors that can happen is if a container wants to bind
+to a port that already exists, harpoon would just complain saying the container
+exited with a nonzero exit code before it even started.
+
+With this new feature since version 0.5.8.2 Harpoon will try and work out if
+the required ports are already bound and complain if they are:
+
+.. code-block:: yaml
+
+  ---
+
+  images:
+    my_image:
+      context: false
+      commands:
+        - FROM ubuntu:14.04
+        - CMD python3 -m http.server 9000
+
+      tasks:
+        runner:
+          description: Run our python server in the docker container
+          options:
+            ports:
+              - "9000:9000"
+
+.. code-block:: text
+
+  $ python3 -m http.server 9000 &
+  $ harpoon runner
+  11:06:37 INFO    harpoon.executor Connected to docker daemon    driver=aufs     kernel=4.1.17-boot2docker
+  11:06:37 INFO    option_merge.collector Adding configuration from /Users/stephen.moore/.harpoonrc.yml
+  11:06:37 INFO    option_merge.collector Adding configuration from /Users/stephen.moore/deleteme/harpoon.yml
+  11:06:37 INFO    harpoon.collector Converting harpoon
+  11:06:37 INFO    harpoon.collector Converting images.my_image
+  11:06:37 INFO    harpoon.ship.builder Making image for 'my_image' (my_image) - FROM ubuntu:14.04
+  11:06:37 INFO    harpoon.ship.builders.mixin Building 'my_image' in '/Users/stephen.moore/deleteme' with 10.2 kB of context
+  Step 1 : FROM ubuntu:14.04
+  ---> 06ab2de020f4
+  Step 2 : CMD python3 -m http.server 9000
+  ---> Running in 32200c32359a
+  ---> 15052fde2407
+  Removing intermediate container 32200c32359a
+  Successfully built 15052fde2407
+  11:06:38 INFO    harpoon.ship.runner Creating container from my_image   image=my_image  container_name=my_image-4826b066-1582-11e6-a2d8-20c9d088bcc7    tty=True
+  11:06:38 INFO    harpoon.ship.runner    Using ports     ports=[9000]
+  11:06:38 INFO    harpoon.ship.runner    Port bindings: [9000]
+  11:06:38 INFO    harpoon.executor Connected to docker daemon    driver=aufs     kernel=4.1.17-boot2docker
+  11:06:38 INFO    harpoon.ship.runner Removing container my_image-4826b066-1582-11e6-a2d8-20c9d088bcc7:ec5867550aeff206fd4d64258053e123fe092f96148725634e66f977a6513609
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Something went wrong! -- AlreadyBoundPorts
+          "Ports are already bound by something else"     ports=[9000]
+
 Authentication
 --------------
 

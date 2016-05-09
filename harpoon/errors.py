@@ -68,3 +68,6 @@ class BadEnvironment(HarpoonError):
 class BadAmazon(HarpoonError):
     desc = "Something wrong with amazon"
 
+class AlreadyBoundPorts(HarpoonError):
+    desc = "Ports are already bound by something else"
+

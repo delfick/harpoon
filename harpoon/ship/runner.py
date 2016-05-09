@@ -10,7 +10,7 @@ Finally, the Runner is also responsible for starting and cleaning up interventio
 containers.
 """
 
-from harpoon.errors import BadOption, BadImage, BadResult, UserQuit
+from harpoon.errors import BadOption, BadImage, BadResult, UserQuit, AlreadyBoundPorts
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon import helpers as hp
 from harpoon.helpers import until
@@ -321,6 +321,9 @@ class Runner(object):
 
     def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
         """Start up a single container"""
+        # Make sure we can bind to our specified ports!
+        self.find_bound_ports(conf.ports)
+
         container_id = conf.container_id
         container_name = conf.container_name
         log.info("Starting container %s (%s)", container_name, container_id)
@@ -489,6 +492,21 @@ class Runner(object):
                     return inspection
             except Exception as error:
                 log.error("Failed to see if container exited normally or not\thash=%s\terror=%s", conf.container_id, error)
+
+    def find_bound_ports(self, ports):
+        """Find any ports that are already bound and complain about them"""
+        bound = []
+        for port in ports:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.bind((port.ip if port.ip is not NotSpecified else "127.0.0.1", port.host_port))
+            except socket.error as error:
+                bound.append(port.host_port)
+            finally:
+                s.close()
+
+        if bound:
+            raise AlreadyBoundPorts(ports=bound)
 
     ########################
     ###   INTERVENTION

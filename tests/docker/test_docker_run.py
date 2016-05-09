@@ -1,14 +1,19 @@
 #coding: spec
 
+from harpoon.errors import FailedImage, BadImage, AlreadyBoundPorts
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.errors import FailedImage, BadImage
 from harpoon.ship.runner import Runner
+from harpoon import helpers as hp
 
 from tests.helpers import HarpoonCase
 
 from option_merge.converter import Converter
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
+from contextlib import contextmanager
+import threading
+import logging
+import socket
 import codecs
 import nose
 import mock
@@ -17,6 +22,8 @@ import os
 import re
 
 mtime = 1431170923
+
+log = logging.getLogger("tests.docker.test_docker_run")
 
 describe HarpoonCase, "Building docker images":
     def make_image(self, options, harpoon_options=None):
@@ -39,6 +46,49 @@ describe HarpoonCase, "Building docker images":
         if "configuration" not in options:
             options["configuration"] = everything
         return HarpoonSpec().image_spec.normalise(Meta(everything, []), options)
+
+    @contextmanager
+    def a_port(self, port):
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(("localhost", port))
+            s.listen(1)
+
+            yield
+        finally:
+            try:
+                if s is not None:
+                    s.close()
+            except Exception as error:
+                log.warning(error)
+
+    it "can complain if ports are already bound to something else":
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 1"]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+
+        with self.a_port(9999):
+            with self.a_port(9998):
+                with self.fuzzyAssertRaisesError(AlreadyBoundPorts, ports=[9999, 9998]):
+                    with self.a_built_image({"context": False, "commands": commands, "ports": ["9999:9999", "9998:9998"]}, {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}) as (cached, conf):
+                        Runner().run_container(conf, {conf.name: conf})
+
+    it "does not complain if nothing is using a port":
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 0"]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+
+        # Make sure we can get 9999
+        with self.a_port(9999):
+            pass
+
+        with self.a_built_image({"context": False, "commands": commands, "ports": ["9999:9999"]}, {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}) as (cached, conf):
+            Runner().run_container(conf, {conf.name: conf})
+
+        assert True
 
     it "can intervene a broken build":
         called = []
