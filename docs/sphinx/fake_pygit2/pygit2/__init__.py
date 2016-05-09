@@ -1,0 +1,2 @@
+class Repository(object):
+    pass
