@@ -64,11 +64,7 @@ if sys.version.startswith('2.7'): sys.exit(1)
   fi
 
   source $TMP_DIR/bin/activate
-  cd $DIR/sphinx/fake_pygit2 && pip install -e .
-  cd $DIR
   pip install -r sphinx/requirements.txt
-  cd $DIR/..
-  pip install -e .
 fi
 
 # use with --clean if you change anything in sphinx
