@@ -215,6 +215,7 @@ class HarpoonSpec(object):
                 , folders = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
                 , cmd = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
                 , shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
+                , no_volumes = defaulted(boolean(), False)
                 , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))
 

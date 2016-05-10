@@ -60,7 +60,7 @@ class PersistenceBuilder(BuilderBase):
         return cached, test_conf.image_name
 
     @contextmanager
-    def build_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, command=None, tag=False):
+    def build_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, command=None, tag=False, volumes=None):
         conf_image_name = conf.prefixed_image_name
         new_conf = conf.clone()
         if name is not None:
@@ -70,6 +70,7 @@ class PersistenceBuilder(BuilderBase):
                 new_name = None
             new_conf.name = name
             new_conf.image_name = new_name
+            new_conf.volumes = volumes or Volumes([], [])
             new_conf.container_id = None
             new_conf.container_name = "{0}-{1}".format(new_name, str(uuid.uuid1())).replace("/", "__")
         else:
@@ -111,9 +112,9 @@ class PersistenceBuilder(BuilderBase):
 
         yield new_conf, cached
 
-    def run_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, tag=None, detach=False, command=None):
+    def run_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, tag=None, detach=False, command=None, volumes=None):
         """Helper to build and run a new dockerfile"""
-        with self.build_with_altered_context(name, conf, context, stream, dockerfile, volumes_from=volumes_from, command=command) as (new_conf, _):
+        with self.build_with_altered_context(name, conf, context, stream, dockerfile, volumes_from=volumes_from, command=command, volumes=volumes) as (new_conf, _):
             if detach:
                 Runner().run_container(new_conf, {}, detach=True, dependency=True)
             else:
@@ -152,22 +153,26 @@ class PersistenceBuilder(BuilderBase):
         first_conf = None
         try:
             docker_file = conf.persistence.make_rerunner_prep_dockerfile(conf.docker_file, existing_image)
+            volumes = conf.volumes
+            if conf.persistence.no_volumes:
+                volumes = None
+
             first_conf = self.run_with_altered_context("rerunner_prep"
-                , conf, context, stream, docker_file, detach=True, command="while true; do sleep 5; done"
+                , conf, context, stream, docker_file, detach=True, command="while true; do sleep 5; done", volumes=volumes
                 )
             log.info("Built {0}".format(first_conf.image_name))
 
             # Make the second image, which copies over from the VOLUME into the image
             docker_file = conf.persistence.make_second_dockerfile(conf.docker_file)
             second_image_conf = self.run_with_altered_context("second"
-                , conf, context, stream, docker_file, volumes_from=[first_conf.container_id]
+                , conf, context, stream, docker_file, volumes_from=[first_conf.container_id], volumes=volumes
                 )
 
             log.info("Built {0}".format(second_image_conf.image_name))
 
             # Build the final image, which just appends the desired CMD to the end
             docker_file = conf.persistence.make_final_dockerfile(conf.docker_file, second_image_conf.image_name)
-            with self.build_with_altered_context(None, conf, None, stream, docker_file):
+            with self.build_with_altered_context(None, conf, None, stream, docker_file, volumes=volumes):
                 pass
         finally:
             if first_conf:

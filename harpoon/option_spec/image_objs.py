@@ -310,6 +310,7 @@ class Persistence(dictobj):
         , "folders": "The folders to persist between builds"
         , "image_name": "A function that returns the image name of the persistence container"
         , "cmd": "The default CMD to give the final image"
+        , "no_volumes": "Whether to make sure there are no volumes"
         , ("shell", "/bin/bash"): "The default shell to use"
         }
 
