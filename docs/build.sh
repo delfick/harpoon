@@ -46,13 +46,14 @@ if [[ ! -d "$DIR/sphinx/venv" ]]; then
   TMP_DIR="$DIR/sphinx/venv"
   if [[ ! -d $TMP_DIR ]]; then
     opts=""
-    if [[ -f /usr/bin/python2.7 ]]; then
+    python_exe=$(which python3)
+    if [[ -f $python_exe ]]; then
       question="
 import sys
-if sys.version.startswith('2.7'): sys.exit(1)
+if sys.version.startswith('3'): sys.exit(1)
       "
       if python -c "$question"; then
-        opts=" -p /usr/bin/python2.7"
+        opts=" -p $python_exe"
       fi
     fi
 
