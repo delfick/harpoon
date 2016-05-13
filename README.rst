@@ -7,7 +7,7 @@ images and run tasks.
 .. image:: https://travis-ci.org/realestate-com-au/harpoon.png?branch=master
     :target: https://travis-ci.org/realestate-com-au/harpoon
 
-See http://harpoon.readthedocs.org for the full documentation.
+See http://harpoon.readthedocs.io for the full documentation.
 
 Installation
 ------------
