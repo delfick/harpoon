@@ -129,7 +129,7 @@ describe HarpoonCase, "Building docker images":
           ---> Running in .+
          !!!!
          It would appear building the image failed
-         Do you want to run /bin/bash where the build to help debug why it failed?
+         Do you want to run sh where the build to help debug why it failed?
          intervention_goes_here
         """
 
@@ -144,7 +144,7 @@ describe HarpoonCase, "Building docker images":
             return original_commit_and_run(Runner(), *args, **kwargs)
         fake_commit_and_run = mock.Mock(name="commit_and_run", side_effect=commit_and_run)
 
-        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD /bin/sh -c 'exit 1'"]
+        commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD sh -c 'exit 1'"]
 
         try:
             fake_sys_stdout = self.make_temp_file()
@@ -168,14 +168,14 @@ describe HarpoonCase, "Building docker images":
         expected = """
          Step 1 : FROM busybox:buildroot-2014.02
           ---> [a-zA-Z0-9]{12}
-         Step 2 : CMD ['/bin/sh', '-c', 'exit 1']
+         Step 2 : CMD ['sh', '-c', 'exit 1']
           ---> Running in .+
           --->
          Removing intermediate container .+
          Successfully built .+
          !!!!
          Failed to run the container!
-         Do you want commit the container in it's current state and /bin/bash into it to debug?
+         Do you want commit the container in it's current state and sh into it to debug?
          intervention_goes_here
         """
 
@@ -223,7 +223,7 @@ describe HarpoonCase, "Building docker images":
          hi
          !!!!
          Failed to run the container!
-         Do you want commit the container in it's current state and /bin/bash into it to debug?
+         Do you want commit the container in it's current state and sh into it to debug?
          intervention_goes_here
         """
 

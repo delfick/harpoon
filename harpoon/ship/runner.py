@@ -522,11 +522,11 @@ class Runner(object):
         else:
             hp.write_to(conf.harpoon.stdout, "!!!!\n")
             hp.write_to(conf.harpoon.stdout, "Failed to run the container!\n")
-            hp.write_to(conf.harpoon.stdout, "Do you want commit the container in it's current state and /bin/bash into it to debug?\n")
+            hp.write_to(conf.harpoon.stdout, "Do you want commit the container in it's current state and sh into it to debug?\n")
             conf.harpoon.stdout.flush()
             answer = input("[y]: ")
         if not answer or answer.lower().startswith("y"):
-            with self.commit_and_run(conf.container_id, conf, command="/bin/bash"):
+            with self.commit_and_run(conf.container_id, conf, command="sh"):
                 pass
 
     def stage_build_intervention(self, conf, container):
@@ -551,25 +551,25 @@ class Runner(object):
 
     @contextmanager
     def intervention(self, commit, conf):
-        """Ask the user if they want to commit this container and run /bin/bash in it"""
+        """Ask the user if they want to commit this container and run sh in it"""
         if not conf.harpoon.interactive or conf.harpoon.no_intervention:
             yield
             return
 
         hp.write_to(conf.harpoon.stdout, "!!!!\n")
         hp.write_to(conf.harpoon.stdout, "It would appear building the image failed\n")
-        hp.write_to(conf.harpoon.stdout, "Do you want to run /bin/bash where the build to help debug why it failed?\n")
+        hp.write_to(conf.harpoon.stdout, "Do you want to run sh where the build to help debug why it failed?\n")
         conf.harpoon.stdout.flush()
         answer = input("[y]: ")
         if answer and not answer.lower().startswith("y"):
             yield
             return
 
-        with self.commit_and_run(commit, conf, command="/bin/bash"):
+        with self.commit_and_run(commit, conf, command="sh"):
             yield
 
     @contextmanager
-    def commit_and_run(self, commit, conf, command="/bin/bash"):
+    def commit_and_run(self, commit, conf, command="sh"):
         """Commit this container id and run the provided command in it and clean up afterwards"""
         image_hash = None
         try:

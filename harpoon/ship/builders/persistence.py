@@ -134,7 +134,7 @@ class PersistenceBuilder(BuilderBase):
         and commit into an image.
 
         Finally, we construct an image from that committed image and add a CMD command to
-        the one specified in the options, or /bin/bash
+        the one specified in the options, or sh
 
         After all this we clean up everything, including that volume we created
         """

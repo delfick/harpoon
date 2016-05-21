@@ -68,7 +68,7 @@ describe HarpoonCase, "Persistence builds":
             , "persistence":
               { "action": "cat /tmp/lines > /tmp/lines2; echo 'another_line' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"
               , "folders": "/tmp"
-              , "shell": "/bin/sh"
+              , "shell": "sh"
               }
             }
         )
@@ -174,8 +174,8 @@ describe HarpoonCase, "Persistence builds":
                 commands.append(line["CreatedBy"])
 
             self.assertEqual(commands
-                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "/bin/sh"]'
-                  , '/bin/sh -c /bin/sh -c \'cat /tmp/lines > /tmp/lines2; echo \'"\'"\'another_line\'"\'"\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines\''
+                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "sh"]'
+                  , '/bin/sh -c sh -c \'cat /tmp/lines > /tmp/lines2; echo \'"\'"\'another_line\'"\'"\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines\''
                   , "/bin/sh -c echo 'a_line' > /tmp/lines"
                   ]
                 )
@@ -190,7 +190,7 @@ describe HarpoonCase, "Persistence builds":
 
             assert found, "Tester wasn't based on the first image!"
             self.assertEqual(tester_commands
-                , [ '/bin/sh -c echo /bin/sh'
+                , [ '/bin/sh -c echo sh'
                   , '/bin/sh -c echo /tmp'
                   , '/bin/sh -c echo \'cat /tmp/lines > /tmp/lines2; echo \'"\'"\'another_line\'"\'"\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines\''
                   ]
@@ -241,7 +241,7 @@ describe HarpoonCase, "Persistence builds":
                 commands.append(line["CreatedBy"])
 
             self.assertEqual(commands
-                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "/bin/sh"]'
+                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "sh"]'
                   , "/bin/sh -c echo /tmp && rm -rf /tmp && mkdir -p $(dirname /tmp) && mv /awesome_image/_tmp /tmp && cat /tmp/lines > /tmp/lines2; echo 'another_line' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"
                   , '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "echo /tmp && rm -rf /tmp && mkdir -p $(dirname /tmp) && mv /awesome_image/_tmp /tmp && cat /tmp/lines > /tmp/lines2; echo \'another_line\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"]'
                   , "/bin/sh -c echo    'a_line' > /tmp/lines"
