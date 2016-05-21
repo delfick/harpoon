@@ -38,8 +38,13 @@ class Runner(object):
     ###   USAGE
     ########################
 
-    def run_container(self, conf, images, detach=False, started=None, dependency=False, tag=None):
+    def run_container(self, conf, images, **kwargs):
         """Run this image and all dependency images"""
+        with self._run_container(conf, images, **kwargs):
+            pass
+
+    @contextmanager
+    def _run_container(self, conf, images, detach=False, started=None, dependency=False, tag=None, delete_anyway=False):
         if conf.container_id:
             return
 
@@ -56,8 +61,9 @@ class Runner(object):
                 raise UserQuit()
 
             self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
+            yield
         finally:
-            if not detach and not dependency:
+            if delete_anyway or (not detach and not dependency):
                 self.stop_deps(conf, images)
                 self.stop_container(conf, tag=tag)
                 self.delete_deps(conf, images)
@@ -76,7 +82,7 @@ class Runner(object):
 
     def run_deps(self, conf, images):
         """Start containers for all our dependencies"""
-        for dependency_name, detached in conf.dependency_images():
+        for dependency_name, detached in conf.dependency_images(for_running=True):
             try:
                 self.run_container(images[dependency_name], images, detach=detached, dependency=True)
             except Exception as error:
