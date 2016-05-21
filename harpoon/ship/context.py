@@ -15,7 +15,9 @@ from harpoon.errors import HarpoonError
 from delfick_app import command_output
 from contextlib import contextmanager
 from gitmit.mit import GitTimes
+from six.moves import StringIO
 import tempfile
+import tarfile
 import fnmatch
 import logging
 import tarfile
@@ -78,9 +80,11 @@ class ContextBuilder(object):
         silent_build - boolean
             If True, then suppress printing out information
 
-        extra_context - List of (string, string)
-            First string represents the content to put in a file and the second
-            string represents where in the context this extra file should go
+        extra_context - List of (content, string)
+            content is either a string repsenting the content to put in a file
+            or a dictionary representing what path to get from what docker image
+
+            The second string represents where in the context this extra file should go
         """
         with a_temp_file() as tmpfile:
             t = tarfile.open(mode='w', fileobj=tmpfile)
@@ -114,10 +118,42 @@ class ContextBuilder(object):
                 fle.write(content.encode('utf-8'))
                 fle.seek(0)
                 yield fle
-        else:
+        elif "context" in content:
             with ContextBuilder().make_context(content["context"], silent_build=silent_build) as wrapper:
                 wrapper.close()
                 yield wrapper.tmpfile
+        elif "image" in content:
+            from harpoon.ship.builder import Builder
+            from harpoon.ship.runner import Runner
+            with a_temp_file() as fle:
+                content["conf"].command = "yes"
+                with Runner()._run_container(content["conf"], content["images"], detach=True, delete_anyway=True):
+                    try:
+                        strm, stat = content["docker_context"].get_archive(content["conf"].container_id, content["path"])
+                    except docker.errors.NotFound:
+                        raise BadOption("Trying to get something from an image that don't exist!", path=content["path"], image=content["conf"].image_name)
+                    else:
+                        log.debug(stat)
+
+                        fo = StringIO(strm.read())
+                        tf = tarfile.TarFile(fileobj=fo)
+
+                        if tf.firstmember.isdir():
+                            tf2 = tarfile.TarFile(fileobj=fle, mode='w')
+                            name = tf.firstmember.name
+                            for member in tf.getmembers()[1:]:
+                                member.name = member.name[len(name)+1:]
+                                if not member.isdir():
+                                    tf2.addfile(member, fileobj=tf.extractfile(member.name))
+                            tf2.close()
+                        else:
+                            fle.write(tf.extractfile(tf.firstmember.name).read())
+
+                        tf.close()
+                        log.info("Got '{0}' from {1} for context".format(content["path"], content["conf"].container_id))
+
+                fle.seek(0)
+                yield fle
 
     def find_mtimes(self, context, silent_build):
         """
