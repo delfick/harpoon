@@ -192,7 +192,7 @@ class Image(dictobj):
         for image, _ in self.dependency_images():
             yield image
 
-    def dependency_images(self):
+    def dependency_images(self, for_running=False):
         """
         What images does this one require
 
@@ -204,6 +204,12 @@ class Image(dictobj):
         for link in self.links:
             if link.container:
                 candidates.append(link.container.name)
+
+        if not for_running:
+            for content, _ in self.commands.extra_context:
+                if type(content) is dict and "image" in content:
+                    if not isinstance(content["image"], six.string_types):
+                        candidates.append(content["image"].name)
 
         candidates.extend(list(self.shared_volume_containers()))
 

@@ -13,7 +13,9 @@ import mock
 
 describe HarpoonCase, "HarpoonSpec":
     before_each:
-        self.meta = mock.Mock(name="meta")
+        self.docker_context = mock.Mock(name="docker_context")
+        self.harpoon = mock.Mock(name="harpoon", docker_context=self.docker_context)
+        self.meta = Meta({"harpoon": self.harpoon}, [])
 
     it "can get a fake Image":
         with self.a_temp_dir() as directory:
@@ -64,9 +66,6 @@ describe HarpoonCase, "HarpoonSpec":
 
     describe "task spec":
         it "creates a Task object for each task":
-            meta_at = mock.Mock(name="meta_at", base={})
-            self.meta.at.return_value = meta_at
-
             tasks = HarpoonSpec().tasks_spec(["run"]).normalise(self.meta, {"one": {}})
             self.assertEqual(type(tasks), dict)
             self.assertEqual(list(tasks.keys()), ["one"])

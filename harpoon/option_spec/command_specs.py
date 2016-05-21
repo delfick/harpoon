@@ -3,48 +3,157 @@ It's recommended you read this file from the bottom up.
 """
 
 from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.errors import BadOption, ProgrammerError
 from harpoon.option_spec.command_objs import Command
-from harpoon.errors import BadOption
 
 from input_algorithms.many_item_spec import many_item_formatted_spec
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
+from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
 import hashlib
+import json
 import six
 
-class complex_ADD_spec(sb.Spec):
+class CommandContentAddString(dictobj):
+    fields = ["content"]
+
+    def resolve(self):
+        return self.content
+    for_json = resolve
+
+class CommandContent(dictobj):
+    def setup(self, *args, **kwargs):
+        if self.__class__ is CommandContent:
+            raise ProgrammerError("This should never be instantiated without subclassing it")
+        else:
+            super(CommandContent, self).setup(*args, **kwargs)
+
+    def context_name(self, meta):
+        mtime = self.mtime
+        if mtime is NotSpecified:
+            ctxt = type("Context", (object, ), {"use_git": True})()
+            mtime = meta.everything["mtime"](ctxt)
+
+        hsh = self.make_hash()
+        dst = self.dest.replace("/", "-").replace(" ", "--")
+
+        return "{0}-{1}-mtime({2})".format(hsh, dst, mtime)
+
+    def make_hash(self):
+        content_json = json.dumps({"content": self.for_json()}, sort_keys=True)
+        return hashlib.md5(content_json.encode('utf-8')).hexdigest()
+
+class CommandContextAdd(CommandContent):
+    fields = {
+          "dest": "The path in the container where the content will be put"
+        , "mtime": "The modified time given to the item put into the context"
+        , "context": "Context options that creates a context tar that is added into the container"
+        }
+
+    def for_json(self):
+        return str(self.context.as_dict())
+
+    def commands(self, meta):
+        context_name = "{0}.tar".format(self.context_name(meta))
+        extra_context = ({"context": self.context}, context_name)
+        yield Command(("ADD", "{0} {1}".format(context_name, self.dest)), extra_context)
+
+class CommandContentAdd(CommandContent):
+    fields = {
+          "dest": "The path in the container where the content will be put"
+        , "mtime": "The modified time given to the item put into the context"
+        , "content": "The content to put into the context"
+        }
+
+    def for_json(self):
+        return self.content.for_json()
+
+    def commands(self, meta):
+        extra_context = (self.content.resolve(), self.context_name(meta))
+        yield Command(("ADD", "{0} {1}".format(self.context_name(meta), self.dest)), extra_context)
+
+class CommandContentAddDict(dictobj):
+    fields = {
+          "image": "The image to get the content from"
+        , "conf": "An Image object for the image"
+        , "path": "The path in the image to get the content from"
+        , "images": "All images defined by this harpoon configuration"
+        , "docker_context": "The docker context"
+        }
+
+    def resolve(self):
+        return self
+
+    def for_json(self):
+        return {"image": self.conf.image_name, "path": self.path}
+
+class CommandAddExtra(dictobj):
+    fields = {
+          "get": "The files to get"
+        , "prefix": "The prefix to add to all the files for their destination in the container"
+        }
+
+    def commands(self, meta):
+        for val in self.get:
+            yield Command(("ADD", self.command_for(val)))
+
+    def command_for(self, val):
+        dest = val
+        if self.prefix is not NotSpecified:
+            dest = "{0}/{1}".format(self.prefix, val)
+        return "{0} {1}".format(val, dest)
+
+class complex_ADD_from_image_spec(sb.Spec):
     def normalise(self, meta, val):
         from harpoon.option_spec.harpoon_specs import HarpoonSpec
-        if "content" in val or "context" in val:
-            spec = sb.set_options(mtime=sb.optional_spec(sb.integer_spec()), dest=sb.required(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)), content=sb.string_spec(), context=sb.optional_spec(HarpoonSpec().context_spec))
-            result = spec.normalise(meta, val)
-            if result["content"] != "" and result["context"] is not NotSpecified:
-                raise BadOption("Please don't specify both context and content")
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
 
-            mtime = result["mtime"]
-            if mtime is NotSpecified:
-                ctxt = type("Context", (object, ), {"use_git": True})()
-                mtime = meta.everything["mtime"](ctxt)
-            context_name = "{0}-{1}-mtime({2})".format(hashlib.md5(result['content'].encode('utf-8')).hexdigest(), result["dest"].replace("/", "-").replace(" ", "--"), mtime)
-            extra_context = (result["content"], context_name)
-            if result["context"] is not NotSpecified:
-                context_name = "{0}.tar".format(context_name)
-                extra_context = ({"context": result["context"]}, context_name)
+        img = val["conf"] = sb.set_options(image = formatted_string).normalise(meta, val)["image"]
+        if isinstance(img, six.string_types):
+            val["conf"] = HarpoonSpec().image_spec.normalise(meta.at("image"), {"commands": ["FROM {0}".format(img)]})
+            val["conf"].image_name = img
 
-            return Command(("ADD", "{0} {1}".format(context_name, result["dest"])), extra_context)
-        else:
-            spec = sb.set_options(
-                  get=sb.required(sb.listof(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)))
-                , prefix = sb.defaulted(sb.string_spec(), "")
-                )
-            result = spec.normalise(meta, val)
+        return sb.create_spec(CommandContentAddDict
+            , image = formatted_string
+            , conf = sb.any_spec()
+            , path = formatted_string
+            , images = sb.overridden(meta.everything.get("images", []))
+            , docker_context = sb.overridden(meta.everything["harpoon"].docker_context)
+            ).normalise(meta, val)
 
-            final = []
-            for val in result["get"]:
-                final.append(Command(("ADD", "{0} {1}/{2}".format(val, result["prefix"], val))))
-            return final
+class complex_ADD_spec(sb.Spec):
+
+    def normalise(self, meta, val):
+        from harpoon.option_spec.harpoon_specs import HarpoonSpec
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+        val = sb.apply_validators(meta, val, [validators.either_keys(["context"], ["content"], ["get"])])
+
+        if "get" in val:
+            val = sb.create_spec(CommandAddExtra
+                , get = sb.required(sb.listof(formatted_string))
+                , prefix = sb.optional_spec(sb.string_spec())
+                ).normalise(meta, val)
+
+        if "context" in val:
+            val = sb.create_spec(CommandContextAdd
+                , dest = sb.required(formatted_string)
+                , mtime = sb.optional_spec(sb.integer_spec())
+                , context = sb.required(HarpoonSpec().context_spec)
+                ).normalise(meta, val)
+
+        if "content" in val:
+            val = sb.create_spec(CommandContentAdd
+                , dest = sb.required(formatted_string)
+                , mtime = sb.optional_spec(sb.integer_spec())
+                , content = sb.match_spec(
+                      (six.string_types, sb.container_spec(CommandContentAddString, sb.string_spec()))
+                    , fallback = complex_ADD_from_image_spec()
+                    )
+                ).normalise(meta, val)
+
+        return list(val.commands(meta))
 
 class array_command_spec(many_item_formatted_spec):
     value_name = "Command"

@@ -12,10 +12,13 @@ from input_algorithms.meta import Meta
 from option_merge import MergedOptions
 import hashlib
 import mock
+import json
 
 class CommandCase(HarpoonCase):
     def setUp(self):
-        self.meta = mock.Mock(name="meta", spec=Meta)
+        self.docker_context = mock.Mock(name="docker_context")
+        self.harpoon = mock.Mock(name="harpoon", docker_context=self.docker_context)
+        self.meta = Meta({"config_root": '.', "harpoon": self.harpoon}, [])
 
     def assertDockerLines(self, command, expected):
         """
@@ -28,58 +31,6 @@ class CommandCase(HarpoonCase):
         if isinstance(result, Command):
             result = [result]
         self.assertEqual([cmd.as_string for cmd in result], expected)
-
-describe CommandCase, "Complex ADD spec":
-    before_each:
-        self.spec = cs.complex_ADD_spec()
-
-    it "complains if dest does not accompany content":
-        command = {"content": "blah"}
-        with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("dest"))]):
-            self.spec.normalise(self.meta, command)
-
-    it "complains if get is not present if no content":
-        command = {}
-        with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("get"))]):
-            self.spec.normalise(self.meta, command)
-
-    it "complains if get is not a string or list":
-        for get in (0, 1, None, True, False, {}, {1:2}, type("adf", (object, ), {})(), lambda: 1):
-            command = {"get": get}
-            actual_error = BadSpecValue("Expected a string", got=type(get), meta=self.meta.at("get").indexed_at(0))
-            with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue(meta=self.meta.at("get"), _errors=[actual_error])]):
-                self.spec.normalise(self.meta, command)
-
-    describe "With content":
-        it "sets extra context using the content and dest":
-            dest = "/somewhere/nice and fun"
-            content = "blah de blah blah da"
-            command = {"content": content, "dest": dest}
-
-            mtime = mock.Mock(name="mtime")
-            everything = {"mtime": lambda ctxt: mtime}
-            self.meta.everything = everything
-
-            result = self.spec.normalise(self.meta, command)
-            self.assertEqual(result.action, "ADD")
-            md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
-            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun-mtime({1})".format(md5, mtime)))
-
-        it "sets command as adding in context dest to actual dest":
-            dest = "/somewhere/nice and fun"
-            content = "blah de blah blah da"
-            command = {"content": content, "dest": dest, "mtime": 1430660233}
-            result = self.spec.normalise(self.meta, command)
-            self.assertDockerLines(command, ["ADD {0} {1}".format(result.extra_context[1], dest)])
-
-    describe "With get":
-        it "takes the tedium out of adding multiple files to a destination with the same name":
-            command = {"get": ["one", "two", "three"]}
-            self.assertDockerLines(command, ["ADD one /one", "ADD two /two", "ADD three /three"])
-
-        it "takes a prefix to add to all the files":
-            command = {"get": ["one", "two", "three"], "prefix": "/project"}
-            self.assertDockerLines(command, ["ADD one /project/one", "ADD two /project/two", "ADD three /project/three"])
 
 describe CommandCase, "array_command_spec":
     before_each:
@@ -96,8 +47,7 @@ describe CommandCase, "array_command_spec":
 
     it "formats second list":
         everything = MergedOptions.using({"one": 1, "two": 2})
-        self.meta.indexed_at(0).everything = everything
-        self.meta.indexed_at(1).everything = everything
+        self.meta.everything = everything
 
         command = ["ENV", "ONE {one}"]
         self.assertDockerLines(command, ["ENV ONE 1"])
@@ -113,8 +63,6 @@ describe CommandCase, "array_command_spec":
         command = [self.unique_val(), second_val]
         with mock.patch.object(cs.complex_ADD_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
-        self.meta.indexed_at.assert_called_once_with(0)
-        normalise.assert_called_once_with(self.meta.indexed_at(0), second_val)
         self.assertEqual(result, normalised)
 
 describe CommandCase, "convert_dict_command_spec":
@@ -189,10 +137,18 @@ describe CommandCase, "command_spec":
     it "works":
         content = self.unique_val()
         blah_image = self.unique_val()
-        md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
+        md5 = hashlib.md5(json.dumps({"content": content}).encode('utf-8')).hexdigest()
+        md52 = hashlib.md5(json.dumps({"content": {"image": "blah2", "path": "/tmp/stuff"}}, sort_keys=True).encode("utf-8")).hexdigest()
 
-        everything = MergedOptions.using({"mtime": lambda ctxt: 1430660297, "one": 1, "two": 2, "three": 3, "images": {"blah": blah_image}})
-        meta = Meta(everything, [('test', "")])
+        everything = MergedOptions.using(
+              { "mtime": lambda ctxt: 1430660297, "one": 1, "two": 2, "three": 3, "harpoon": self.harpoon, "config_root": "."
+              , "images":
+                { "blah": blah_image
+                , "blah2": mock.Mock(name="blah2", image_name="blah2")
+                }
+              }
+            )
+        meta = Meta(everything, [])
 
         commands = [
               ["FROM", "{images.blah}"]
@@ -202,10 +158,11 @@ describe CommandCase, "command_spec":
             , ["ADD", {"get": ["blah", "and", "stuff"], "prefix": "/projects"}]
             , {"ADD": {"content": content, "dest": "the_destination"}}
             , {"ADD": {"content": content, "dest": "the_destination2", "mtime": 1530660298}}
+            , {"ADD": {"content": {"image": "{images.blah2}", "path": "/tmp/stuff"}, "dest": "the_destination3"}}
             , "CMD cacafire"
             ]
 
-        result = self.spec.normalise(meta, commands)
+        result = self.spec.normalise(meta.at("images").at("blah").at("commands"), commands)
         self.assertEqual([cmd.as_string for cmd in result.commands]
             , [ "FROM {0}".format(blah_image)
               , "ADD something /somewhere"
@@ -217,6 +174,7 @@ describe CommandCase, "command_spec":
               , "ADD stuff /projects/stuff"
               , "ADD {0}-the_destination-mtime(1430660297) the_destination".format(md5)
               , "ADD {0}-the_destination2-mtime(1530660298) the_destination2".format(md5)
+              , "ADD {0}-the_destination3-mtime(1430660297) the_destination3".format(md52)
               , "CMD cacafire"
               ]
             )
