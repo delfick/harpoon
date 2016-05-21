@@ -18,7 +18,7 @@ env:
 install:
   - sudo apt-get -qqy update
   - sudo apt-get remove -y docker-engine
-  - sudo bash -c "apt-get -y install docker-engine=$DOCKER_VERSION"
+  - sudo bash -c "apt-get -y install docker-engine=$DOCKER_VERSION libgit2-dev"
   - pip install pip --upgrade
   - pip install -e .
   - pip install -e '.[tests]'
