@@ -13,8 +13,7 @@ from input_algorithms.spec_base import (
     , boolean, required, formatted, overridden
     , integer_spec, dictof, dict_from_bool_spec
     , container_spec, many_format, delayed
-    , string_or_int_as_string_spec, float_spec
-    , Spec, set_options
+    , float_spec, Spec, set_options
     )
 
 from harpoon.option_spec.command_specs import command_spec
@@ -285,7 +284,7 @@ class HarpoonSpec(object):
         formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
 
         return create_spec(Harpoon
-            , config = file_spec()
+            , config = optional_spec(file_spec())
 
             , extra = defaulted(formatted_string, "")
             , debug = defaulted(boolean(), False)

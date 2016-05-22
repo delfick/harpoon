@@ -34,14 +34,12 @@ class Collector(Collector):
             new_harpoon.update(new_harpoon_options)
         new_args_dict["harpoon"] = new_harpoon
 
-    def find_missing_config(self, configuration):
-        """Used to make sure we have images before doing anything"""
-        if "images" not in self.configuration:
-            raise self.BadConfigurationErrorKls("Didn't find any images in the configuration")
-
     def extra_prepare(self, configuration, args_dict):
         """Called before the configuration.converters are activated"""
         harpoon = args_dict.pop("harpoon")
+
+        if "images" not in self.configuration:
+            self.configuration["images"] = {}
 
         self.configuration.update(
             { "$@": harpoon.get("extra", "")

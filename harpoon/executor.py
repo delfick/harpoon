@@ -39,15 +39,19 @@ class App(App):
     cli_positional_replacements = [('--task', 'list_tasks'), ('--image', NotSpecified), ('--artifact', NotSpecified)]
 
     def execute(self, args_obj, args_dict, extra_args, logging_handler, no_docker=False):
-        args_dict["harpoon"]["config"] = args_dict["harpoon"]["config"]()
+        args_dict["harpoon"]["config"] = args_dict["harpoon"]["config"](optional=True) or NotSpecified
         args_dict["harpoon"]["extra"] = extra_args
+
+        config_name = None
+        if args_dict["harpoon"]["config"] is not NotSpecified:
+            config_name = args_dict["harpoon"]["config"].name
 
         if not no_docker:
             args_dict["harpoon"]["docker_context"] = docker_context()
         args_dict["harpoon"]["docker_context_maker"] = docker_context
 
         collector = Collector()
-        collector.prepare(args_dict["harpoon"]["config"].name, args_dict)
+        collector.prepare(config_name, args_dict)
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
 
