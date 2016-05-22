@@ -108,7 +108,8 @@ class CommandAddExtra(dictobj):
 class complex_ADD_from_image_spec(sb.Spec):
     def normalise(self, meta, val):
         from harpoon.option_spec.harpoon_specs import HarpoonSpec
-        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+        from harpoon.option_spec.image_objs import Image
+        formatted_string = sb.formatted(sb.or_spec(sb.string_spec(), sb.typed(Image)), formatter=MergedOptionStringFormatter)
 
         img = val["conf"] = sb.set_options(image = formatted_string).normalise(meta, val)["image"]
         if isinstance(img, six.string_types):
@@ -116,7 +117,7 @@ class complex_ADD_from_image_spec(sb.Spec):
             val["conf"].image_name = img
 
         return sb.create_spec(CommandContentAddDict
-            , image = formatted_string
+            , image = sb.overridden(img)
             , conf = sb.any_spec()
             , path = formatted_string
             , images = sb.overridden(meta.everything.get("images", []))

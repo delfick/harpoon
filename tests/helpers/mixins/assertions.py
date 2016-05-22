@@ -36,7 +36,7 @@ class AssertionsAssertionsMixin:
         output = output.encode('utf-8')
 
         if len(expected_lines) != len(output_lines):
-            assert False, "Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
+            assert False, "Different number of lines! Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
 
         ansi_escape = re.compile(r'\x1b[^m]*m')
         for a, b in zip(expected_lines, output_lines):
@@ -46,7 +46,7 @@ class AssertionsAssertionsMixin:
                 b = re.sub(ansi_escape, '', b).encode('utf-8')
             else:
                 b = re.sub(ansi_escape, '', b.decode('utf-8')).encode('utf-8')
-            assert re.match(a, b), "expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
+            assert re.match(a, b), "Didn't match! Expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
 
     @contextmanager
     def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):

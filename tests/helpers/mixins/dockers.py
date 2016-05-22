@@ -23,13 +23,20 @@ class DockersAssertionsMixin:
         return self.docker_client
 
     @contextmanager
-    def a_built_image(self, options, harpoon_options=None):
+    def a_built_image(self, options, harpoon_options=None, images=None, **kwargs):
         ident = str(uuid.uuid1())
         ident_tag = "{0}:latest".format(ident)
 
-        conf = self.make_image(options, harpoon_options)
+        conf = self.make_image(options, harpoon_options, **kwargs)
+        if images:
+            images[conf.image_name] = conf
         conf.image_name = ident
-        cached = Builder().build_image(conf)
+
+        if images:
+            images[conf.image_name] = conf
+            cached = Builder().make_image(conf, images)
+        else:
+            cached = Builder().build_image(conf)
 
         try:
             yield cached, conf

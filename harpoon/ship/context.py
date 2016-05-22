@@ -9,20 +9,18 @@ sent to the server in a zip file.
 Here we define the class that builds this "context" zip file.
 """
 
+from harpoon.errors import HarpoonError, BadOption
 from harpoon.helpers import a_temp_file
-from harpoon.errors import HarpoonError
 
 from delfick_app import command_output
 from contextlib import contextmanager
 from gitmit.mit import GitTimes
 from six.moves import StringIO
-import tempfile
 import tarfile
 import fnmatch
 import logging
-import tarfile
 import shutil
-import json
+import docker
 import six
 import os
 import re
@@ -123,7 +121,6 @@ class ContextBuilder(object):
                 wrapper.close()
                 yield wrapper.tmpfile
         elif "image" in content:
-            from harpoon.ship.builder import Builder
             from harpoon.ship.runner import Runner
             with a_temp_file() as fle:
                 content["conf"].command = "yes"

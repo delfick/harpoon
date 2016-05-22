@@ -207,7 +207,7 @@ class Image(dictobj):
 
         if not for_running:
             for content, _ in self.commands.extra_context:
-                if type(content) is dict and "image" in content:
+                if type(content) is dict or (hasattr(content, "is_dict") and content.is_dict) and "image" in content:
                     if not isinstance(content["image"], six.string_types):
                         candidates.append(content["image"].name)
 
