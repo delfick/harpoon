@@ -15,7 +15,7 @@ from harpoon.helpers import a_temp_file
 from delfick_app import command_output
 from contextlib import contextmanager
 from gitmit.mit import GitTimes
-from six.moves import StringIO
+from six import BytesIO
 import tarfile
 import fnmatch
 import logging
@@ -132,7 +132,7 @@ class ContextBuilder(object):
                     else:
                         log.debug(stat)
 
-                        fo = StringIO(strm.read())
+                        fo = BytesIO(strm.read())
                         tf = tarfile.TarFile(fileobj=fo)
 
                         if tf.firstmember.isdir():
