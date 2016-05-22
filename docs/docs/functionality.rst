@@ -379,6 +379,56 @@ Where instruction may be::
     The mtime you specify will be the modified time that is given to this temp
     file.
 
+  [ADD, {content: {image: <image>, path: <path>}, dest: <dest>, mtime: <mtime>}]
+
+    This will add the files found in <image> at <path> to <dest>. It uses a tar
+    file to add in these files to the context and that tar file with have a
+    modified time of <mtime>
+
+    For example:
+
+    .. code-block:: yaml
+
+      ---
+
+      images:
+        one:
+          commands:
+            - FROM busybox
+            - RUN mkdir /tmp/blah
+            - RUN echo 'lol' > /tmp/blah/one
+            - RUN echo 'hehehe' > /tmp/blah/two
+            - RUN mkdir /tmp/blah/another
+            - RUN echo 'hahahha' > /tmp/blah/another/three
+            - RUN echo 'hello' > /tmp/other
+
+        two:
+          commands:
+            - FROM busybox
+
+            - - ADD
+              - dest: /tmp/copied
+                content:
+                  image: "{images.one}"
+                  path: /tmp/blah
+                mtime: 1463473251
+
+            - - ADD
+              - dest: /tmp/copied/other
+                content:
+                  image: "{images.one}"
+                  path: /tmp/other
+                mtime: 1463473251
+
+            - CMD find /tmp/copied -type f -exec echo {} \; -exec cat {} \;
+
+          tasks:
+            cat:
+              description: Cat out the copied file from the one image!
+
+    Using this definition, we can now run ``harpoon cat`` and it will print out
+    the files we stole from the ``one`` image!
+
   [ADD, {context:<context>, mtime:<mtime>, dest:<dest>}]
 
     This is the same as specifying ``content`` instead of ``context``, however
