@@ -20,6 +20,7 @@ install:
   - sudo apt-get remove -y docker-engine
   - sudo bash -c "apt-get -y install docker-engine=$DOCKER_VERSION"
   - sudo bash -c "wget https://github.com/libgit2/libgit2/archive/v0.23.4.tar.gz && tar xf v0.23.4.tar.gz && cd libgit2-0.23.4 && cmake . && make && make install"
+  - sudo ln -s -f /usr/local/lib/libgit2.so.0.23.4 /usr/lib/libgit2.so.23
   - pip install pip --upgrade
   - pip install -e .
   - pip install -e '.[tests]'
