@@ -16,7 +16,7 @@ if [[ -z $CI_SERVER ]]; then
         exit 1
       fi
     fi
-    captured=$(docker-machine env harpoon-tests)
+    captured=$(docker-machine env harpoon-tests --shell sh)
     if [[ $? != 0 ]]; then
       echo -e $captured
       echo "Failed to do harpoon-tests environment"
