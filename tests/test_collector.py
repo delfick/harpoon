@@ -29,12 +29,6 @@ describe HarpoonCase, "Collector":
                 self.assertEqual(collector2.configuration["harpoon"].chosen_image, "other")
 
     describe "prepare":
-        it "complains if there is no images":
-            configuration = {}
-            with self.a_temp_file(json.dumps(configuration)) as filename:
-                with self.fuzzyAssertRaisesError(Collector.BadConfigurationErrorKls, "Didn't find any images in the configuration"):
-                    Collector().prepare(filename, {})
-
         it "adds some items to the configuration from the args_dict":
             bash = "bash command"
             extra = "extra commands after the --"
