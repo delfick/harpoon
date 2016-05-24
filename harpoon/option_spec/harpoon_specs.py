@@ -203,6 +203,7 @@ class HarpoonSpec(object):
             , authentication = self.authentications_spec
 
             # The spec itself
+            , shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
             , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , command = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , commands = required(container_spec(Commands, listof(command_spec())))

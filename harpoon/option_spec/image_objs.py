@@ -32,7 +32,8 @@ class Image(dictobj):
         , "tag": "defaults to 'latest'"
         , "vars": "Arbritrary dictionary of values"
         , "name": "The name of the image"
-        , "bash": "A command to run, will transform into ``bash -c '<bash>'``"
+        , "bash": "A command to run, will transform into ``{self.shell} -c '<bash>'``"
+        , "shell": "The shell to use for the bash option"
         , "user": "The user to use inside the container"
         , "ports": "The ports to expose"
         , "mtime": "The mtime of the Dockerfile"
@@ -170,7 +171,7 @@ class Image(dictobj):
         if bash not in (None, "", NotSpecified) and callable(bash):
             bash = bash()
         if bash not in (None, "", NotSpecified):
-            return "/bin/bash -c {0}".format(shlex_quote(bash))
+            return "{0} -c {1}".format(self.shell, shlex_quote(bash))
 
         command = self.command
         if command not in (None, "", NotSpecified) and callable(command):
