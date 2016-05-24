@@ -25,6 +25,10 @@ import six
 import os
 import re
 
+regexes = {
+      "whitespace": re.compile("\s+")
+    }
+
 log = logging.getLogger("harpoon.ship.context")
 
 class ContextWrapper(object):
@@ -270,8 +274,8 @@ class ContextBuilder(object):
 
         return (changed_files, untracked_files, valid_files)
         """
-        def git(args, error_message, **error_kwargs):
-            output, status = command_output("git {0}".format(args), cwd=context.parent_dir)
+        def git(args, error_message, cwd=context.parent_dir, **error_kwargs):
+            output, status = command_output("git {0}".format(args), cwd=cwd)
             if status != 0:
                 error_kwargs['output'] = output
                 error_kwargs['directory'] = context.parent_dir
@@ -286,6 +290,8 @@ class ContextBuilder(object):
         valid = set()
         if context.use_gitignore:
             under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
+            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submoudles")]
+
             valid = under_source_control + untracked_files
 
             for filename in valid:
@@ -298,6 +304,10 @@ class ContextBuilder(object):
                     to_include = git("ls-files --exclude-standard -- {0}".format(include_from), "Failed to find files under a symlink")
                     for found in to_include:
                         valid += [os.path.join(filename, os.path.relpath(found, include_from))]
+                elif os.path.isdir(location) and filename in git_submodules:
+                    to_include = git("ls-files --exclude-standard", "Failed to find files in a submodule", cwd=location)
+                    for found in to_include:
+                        valid.append(os.path.join(filename, found))
 
         to_set = lambda lst: set(self.convert_nonascii(lst))
         return to_set(changed_files), to_set(untracked_files), to_set(valid)
