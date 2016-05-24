@@ -385,7 +385,7 @@ class Persistence(dictobj):
         """Used to determine if we need to rebuild the image"""
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-            "RUN echo {0}".format(shlex_quote(self.action))
+            "RUN echo {0}".format(shlex_quote(self.action.strip()))
           , "RUN echo {0}".format(" ".join(self.folders))
           , "RUN echo {0}".format(shlex_quote(self.default_cmd))
           ]
