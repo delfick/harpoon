@@ -606,9 +606,9 @@ class Mount(dictobj):
     @property
     def pair(self):
         if self.permissions == 'rw':
-            return (self.local_path, {"bind": self.container_path, 'ro': False})
+            return (os.path.expanduser(self.local_path), {"bind": self.container_path, 'ro': False})
         else:
-            return (self.local_path, {"bind": self.container_path, 'ro': True})
+            return (os.path.expanduser(self.local_path), {"bind": self.container_path, 'ro': True})
 
 class Environment(dictobj):
     """A single environment variable, and it's default or set value"""
