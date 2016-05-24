@@ -3,7 +3,6 @@
 from harpoon.errors import FailedImage, BadImage, AlreadyBoundPorts
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.ship.runner import Runner
-from harpoon import helpers as hp
 
 from tests.helpers import HarpoonCase
 
@@ -11,11 +10,9 @@ from option_merge.converter import Converter
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
-import threading
 import logging
 import socket
 import codecs
-import nose
 import mock
 import six
 import os
@@ -129,7 +126,7 @@ describe HarpoonCase, "Building docker images":
           ---> Running in .+
          !!!!
          It would appear building the image failed
-         Do you want to run sh where the build to help debug why it failed?
+         Do you want to run /bin/bash where the build to help debug why it failed?
          intervention_goes_here
         """
 
@@ -175,7 +172,7 @@ describe HarpoonCase, "Building docker images":
          Successfully built .+
          !!!!
          Failed to run the container!
-         Do you want commit the container in it's current state and sh into it to debug?
+         Do you want commit the container in it's current state and /bin/bash into it to debug?
          intervention_goes_here
         """
 
@@ -223,7 +220,7 @@ describe HarpoonCase, "Building docker images":
          hi
          !!!!
          Failed to run the container!
-         Do you want commit the container in it's current state and sh into it to debug?
+         Do you want commit the container in it's current state and /bin/bash into it to debug?
          intervention_goes_here
         """
 

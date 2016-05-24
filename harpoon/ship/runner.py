@@ -528,11 +528,11 @@ class Runner(object):
         else:
             hp.write_to(conf.harpoon.stdout, "!!!!\n")
             hp.write_to(conf.harpoon.stdout, "Failed to run the container!\n")
-            hp.write_to(conf.harpoon.stdout, "Do you want commit the container in it's current state and sh into it to debug?\n")
+            hp.write_to(conf.harpoon.stdout, "Do you want commit the container in it's current state and {0} into it to debug?\n".format(conf.resolved_shell))
             conf.harpoon.stdout.flush()
             answer = input("[y]: ")
         if not answer or answer.lower().startswith("y"):
-            with self.commit_and_run(conf.container_id, conf, command="sh"):
+            with self.commit_and_run(conf.container_id, conf, command=conf.resolved_shell):
                 pass
 
     def stage_build_intervention(self, conf, container):
@@ -564,14 +564,14 @@ class Runner(object):
 
         hp.write_to(conf.harpoon.stdout, "!!!!\n")
         hp.write_to(conf.harpoon.stdout, "It would appear building the image failed\n")
-        hp.write_to(conf.harpoon.stdout, "Do you want to run sh where the build to help debug why it failed?\n")
+        hp.write_to(conf.harpoon.stdout, "Do you want to run {0} where the build to help debug why it failed?\n".format(conf.resolved_shell))
         conf.harpoon.stdout.flush()
         answer = input("[y]: ")
         if answer and not answer.lower().startswith("y"):
             yield
             return
 
-        with self.commit_and_run(commit, conf, command="sh"):
+        with self.commit_and_run(commit, conf, command=conf.resolved_shell):
             yield
 
     @contextmanager
