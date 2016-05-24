@@ -61,7 +61,6 @@ class PersistenceBuilder(BuilderBase):
 
     @contextmanager
     def build_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, command=None, tag=False, volumes=None):
-        conf_image_name = conf.prefixed_image_name
         new_conf = conf.clone()
         if name is not None:
             if tag:

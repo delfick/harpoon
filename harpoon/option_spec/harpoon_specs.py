@@ -13,7 +13,7 @@ from input_algorithms.spec_base import (
     , boolean, required, formatted, overridden
     , integer_spec, dictof, dict_from_bool_spec
     , container_spec, many_format, delayed
-    , float_spec, Spec, set_options
+    , float_spec, Spec, set_options, NotSpecified
     )
 
 from harpoon.option_spec.command_specs import command_spec
@@ -164,6 +164,13 @@ class HarpoonSpec(object):
         """Spec for each image"""
         from harpoon.option_spec import image_specs as specs
         from harpoon.option_spec import image_objs
+        class persistence_shell_spec(Spec):
+            """Make the persistence shell default to the shell on the image"""
+            def normalise(self, meta, val):
+                shell = defaulted(string_spec(), "/bin/bash").normalise(meta, meta.everything[["images", meta.key_names()["_key_name_2"]]].get("shell", NotSpecified))
+                shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), shell).normalise(meta, val)
+                return shell
+
         return create_spec(image_objs.Image
             # Change the context options
             , validators.deprecated_key("exclude_context", "Use ``context.exclude``")
@@ -214,7 +221,8 @@ class HarpoonSpec(object):
                 , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
                 , folders = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
                 , cmd = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-                , shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
+                , shell = delayed(persistence_shell_spec())
+                , noshell = defaulted(boolean(), False)
                 , no_volumes = defaulted(boolean(), False)
                 , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
                 ))

@@ -82,6 +82,15 @@ class Image(dictobj):
                 setattr(self, key, getattr(self, key)())
 
     @property
+    def resolved_shell(self):
+        if getattr(self, "_resolved_shell", None) is None:
+            shell = self.shell
+            if callable(shell):
+                shell = shell()
+            self._resolved_shell = shell
+        return self._resolved_shell
+
+    @property
     def from_name(self):
         if getattr(self, "_from_name", NotSpecified) is NotSpecified:
             return self.image_name
@@ -171,7 +180,7 @@ class Image(dictobj):
         if bash not in (None, "", NotSpecified) and callable(bash):
             bash = bash()
         if bash not in (None, "", NotSpecified):
-            return "{0} -c {1}".format(self.shell, shlex_quote(bash))
+            return "{0} -c {1}".format(self.resolved_shell, shlex_quote(bash))
 
         command = self.command
         if command not in (None, "", NotSpecified) and callable(command):
@@ -319,12 +328,28 @@ class Persistence(dictobj):
         , "cmd": "The default CMD to give the final image"
         , "no_volumes": "Whether to make sure there are no volumes"
         , ("shell", "/bin/bash"): "The default shell to use"
+        , ("noshell", False): "Don't use a shell with the command"
         }
+
+    @property
+    def resolved_shell(self):
+        if getattr(self, "_resolved_shell", None) is None:
+            shell = self.shell
+            if callable(shell):
+                shell = shell()
+            self._resolved_shell = shell
+        return self._resolved_shell
+
+    @property
+    def resolved_command(self):
+        if self.noshell:
+            return str(shlex_quote(self.action))
+        return "{0} -c {1}".format(shlex_quote(self.resolved_shell), shlex_quote(self.action))
 
     @property
     def default_cmd(self):
         if self.cmd in (None, "", NotSpecified):
-            return self.shell
+            return self.resolved_shell
         else:
             return self.cmd
 
@@ -337,14 +362,14 @@ class Persistence(dictobj):
         self._setup_lines = True
 
         # Make the shared volume name same as this image name so it doesn't change every time
-        shared_name = self["shared_name"] = self.image_name().replace('/', '__')
+        self["shared_name"] = self.image_name().replace('/', '__')
 
         # underscored names for our folders
         def without_last_slash(val):
             while val and val.endswith("/"):
                 val = val[:-1]
             return val
-        folders_underscored = self["folders_underscored"] = [(shlex_quote(name.replace("_", "__").replace("/", "_")), shlex_quote(without_last_slash(name))) for name in self.folders]
+        self["folders_underscored"] = [(shlex_quote(name.replace("_", "__").replace("/", "_")), shlex_quote(without_last_slash(name))) for name in self.folders]
 
         self["move_from_volume"] = " ; ".join(
               "echo {0} && rm -rf {0} && mkdir -p $(dirname {0}) && mv /{1}/{2} {0}".format(name, self.shared_name, underscored)
@@ -373,7 +398,7 @@ class Persistence(dictobj):
         """
         self.setup_lines()
         docker_lines = docker_file.docker_lines + [
-              "RUN {0} -c {1}".format(shlex_quote(self.shell), shlex_quote(self.action))
+              "RUN {0}".format(self.resolved_command)
             , "CMD {0}".format(self.default_cmd)
             ]
         return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
