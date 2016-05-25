@@ -32,7 +32,8 @@ import sys
 
 class Harpoon(dictobj):
     fields = {
-          "flat": "Don't show images as layers when doing ``harpoon show``"
+          "tag": "Tag used for pulling/pushing a single image"
+        , "flat": "Don't show images as layers when doing ``harpoon show``"
         , "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline"
         , "debug": "Whether debug has been specified"
         , "stdout": "The stdout to use for printing"
@@ -295,6 +296,7 @@ class HarpoonSpec(object):
         return create_spec(Harpoon
             , config = optional_spec(file_spec())
 
+            , tag = optional_spec(string_spec())
             , extra = defaulted(formatted_string, "")
             , debug = defaulted(boolean(), False)
             , artifact = optional_spec(formatted_string)

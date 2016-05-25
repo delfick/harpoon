@@ -113,6 +113,12 @@ class App(App):
             , help = "Specify a command that will be ran as /bin/bash -c '<command>'"
             )
 
+        parser.add_argument("--tag"
+            , help = "Tag used for pulling or pushing a single image"
+            , dest = "harpoon_tag"
+            , default = NotSpecified
+            )
+
         parser.add_argument("--silent-build"
             , help = "Make the build process quiet"
             , dest = "harpoon_silent_build"
