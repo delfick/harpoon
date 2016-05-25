@@ -71,7 +71,7 @@ def pull_arbitrary(collector, image, **kwargs):
     else:
         image_indexes = [(image, image_index_of(image))]
 
-    authentication = collector.configuration.get("authentication")
+    authentication = collector.configuration.get("authentication", NotSpecified)
     for index, (image, image_index) in enumerate(image_indexes):
         image = {
               "image_name": image
