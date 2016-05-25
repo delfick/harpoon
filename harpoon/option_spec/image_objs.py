@@ -343,8 +343,8 @@ class Persistence(dictobj):
     @property
     def resolved_command(self):
         if self.noshell:
-            return str(shlex_quote(self.action))
-        return "{0} -c {1}".format(shlex_quote(self.resolved_shell), shlex_quote(self.action))
+            return str(shlex_quote(self.action.strip()))
+        return "{0} -c {1}".format(shlex_quote(self.resolved_shell), shlex_quote(self.action.strip()))
 
     @property
     def default_cmd(self):
