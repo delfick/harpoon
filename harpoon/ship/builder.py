@@ -166,5 +166,11 @@ class Builder(BuilderBase):
 
         layers = Layers(operate_on, all_images=images)
         layers.add_all_to_layers()
-        return layers.layered
+        for layer in layers.layered:
+            buf = []
+            for image_name, image in layer:
+                if image.image_index:
+                    buf.append((image_name, image))
+            if buf:
+                yield buf
 

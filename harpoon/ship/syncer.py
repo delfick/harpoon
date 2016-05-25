@@ -76,7 +76,7 @@ class Syncer(object):
             raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
 
         if not conf.image_index:
-            raise BadImage("Can't push without an image_index configuration", image=conf.name)
+            raise BadImage("Can't {0} without an image_index configuration".format(action), image=conf.name)
 
         sync_stream = SyncProgressStream()
 
