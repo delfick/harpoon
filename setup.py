@@ -42,7 +42,7 @@ setup(
       }
 
     # metadata for upload to PyPI
-    , url = "https://github.com/realestate-com-au/harpoon"
+    , url = "https://github.com/delfick/harpoon"
     , author = "Stephen Moore"
     , author_email = "delfick755@gmail.com"
     , description = "Opinionated wrapper around docker"
