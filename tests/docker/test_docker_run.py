@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import logging
 import socket
 import codecs
+import nose
 import mock
 import six
 import os
@@ -61,6 +62,9 @@ describe HarpoonCase, "Building docker images":
                 log.warning(error)
 
     it "can complain if ports are already bound to something else":
+        if self.docker_client.base_url.startswith("http"):
+            raise nose.SkipTest()
+
         commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 1"]
 
         fake_sys_stdout = self.make_temp_file()
@@ -73,6 +77,9 @@ describe HarpoonCase, "Building docker images":
                         Runner().run_container(conf, {conf.name: conf})
 
     it "does not complain if nothing is using a port":
+        if self.docker_client.base_url.startswith("http"):
+            raise nose.SkipTest()
+
         commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 0"]
 
         fake_sys_stdout = self.make_temp_file()

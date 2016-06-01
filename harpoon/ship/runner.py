@@ -336,7 +336,8 @@ class Runner(object):
     def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
         """Start up a single container"""
         # Make sure we can bind to our specified ports!
-        self.find_bound_ports(conf.ports)
+        if not conf.harpoon.docker_context.base_url.startswith("http"):
+            self.find_bound_ports(conf.ports)
 
         container_id = conf.container_id
         container_name = conf.container_name
