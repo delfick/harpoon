@@ -229,9 +229,9 @@ describe HarpoonCase, "ContainerPort object":
         self.assertEqual(container_port.transport, NotSpecified)
 
     describe "Port pair":
-        it "returns just the port if no transport":
+        it "defaults transport to tcp":
             container_port = objs.ContainerPort(self.port)
-            self.assertEqual(container_port.port_pair, self.port)
+            self.assertEqual(container_port.port_pair, (self.port, 'tcp'))
 
         it "returns port and transport as a tuple":
             container_port = objs.ContainerPort(self.port, self.transport)
