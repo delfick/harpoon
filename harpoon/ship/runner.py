@@ -215,6 +215,13 @@ class Runner(object):
     ###   CREATION
     ########################
 
+    def exposed(self, ports):
+        result = {}
+        for p in ports:
+            key = '/'.join(str(s) for s in p.container_port.port_pair)
+            result[key] = {"HostIP": "0.0.0.0", "HostPort": "{0}/tcp".format(p.host_port)}
+        return result
+
     def create_container(self, conf, detach, tty):
         """Create a single container"""
 
@@ -225,14 +232,15 @@ class Runner(object):
         with conf.assumed_role():
             env = dict(e.pair for e in conf.env)
 
-        ports = [port.host_port for port in conf.ports]
         links = [link.pair for link in conf.links]
         binds = conf.volumes.binds
         command = conf.formatted_command
         volume_names = conf.volumes.volume_names
         volumes_from = list(conf.volumes.share_with_names)
-        port_bindings = dict([port.pair for port in conf.ports])
         no_tty_option = conf.no_tty_option
+
+        ports = [p.container_port.port_pair for p in conf.ports]
+        port_bindings = self.exposed(conf.ports)
 
         uncreated = []
         for name in binds:
@@ -255,7 +263,7 @@ class Runner(object):
         if ports:
             log.info("\tUsing ports\tports=%s", ports)
         if port_bindings:
-            log.info("\tPort bindings: %s", ports)
+            log.info("\tPort bindings: %s", port_bindings)
         if volumes_from:
             log.info("\tVolumes from: %s", volumes_from)
 
