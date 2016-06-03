@@ -362,7 +362,7 @@ class Persistence(dictobj):
         self._setup_lines = True
 
         # Make the shared volume name same as this image name so it doesn't change every time
-        self["shared_name"] = self.image_name().replace('/', '__')
+        self["shared_name"] = self.image_name().replace('/', '__').replace(':', '___')
 
         # underscored names for our folders
         def without_last_slash(val):
