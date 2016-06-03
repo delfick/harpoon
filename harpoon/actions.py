@@ -57,10 +57,6 @@ def push(collector, image, **kwargs):
 def push_all(collector, **kwargs):
     """Push all the images"""
     configuration = collector.configuration
-    tag = kwargs["artifact"]
-    if tag is NotSpecified:
-        tag = configuration["harpoon"].tag
-    configuration["harpoon"].tag = tag
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
     make_all(collector, **kwargs)
@@ -99,11 +95,12 @@ def pull(collector, image, **kwargs):
     """Pull an image"""
     if not image.image_index:
         raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
-    tag = kwargs["artifacct"]
+    tag = kwargs["artifact"]
     if tag is NotSpecified:
         collector.configuration["harpoon"].tag
     if tag is not NotSpecified:
         image.tag = tag
+        log.info("Pulling tag: %s", tag)
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
 @an_action(needs_image=True)
@@ -119,19 +116,14 @@ def pull_parent(collector, image, ignore_defined=False, **kwargs):
         pull_arbitrary(collector, parent_image, **kwargs)
 
 @an_action()
-def pull_all(collector, **kwargs):
+def pull_all(collector, image, **kwargs):
     """Pull all the images"""
     images = collector.configuration["images"]
-    tag = kwargs["artifact"]
-    if tag is NotSpecified:
-        tag = collector.configuration["harpoon"].tag
 
     for layer in Builder().layered(images, only_pushable=True):
         for image_name, image in layer:
-            if tag is not NotSpecified:
-                image.tag = tag
             log.info("Pulling %s", image_name)
-            Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
+            pull(collector, image, **kwargs)
 
 @an_action()
 def pull_parents(collector, **kwargs):
@@ -156,10 +148,13 @@ def make_all(collector, **kwargs):
     if push:
         only_pushable = True
 
+    tag = kwargs.get("artifact", NotSpecified)
+    if tag is NotSpecified:
+        tag = configuration["harpoon"].tag
+
     images = configuration["images"]
     for layer in Builder().layered(images, only_pushable=only_pushable):
         for _, image in layer:
-            tag = configuration["harpoon"].tag
             if tag is not NotSpecified:
                 image.tag = tag
             Builder().make_image(image, images, ignore_deps=True, ignore_parent=True)
