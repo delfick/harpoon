@@ -33,12 +33,13 @@ describe HarpoonCase, "Collector":
             bash = "bash command"
             extra = "extra commands after the --"
             command = "Command command"
+            args_dict = {"harpoon": {}}
 
             configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 collector = Collector()
-                raw_config = collector.collect_configuration(filename)
-                for thing in ("configuration", "$@", "bash", "command", "harpoon", "collector", "getpass", "args_dict"):
+                raw_config = collector.collect_configuration(filename, args_dict)
+                for thing in ("configuration", "$@", "bash", "command", "harpoon"):
                     assert thing not in raw_config, "expected {0} to not be in configuration".format(thing)
 
                 args_dict = {"harpoon": {"extra": extra}, "bash": bash, "command": command, "assume_role": None}
