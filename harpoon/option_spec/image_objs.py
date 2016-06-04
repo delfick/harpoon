@@ -514,6 +514,7 @@ class Context(dictobj):
         , "parent_dir": "The parent directory to get the context from (this is an absolute path, use ``{config_root}`` to make it relative to the configuration)"
         , ("include", None): "Globs of what to include in the context"
         , ("exclude", None): "Globs of what to exclude from the context"
+        , ("find_options", ""): "Extra options for the find command that's used to find the present files in the repo"
         , ("use_gitignore", lambda: NotSpecified): "Whether we should pay attention to git ignore logic"
         , ("use_git_timestamps", lambda: NotSpecified): "Whether we should find commit timestamps for the files in the context"
         }

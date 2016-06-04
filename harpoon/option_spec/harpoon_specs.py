@@ -153,6 +153,7 @@ class HarpoonSpec(object):
                 , include = listof(string_spec())
                 , exclude = listof(string_spec())
                 , enabled = defaulted(boolean(), True)
+                , find_options = string_spec()
 
                 , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
                 , use_gitignore = defaulted(boolean(), False)
