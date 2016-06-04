@@ -172,6 +172,45 @@ describe HarpoonCase, "Collector":
                     self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), 13456789)
 
         describe "Adding configuration":
+            it "merges from extra_files":
+                config1 = dedent("""
+                    ---
+
+                    two:
+                        three: 5
+                        six: 6
+                """).strip()
+
+                with self.a_temp_file(config1) as filename1:
+                    config2 = dedent("""
+                        ---
+
+                        harpoon:
+                            extra_files: {0}
+                        one: 1
+                        two:
+                            three: 3
+                            four: 4
+                        five: |
+                            six
+                            seven
+                            eight
+                        nine: >
+                            ten
+                            eleven
+                            twelve
+                    """.format(filename1)).strip()
+
+                    with self.a_temp_file(config2) as filename2:
+                        collector = Collector()
+                        configuration = collector.collect_configuration(filename2, {})
+                        as_dict = configuration.as_dict()
+                        self.assertEqual(as_dict
+                            , { "one": 1, "two": {"three": 3, "six": 6, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve", "harpoon": {'extra_files': filename1}
+                              , "collector": collector, "getpass": getpass, "args_dict": {}, "config_root": os.path.dirname(filename2), "mtime": as_dict["mtime"]
+                              }
+                            )
+
             it "adds in an mtime function":
                 collector = Collector()
                 configuration = collector.start_configuration()

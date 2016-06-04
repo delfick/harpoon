@@ -3,11 +3,13 @@ Collects then parses configuration files and verifies that they are valid.
 """
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.errors import BadConfiguration, BadYaml
 from harpoon.actions import available_actions
 from harpoon.task_finder import TaskFinder
 
 from input_algorithms.spec_base import NotSpecified
+from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
 
@@ -89,6 +91,16 @@ class Collector(Collector):
         def make_mtime_func(source):
             """Lazily calculate the mtime to avoid wasted computation"""
             return lambda context: self.get_committime_or_mtime(context, source)
+
+        if "harpoon" in result:
+            if "extra_files" in result["harpoon"]:
+                spec = sb.listof(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
+                meta = Meta(MergedOptions.using(result), []).at("harpoon").at("extra_files")
+                for extra in spec.normalise(meta, result["harpoon"]["extra_files"]):
+                    if os.path.abspath(extra) not in done:
+                        if not os.path.exists(extra):
+                            raise BadConfiguration("Specified extra file doesn't exist", extra=extra, source=src)
+                        collect_another_source(extra)
 
         if "images" in result and "__images_from__" in result["images"]:
             images_from_path = result["images"]["__images_from__"]

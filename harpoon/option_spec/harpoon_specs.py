@@ -44,6 +44,7 @@ class Harpoon(dictobj):
         , "tty_stdin": "The stdin to use for a tty"
         , "tty_stdout": "The stdout to use for a tty"
         , "tty_stderr": "The stderr to use for a tty"
+        , "extra_files": "Extra files to load in as configuration"
         , "chosen_task": "The task to run"
         , "interactive": "Run the container with a tty"
         , "chosen_image": "The image that we want to run"
@@ -301,6 +302,7 @@ class HarpoonSpec(object):
             , extra = defaulted(formatted_string, "")
             , debug = defaulted(boolean(), False)
             , artifact = optional_spec(formatted_string)
+            , extra_files = listof(string_spec())
             , chosen_task = defaulted(formatted_string, "list_tasks")
             , chosen_image = defaulted(formatted_string, "")
 
