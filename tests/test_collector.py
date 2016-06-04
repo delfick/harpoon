@@ -18,11 +18,11 @@ import os
 describe HarpoonCase, "Collector":
     describe "clone":
         it "has a new harpoon object":
-            configuration = {"harpoon": {"chosen_image": "blah"}, "images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
+            configuration = {"images": {"blah": {"commands": "FROM ubuntu:14.04"}}}
             with self.a_temp_file(json.dumps(configuration)) as filename:
                 collector = Collector()
-                collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None, "assume_role": None})
-                collector2 = collector.clone({"chosen_image": "other"})
+                collector.prepare(filename, {"harpoon": {"chosen_image": "blah"}, "bash": None, "command": None, "assume_role": None})
+                collector2 = collector.clone({"harpoon": {"chosen_image": "other"}})
 
                 self.assertNotEqual(collector.configuration["harpoon"], collector2.configuration["harpoon"])
                 self.assertEqual(collector.configuration["harpoon"].chosen_image, "blah")
@@ -275,18 +275,23 @@ describe HarpoonCase, "Collector":
                 self.assertEqual(configuration["harpoon"].as_dict(), {})
                 self.assertNotEqual(type(configuration["harpoon"]), Harpoon)
 
+                configuration.update({"args_dict": {"harpoon": configuration["harpoon"]}})
                 collector.extra_configuration_collection(configuration)
                 configuration.converters.activate()
                 self.assertEqual(type(configuration["harpoon"]), Harpoon)
 
             it "registers image converters for each image":
-                harpoon_spec = mock.Mock(name="harpoon_spec")
+                the_harpoon_spec = mock.Mock(name="the_harpoon_spec")
+                harpoon_spec = mock.Mock(name="harpoon_spec", harpoon_spec=the_harpoon_spec)
+                the_harpoon_spec.normalise.return_value = mock.Mock(name="harpoon", addons=[], spec=["addons"])
+
                 FakeHarpoonSpec = mock.Mock(name="HarpoonSpec", return_value=harpoon_spec)
                 make_image_converters = mock.Mock(name="make_image_converters")
 
                 collector = Collector()
                 configuration = collector.start_configuration()
                 configuration["images"] = {"blah": {}, "stuff": {}, "other": {}}
+                configuration.update({"args_dict": {"harpoon": {}}})
                 with mock.patch("harpoon.collector.HarpoonSpec", FakeHarpoonSpec):
                     with mock.patch.object(collector, "make_image_converters", make_image_converters):
                         collector.extra_configuration_collection(configuration)

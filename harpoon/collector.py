@@ -35,15 +35,20 @@ class Collector(Collector):
     def setup(self):
         self.task_overrides = {}
 
-    def alter_clone_args_dict(self, new_collector, new_args_dict, new_harpoon_options=None):
-        new_harpoon = self.configuration["harpoon"].clone()
-        if new_harpoon_options:
-            new_harpoon.update(new_harpoon_options)
-        new_args_dict["harpoon"] = new_harpoon
+    def alter_clone_args_dict(self, new_collector, new_args_dict, options=None):
+        return MergedOptions.using(
+              new_args_dict
+            , {"harpoon": self.configuration["harpoon"].as_dict()}
+            , options or {}
+            )
 
     def extra_prepare(self, configuration, args_dict):
         """Called before the configuration.converters are activated"""
-        harpoon = args_dict.pop("harpoon")
+        harpoon = MergedOptions.using(configuration.get('harpoon', MergedOptions()).as_dict(), dict(args_dict.get("harpoon", MergedOptions()).items())).as_dict()
+
+        # Args_dict may itself be a MergedOptions
+        while "harpoon" in args_dict:
+            del args_dict["harpoon"]
 
         # Create the addon getter and register the crosshair namespace
         self.addon_getter = AddonGetter()
@@ -65,6 +70,7 @@ class Collector(Collector):
         if "images" not in self.configuration:
             self.configuration["images"] = {}
 
+        # Add our special stuff to the configuration
         self.configuration.update(
             { "$@": harpoon.get("extra", "")
             , "bash": args_dict["bash"] or NotSpecified
