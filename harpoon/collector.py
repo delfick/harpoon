@@ -4,7 +4,8 @@ Collects then parses configuration files and verifies that they are valid.
 
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.errors import BadConfiguration, BadYaml
+from harpoon.errors import BadYaml, BadConfiguration
+from harpoon.option_spec.task_objs import Task
 from harpoon.actions import available_actions
 from harpoon.task_finder import TaskFinder
 
@@ -13,6 +14,7 @@ from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
 
+from option_merge_addons import Result, Addon, Register, AddonGetter
 from option_merge.collector import Collector
 from option_merge import MergedOptions
 from option_merge import Converter
@@ -30,6 +32,9 @@ class Collector(Collector):
     BadFileErrorKls = BadYaml
     BadConfigurationErrorKls = BadConfiguration
 
+    def setup(self):
+        self.task_overrides = {}
+
     def alter_clone_args_dict(self, new_collector, new_args_dict, new_harpoon_options=None):
         new_harpoon = self.configuration["harpoon"].clone()
         if new_harpoon_options:
@@ -40,6 +45,23 @@ class Collector(Collector):
         """Called before the configuration.converters are activated"""
         harpoon = args_dict.pop("harpoon")
 
+        # Create the addon getter and register the crosshair namespace
+        self.addon_getter = AddonGetter()
+        self.addon_getter.add_namespace("harpoon.crosshairs", Result.FieldSpec(), Addon.FieldSpec())
+
+        # Initiate the addons from our configuration
+        self.register = Register(self.addon_getter, self)
+        if ("addons" in harpoon) and (type(harpoon["addons"]) in (MergedOptions, dict) or getattr(harpoon["addons"], "is_dict", False)):
+            for namespace, adns in sb.dictof(sb.string_spec(), sb.listof(sb.string_spec())).normalise(Meta(harpoon, []).at("addons"), harpoon["addons"]).items():
+                self.register.add_pairs(*[(namespace, adn) for adn in adns])
+
+        # Import our addons
+        self.register.recursive_import_known()
+
+        # Resolve our addons
+        self.register.recursive_resolve_imported()
+
+        # Make sure images is started
         if "images" not in self.configuration:
             self.configuration["images"] = {}
 
@@ -55,9 +77,20 @@ class Collector(Collector):
 
     def extra_prepare_after_activation(self, configuration, args_dict):
         """Called after the configuration.converters are activated"""
+        def task_maker(name, description=None, action=None, label="Project", **options):
+            if not action:
+                action = name
+            self.task_overrides[name] = Task(action=action, description=description, options=options, label=label)
+            return self.task_overrides[name]
+
+        # Post register our addons
+        extra_args = {"harpoon.crosshairs": {"task_maker": task_maker}}
+        self.register.post_register(extra_args)
+
+        # Make the task finder
         task_finder = TaskFinder(self)
         self.configuration["task_runner"] = task_finder.task_runner
-        task_finder.find_tasks({})
+        task_finder.find_tasks(getattr(self, "task_overrides", {}))
 
     def home_dir_configuration_location(self):
         if os.path.exists(os.path.expanduser("~/.harpoon.yml")):

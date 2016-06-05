@@ -38,6 +38,7 @@ class Harpoon(dictobj):
         , "debug": "Whether debug has been specified"
         , "stdout": "The stdout to use for printing"
         , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
+        , "addons": "A dictionary of namespace to list of names for addons to register"
         , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
         , "artifact": "Extra information for actions"
         , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
@@ -301,6 +302,7 @@ class HarpoonSpec(object):
             , tag = optional_spec(string_spec())
             , extra = defaulted(formatted_string, "")
             , debug = defaulted(boolean(), False)
+            , addons = dictof(string_spec(), listof(string_spec()))
             , artifact = optional_spec(formatted_string)
             , extra_files = listof(string_spec())
             , chosen_task = defaulted(formatted_string, "list_tasks")
