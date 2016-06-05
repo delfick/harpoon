@@ -611,6 +611,10 @@ class Mount(dictobj):
         else:
             return (os.path.expanduser(self.local_path), {"bind": self.container_path, 'ro': True})
 
+    @property
+    def triple(self):
+        return (os.path.expanduser(self.local_path), self.container_path, self.permissions)
+
 class Environment(dictobj):
     """A single environment variable, and it's default or set value"""
     fields = ["env_name", ("default_val", None), ("set_val", None)]
