@@ -40,10 +40,10 @@ class NormalBuilder(BuilderBase):
             )
 
         for found in lines:
-            for line in found.split("\n"):
+            for line in found.decode().split("\n"):
                 if line.strip():
                     try:
-                        stream.feed(line)
+                        stream.feed(line.encode())
                     except Failure as error:
                         raise FailedImage("Failed to build an image", image=conf.name, msg=error)
                     except Unknown as error:
