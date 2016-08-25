@@ -39,17 +39,19 @@ class NormalBuilder(BuilderBase):
             , stream = True
             )
 
-        for line in lines:
-            try:
-                stream.feed(line)
-            except Failure as error:
-                raise FailedImage("Failed to build an image", image=conf.name, msg=error)
-            except Unknown as error:
-                log.warning("Unknown line\tline=%s", error)
+        for found in lines:
+            for line in found.split("\n"):
+                if line.strip():
+                    try:
+                        stream.feed(line)
+                    except Failure as error:
+                        raise FailedImage("Failed to build an image", image=conf.name, msg=error)
+                    except Unknown as error:
+                        log.warning("Unknown line\tline=%s", error)
 
-            for part in stream.printable():
-                hp.write_to(conf.harpoon.stdout, part)
-            conf.harpoon.stdout.flush()
+                    for part in stream.printable():
+                        hp.write_to(conf.harpoon.stdout, part)
+                    conf.harpoon.stdout.flush()
 
         return stream.cached
 
