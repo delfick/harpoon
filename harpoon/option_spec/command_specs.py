@@ -65,13 +65,18 @@ class CommandContentAdd(CommandContent):
           "dest": "The path in the container where the content will be put"
         , "mtime": "The modified time given to the item put into the context"
         , "content": "The content to put into the context"
+        , ("formatted", None): "Formatted string for content to put into the context"
         }
 
+    @property
+    def resolved_content(self):
+        return self.content if self.content is not sb.NotSpecified else self.formatted
+
     def for_json(self):
-        return self.content.for_json()
+        return self.resolved_content.for_json()
 
     def commands(self, meta):
-        extra_context = (self.content.resolve(), self.context_name(meta))
+        extra_context = (self.resolved_content.resolve(), self.context_name(meta))
         yield Command(("ADD", "{0} {1}".format(self.context_name(meta), self.dest)), extra_context)
 
 class CommandContentAddDict(dictobj):
@@ -129,7 +134,7 @@ class complex_ADD_spec(sb.Spec):
     def normalise(self, meta, val):
         from harpoon.option_spec.harpoon_specs import HarpoonSpec
         formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
-        val = sb.apply_validators(meta, val, [validators.either_keys(["context"], ["content"], ["get"])])
+        val = sb.apply_validators(meta, val, [validators.either_keys(["context"], ["content"], ["get"], ["formatted"])])
 
         if "get" in val:
             val = sb.create_spec(CommandAddExtra
@@ -142,6 +147,14 @@ class complex_ADD_spec(sb.Spec):
                 , dest = sb.required(formatted_string)
                 , mtime = sb.optional_spec(sb.integer_spec())
                 , context = sb.required(HarpoonSpec().context_spec)
+                ).normalise(meta, val)
+
+        if "formatted" in val:
+            val = sb.create_spec(CommandContentAdd
+                , dest = sb.required(formatted_string)
+                , mtime = sb.optional_spec(sb.integer_spec())
+                , content = sb.overridden(sb.NotSpecified)
+                , formatted = sb.container_spec(CommandContentAddString, formatted_string)
                 ).normalise(meta, val)
 
         if "content" in val:
