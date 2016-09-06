@@ -20,7 +20,7 @@ setup(
       , "glob2"
       , "humanize"
 
-      , "gitmit==0.2"
+      , "gitmit==0.3"
       , "boto3==1.2.3"
       , "pyYaml==3.10"
       ]
