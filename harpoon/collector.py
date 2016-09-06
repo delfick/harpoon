@@ -174,26 +174,20 @@ class Collector(Collector):
         for image in configuration.get('images', {}).keys():
             self.make_image_converters(image, configuration, harpoon_spec)
 
-        def harpoon_converter(p, v):
-            log.info("Converting %s", p)
-            meta = Meta(p.configuration, [("harpoon", "")])
-            configuration.converters.started(p)
-            return harpoon_spec.harpoon_spec.normalise(meta, v)
-        configuration.add_converter(Converter(convert=harpoon_converter, convert_path=["harpoon"]))
-
-        def authentication_converter(p, v):
-            log.info("Converting %s", p)
-            meta = Meta(p.configuration, [("harpoon", "")])
-            configuration.converters.started(p)
-            return harpoon_spec.authentications_spec.normalise(meta, v)
-        configuration.add_converter(Converter(convert=authentication_converter, convert_path=["authentication"]))
+        self.register_converters(
+              { (0, ("content", )): sb.dictof(sb.string_spec(), sb.string_spec())
+              , (0, ("harpoon", )): harpoon_spec.harpoon_spec
+              , (0, ("authentication", )): harpoon_spec.authentications_spec
+              }
+            , Meta, configuration, sb.NotSpecified
+            )
 
     def make_image_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
             log.info("Converting %s", path)
             everything = path.configuration.root().wrapped()
-            meta = Meta(everything, [("images", ""), (image, "")])
+            meta = Meta(everything, [])
             configuration.converters.started(path)
 
             base = path.configuration.root().wrapped()
@@ -205,7 +199,7 @@ class Collector(Collector):
 
             base["harpoon"] = configuration["harpoon"]
             base["configuration"] = configuration
-            return harpoon_spec.image_spec.normalise(meta, base)
+            return harpoon_spec.image_spec.normalise(meta.at("images").at(image), base)
 
         converter = Converter(convert=convert_image, convert_path=["images", image])
         configuration.add_converter(converter)
