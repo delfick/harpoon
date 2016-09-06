@@ -114,10 +114,21 @@ class PersistenceBuilder(BuilderBase):
     def run_with_altered_context(self, name, conf, context, stream, dockerfile, volumes_from=None, tag=None, detach=False, command=None, volumes=None):
         """Helper to build and run a new dockerfile"""
         with self.build_with_altered_context(name, conf, context, stream, dockerfile, volumes_from=volumes_from, command=command, volumes=volumes) as (new_conf, _):
+
+            # Hackity hack hakc hack hack hack
+            # I should just be able to use conf.configuration["images"]
+            # But it seems a bug in option_merge behaviour means the converters stop working :(
+            # Much strange
+            configuration = conf.configuration
+            class Images(object):
+                def __getitem__(self, key):
+                    return configuration[["images", key]]
+            images = Images()
+
             if detach:
-                Runner().run_container(new_conf, {}, detach=True, dependency=True)
+                Runner().run_container(new_conf, images, detach=True, dependency=True)
             else:
-                Runner().run_container(new_conf, {}, detach=False, dependency=False, tag=True)
+                Runner().run_container(new_conf, images, detach=False, dependency=False, tag=True)
                 new_conf.image_name = new_conf.committed
 
             return new_conf
