@@ -9,7 +9,7 @@ setup(
 
     , install_requires =
       [ "delfick_app==0.8.2.1"
-      , "option_merge==1.4.3.2"
+      , "option_merge==1.4.4"
       , "input_algorithms==0.5.1"
       , "option_merge_addons==0.1"
 
