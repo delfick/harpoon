@@ -6,6 +6,7 @@ from harpoon.collector import Collector
 
 from tests.helpers import HarpoonCase
 
+from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from delfick_app import command_output
 from option_merge import MergedOptions
@@ -208,6 +209,7 @@ describe HarpoonCase, "Collector":
                         self.assertEqual(as_dict
                             , { "one": 1, "two": {"three": 3, "six": 6, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve", "harpoon": {'extra_files': filename1}
                               , "collector": collector, "getpass": getpass, "args_dict": {}, "config_root": os.path.dirname(filename2), "mtime": as_dict["mtime"]
+                              , "authentication": sb.NotSpecified, "content": sb.NotSpecified
                               }
                             )
 

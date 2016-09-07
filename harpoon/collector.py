@@ -182,6 +182,10 @@ class Collector(Collector):
             , Meta, configuration, sb.NotSpecified
             )
 
+        # Some other code works better when harpoon no existy
+        if configuration["harpoon"] is sb.NotSpecified:
+            del configuration["harpoon"]
+
     def make_image_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
         def convert_image(path, val):
