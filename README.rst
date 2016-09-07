@@ -4,8 +4,8 @@ Harpoon
 An opinionated wrapper around the docker-py API that lets you use YAML to define
 images and run tasks.
 
-.. image:: https://travis-ci.org/realestate-com-au/harpoon.png?branch=master
-    :target: https://travis-ci.org/realestate-com-au/harpoon
+.. image:: https://travis-ci.org/delfick/harpoon.png?branch=master
+    :target: https://travis-ci.org/delfick/harpoon
 
 See http://harpoon.readthedocs.io for the full documentation.
 
