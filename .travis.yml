@@ -13,14 +13,14 @@ env:
   global:
     - CI_SERVER=true
   matrix:
-    - DOCKER_VERSION=1.9.1-0~trusty
+    - DOCKER_VERSION=1.12.0-0~trusty
 
 install:
   - sudo apt-get -qqy update
   - sudo apt-get remove -y docker-engine
   - sudo bash -c "apt-get -y install docker-engine=$DOCKER_VERSION"
-  - sudo bash -c "wget https://github.com/libgit2/libgit2/archive/v0.23.4.tar.gz && tar xf v0.23.4.tar.gz && cd libgit2-0.23.4 && cmake . && make && make install"
-  - sudo ln -s -f /usr/local/lib/libgit2.so.0.23.4 /usr/lib/libgit2.so.23
+  - sudo bash -c "wget https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && tar xf v0.24.1.tar.gz && cd libgit2-0.24.1 && cmake . && make && make install"
+  - sudo ln -s -f /usr/local/lib/libgit2.so.0.24.0 /usr/lib/libgit2.so.24
   - pip install pip --upgrade
   - pip install -e .
   - pip install -e '.[tests]'
