@@ -101,7 +101,7 @@ describe HarpoonCase, "Building docker images":
                 }
               ]
 
-            , "CMD find /tmp/copied -type f -exec echo {} \; -exec cat {} \;"
+            , "CMD find /tmp/copied -type f | sort | xargs -t cat"
             ]
 
         fake_sys_stdout = self.make_temp_file()
@@ -131,13 +131,10 @@ describe HarpoonCase, "Building docker images":
         .+
         Removing .+
         Successfully built .+
-        /tmp/copied/other
-        hello
-        /tmp/copied/one
-        lol
-        /tmp/copied/another/three
+        cat /tmp/copied/another/three /tmp/copied/one /tmp/copied/other /tmp/copied/two
         hahahha
-        /tmp/copied/two
+        lol
+        hello
         hehehe
         """
 

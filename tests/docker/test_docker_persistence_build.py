@@ -174,7 +174,7 @@ describe HarpoonCase, "Persistence builds":
                 commands.append(line["CreatedBy"])
 
             self.assertEqual(commands
-                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "sh"]'
+                , [ '/bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "sh"]'
                   , '/bin/sh -c sh -c \'cat /tmp/lines > /tmp/lines2; echo \'"\'"\'another_line\'"\'"\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines\''
                   , "/bin/sh -c echo 'a_line' > /tmp/lines"
                   ]
@@ -241,9 +241,9 @@ describe HarpoonCase, "Persistence builds":
                 commands.append(line["CreatedBy"])
 
             self.assertEqual(commands
-                , [ '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "sh"]'
+                , [ '/bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "sh"]'
                   , "/bin/sh -c echo /tmp && rm -rf /tmp && mkdir -p $(dirname /tmp) && mv /awesome_image/_tmp /tmp && cat /tmp/lines > /tmp/lines2; echo 'another_line' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"
-                  , '/bin/sh -c #(nop) CMD ["/bin/sh" "-c" "echo /tmp && rm -rf /tmp && mkdir -p $(dirname /tmp) && mv /awesome_image/_tmp /tmp && cat /tmp/lines > /tmp/lines2; echo \'another_line\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"]'
+                  , '/bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "echo /tmp && rm -rf /tmp && mkdir -p $(dirname /tmp) && mv /awesome_image/_tmp /tmp && cat /tmp/lines > /tmp/lines2; echo \'another_line\' >> /tmp/lines2; mv /tmp/lines2 /tmp/lines"]'
                   , "/bin/sh -c echo    'a_line' > /tmp/lines"
                   ]
                 )
