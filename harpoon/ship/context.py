@@ -16,6 +16,7 @@ from delfick_app import command_output
 from contextlib import contextmanager
 from gitmit.mit import GitTimes
 from six import BytesIO
+import tempfile
 import tarfile
 import fnmatch
 import logging
@@ -144,7 +145,12 @@ class ContextBuilder(object):
                             name = tf.firstmember.name
                             for member in tf.getmembers()[1:]:
                                 member.name = member.name[len(name)+1:]
-                                if not member.isdir():
+                                if member.issym():
+                                    with tempfile.NamedTemporaryFile() as symfle:
+                                        os.remove(symfle.name)
+                                        os.symlink(member.linkpath, symfle.name)
+                                        tf2.addfile(member, fileobj=symfle)
+                                elif not member.isdir():
                                     tf2.addfile(member, fileobj=tf.extractfile(member.name))
                             tf2.close()
                         else:
