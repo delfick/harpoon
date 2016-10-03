@@ -296,11 +296,12 @@ class ContextBuilder(object):
         valid = set()
         if context.use_gitignore:
             under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
-            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submoudles")]
+            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submoudles", cwd=context.git_root)]
+            git_submodules = [os.path.normpath(os.path.relpath(os.path.abspath(p), os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)))) for p in git_submodules]
 
             valid = under_source_control + untracked_files
 
-            for filename in valid:
+            for filename in list(valid):
                 location = os.path.join(context.parent_dir, filename)
                 if os.path.islink(location) and os.path.isdir(location):
                     actual_path = os.path.abspath(os.path.realpath(location))
@@ -312,6 +313,7 @@ class ContextBuilder(object):
                         valid += [os.path.join(filename, os.path.relpath(found, include_from))]
                 elif os.path.isdir(location) and filename in git_submodules:
                     to_include = git("ls-files --exclude-standard", "Failed to find files in a submodule", cwd=location)
+                    valid = [v for v in valid if v != filename]
                     for found in to_include:
                         valid.append(os.path.join(filename, found))
 

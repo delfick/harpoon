@@ -325,6 +325,12 @@ describe HarpoonCase, "Context builder":
             self.assertEqual(found_files, expected_files)
             self.assertEqual(found_mtime_ignoreable, set())
 
+    describe "Finding submodule files":
+        it "is able to find files in a submodule":
+            with self.cloned_submodule_example() as first_repo:
+                ctxt = objs.Context(enabled=True, parent_dir=first_repo, use_gitignore=True)
+                self.assertEqual(ContextBuilder().find_ignored_git_files(ctxt, False), (set(), set(), set(["b", ".gitmodules", "vendor/two/a"])))
+
     describe "find_git_mtimes":
 
         it "is able to find all the files owned by git and get their last commit modified time":
