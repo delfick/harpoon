@@ -78,6 +78,10 @@ class Syncer(object):
         if not conf.image_index:
             raise BadImage("Can't {0} without an image_index configuration".format(action), image=conf.name)
 
+        if conf.image_name == "scratch":
+            log.warning("Not pulling/pushing scratch, this is a reserved image!")
+            return
+
         sync_stream = SyncProgressStream()
 
         # Login before pulling or pushing
