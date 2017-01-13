@@ -302,6 +302,15 @@ class ContextBuilder(object):
             valid = under_source_control + untracked_files
 
             for filename in list(valid):
+                matched = False
+                for excluder in context.exclude:
+                    if fnmatch.fnmatch(filename, excluder):
+                        matched = True
+                        break
+
+                if matched:
+                    continue
+
                 location = os.path.join(context.parent_dir, filename)
                 if os.path.islink(location) and os.path.isdir(location):
                     actual_path = os.path.abspath(os.path.realpath(location))
