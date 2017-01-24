@@ -20,7 +20,6 @@ setup(
       , "glob2"
       , "humanize"
 
-      , "gitmit==0.3"
       , "boto3==1.2.3"
       , "pyYaml==3.10"
       ]
@@ -33,6 +32,9 @@ setup(
         , "nose-pattern-exclude"
         , "nose-focus==0.1.2"
         , "tox"
+        ]
+      , "git":
+        [ "gitmit==0.3"
         ]
       }
 

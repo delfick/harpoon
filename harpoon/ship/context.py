@@ -14,7 +14,6 @@ from harpoon.helpers import a_temp_file
 
 from delfick_app import command_output
 from contextlib import contextmanager
-from gitmit.mit import GitTimes
 from six import BytesIO
 import tempfile
 import tarfile
@@ -25,6 +24,11 @@ import docker
 import six
 import os
 import re
+
+try:
+    from gitmit.mit import GitTimes
+except ImportError:
+    GitTimes = None
 
 regexes = {
       "whitespace": re.compile("\s+")
@@ -257,6 +261,9 @@ class ContextBuilder(object):
         # Otherwise all the files get the timestamp of the latest commit
         if context.use_git_timestamps and os.path.exists(os.path.join(root_folder, ".git", "shallow")):
             raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
+
+        if GitTimes is None:
+            raise HarpoonError("Please pip install harpoon[git] before using git options")
 
         options = {"include": context.include, "exclude": context.exclude, "timestamps_for": context.use_git_timestamps, "silent": silent_build}
         return dict(GitTimes(root_folder, os.path.relpath(parent_dir, root_folder), **options).find())

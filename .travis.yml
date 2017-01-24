@@ -23,6 +23,7 @@ install:
   - sudo ln -s -f /usr/local/lib/libgit2.so.0.24.0 /usr/lib/libgit2.so.24
   - pip install pip --upgrade
   - pip install -e .
+  - pip install -e '.[git]'
   - pip install -e '.[tests]'
 
 before_script:
