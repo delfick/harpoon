@@ -200,7 +200,10 @@ class ContextBuilder(object):
         first_layer = ["'{0}'".format(thing) for thing in os.listdir(context.parent_dir)]
         output, status = command_output("find {0} -type l -or -type f {1} -follow -print".format(' '.join(first_layer), context.find_options), cwd=context.parent_dir)
         if status != 0:
-            raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
+            if context.ignore_find_errors:
+                log.warning("The find command failed to run, will continue anyway")
+            else:
+                raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
         all_files = set(self.convert_nonascii(output))
         total_files = set(all_files)
 

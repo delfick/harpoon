@@ -517,6 +517,7 @@ class Context(dictobj):
         , ("find_options", ""): "Extra options for the find command that's used to find the present files in the repo"
         , ("use_gitignore", lambda: NotSpecified): "Whether we should pay attention to git ignore logic"
         , ("use_git_timestamps", lambda: NotSpecified): "Whether we should find commit timestamps for the files in the context"
+        , ("ignore_find_errors", False): "A hack to ignore weird find errors"
         }
 
     @property
