@@ -21,7 +21,7 @@ class NormalBuilder(BuilderBase):
         self.log_context_size(context, conf)
 
         # Login into the correct registry
-        current_tags = list(chain.from_iterable(image["RepoTags"] for image in conf.harpoon.docker_context.images()))
+        current_tags = list(chain.from_iterable(image["RepoTags"] for image in conf.harpoon.docker_context.images() if image["RepoTags"]))
         parent_image = conf.commands.parent_image
         if ":" not in parent_image:
             parent_image = "{0}:latest".format(parent_image)
