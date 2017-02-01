@@ -20,8 +20,9 @@ class PersistenceBuilder(BuilderBase):
 
         # Find an existing image if it exists
         for image in conf.harpoon.docker_context.images():
-            if "{0}:latest".format(conf.image_name) in image["RepoTags"]:
-                existing_image = image['Id']
+            if image["RepoTags"]:
+                if "{0}:latest".format(conf.image_name) in image["RepoTags"]:
+                    existing_image = image['Id']
 
         # If we already have an image, then test to see if any of it's commands
         # have changed. If it's all still cached, then no need to remake the image!
