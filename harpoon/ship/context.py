@@ -276,7 +276,7 @@ class ContextBuilder(object):
         for item in lst:
             if item.startswith('"') and item.endswith('"'):
                 item = item[1:-1]
-                yield item.decode('unicode-escape')
+                yield item.encode('utf-8').decode('unicode-escape')
             else:
                 yield item.encode('utf-8').decode('unicode-escape')
 
