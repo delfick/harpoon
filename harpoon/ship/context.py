@@ -313,10 +313,11 @@ class ContextBuilder(object):
 
             for filename in list(valid):
                 matched = False
-                for excluder in context.exclude:
-                    if fnmatch.fnmatch(filename, excluder):
-                        matched = True
-                        break
+                if context.exclude:
+                    for excluder in context.exclude:
+                        if fnmatch.fnmatch(filename, excluder):
+                            matched = True
+                            break
 
                 if matched:
                     continue

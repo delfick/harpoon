@@ -28,7 +28,10 @@ describe HarpoonCase, "HarpoonSpec":
 
         as_dict = fake.as_dict()
         self.assertEqual(type(as_dict["context"]), dict)
-        self.assertEqual(sorted(as_dict["context"].keys()), sorted(["enabled", "use_git_timestamps", "use_gitignore", "exclude", "include", "parent_dir", "find_options"]))
+        self.assertEqual(
+              sorted(as_dict["context"].keys())
+            , sorted(["enabled", "use_git_timestamps", "use_gitignore", "exclude", "include", "parent_dir", "find_options", "ignore_find_errors"])
+            )
 
     describe "name_spec":
         # Shared tests for image_name_spec and task_name_spec
