@@ -8,7 +8,7 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_app==0.9.3"
+      [ "delfick_app==0.9.4"
       , "option_merge==1.4.4"
       , "input_algorithms==0.5.8"
       , "option_merge_addons==0.2"
