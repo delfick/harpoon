@@ -6,6 +6,7 @@ necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.ship.context import ContextBuilder
 from harpoon.ship.builder import Builder
 from harpoon.ship.syncer import Syncer
 from harpoon.errors import BadOption
@@ -19,6 +20,7 @@ from textwrap import dedent
 from itertools import chain
 import itertools
 import logging
+import shutil
 import six
 import os
 
@@ -290,6 +292,27 @@ def tag(collector, image, artifact, **kwargs):
 
     image.tag = artifact
     Syncer().push(image)
+
+@an_action(needs_image=True)
+def retrieve(collector, image, artifact, **kwargs):
+    """Retrieve a file/folder from an image"""
+    if artifact in (None, "", NotSpecified):
+        raise BadOption("Please specify what to retrieve using the artifact option")
+
+    # make sure the image is built
+    Builder().make_image(image, collector.configuration["images"])
+
+    content = {
+          "conf": image
+        , "docker_context": collector.configuration["harpoon"].docker_context
+        , "images": collector.configuration["images"]
+        , "image": image.image_name
+        , "path": artifact
+        }
+
+    # Get us our gold!
+    with ContextBuilder().the_context(content) as fle:
+        shutil.copyfile(fle.name, os.environ.get("FILENAME", "./retrieved.tar.gz"))
 
 # Make it so future use of @an_action doesn't result in more default tasks
 info["is_default"] = False
