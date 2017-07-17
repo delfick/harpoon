@@ -118,15 +118,15 @@ describe HarpoonCase, "Building docker images":
         output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
 
         expected = """
-        Step 1 : .+
+        Step 1(/4)? : .+
         .+
-        Step 2 : .+
-        .+
-        Removing .+
-        Step 3 : .+
+        Step 2(/4)? : .+
         .+
         Removing .+
-        Step 4 : .+
+        Step 3(/4)? : .+
+        .+
+        Removing .+
+        Step 4(/4)? : .+
         .+
         .+
         Removing .+

@@ -127,9 +127,9 @@ describe HarpoonCase, "Building docker images":
         output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
 
         expected = """
-         Step 1 : FROM busybox:buildroot-2014.02
+         Step 1(/2)? : FROM busybox:buildroot-2014.02
           ---> [a-zA-Z0-9]{12}
-         Step 2 : RUN exit 1
+         Step 2(/2)? : RUN exit 1
           ---> Running in .+
          !!!!
          It would appear building the image failed
@@ -170,9 +170,9 @@ describe HarpoonCase, "Building docker images":
         output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
 
         expected = """
-         Step 1 : FROM busybox:buildroot-2014.02
+         Step 1(/2)? : FROM busybox:buildroot-2014.02
           ---> [a-zA-Z0-9]{12}
-         Step 2 : CMD ['sh', '-c', 'exit 1']
+         Step 2(/2)? : CMD ['sh', '-c', 'exit 1']
           ---> Running in .+
           --->
          Removing intermediate container .+
@@ -217,9 +217,9 @@ describe HarpoonCase, "Building docker images":
         output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
 
         expected = """
-         Step 1 : FROM busybox:buildroot-2014.02
+         Step 1(/2)? : FROM busybox:buildroot-2014.02
           ---> [a-zA-Z0-9]{12}
-         Step 2 : CMD echo 'hi'; sleep 1; exit 1
+         Step 2(/2)? : CMD echo 'hi'; sleep 1; exit 1
           ---> Running in .+
           ---> .+
          Removing intermediate container .+
