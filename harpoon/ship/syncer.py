@@ -89,7 +89,7 @@ class Syncer(object):
 
         for attempt in range(3):
             try:
-                for line in getattr(conf.harpoon.docker_context, action)(
+                for line in getattr(conf.harpoon.docker_api, action)(
                         conf.image_name
                         , tag = None if conf.tag is NotSpecified else conf.tag
                         , stream = True

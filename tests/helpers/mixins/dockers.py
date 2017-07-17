@@ -14,6 +14,10 @@ class DockersAssertionsMixin:
             info["docker_client"] = docker_context()
         return info["docker_client"]
 
+    @property
+    def docker_api(self):
+        return self.docker_client.api
+
     def refresh_docker_client(self):
         if "docker_client" in info:
             del info["docker_client"]
@@ -42,7 +46,7 @@ class DockersAssertionsMixin:
             yield cached, conf
         finally:
             try:
-                self.docker_client.remove_image(ident_tag)
+                self.docker_api.remove_image(ident_tag)
             except docker.errors.APIError as error:
                 print("Failed to delete the image", error)
 

@@ -85,7 +85,7 @@ class CommandContentAddDict(dictobj):
         , "conf": "An Image object for the image"
         , "path": "The path in the image to get the content from"
         , "images": "All images defined by this harpoon configuration"
-        , "docker_context": "The docker context"
+        , "docker_api": "The docker api"
         }
 
     def resolve(self):
@@ -126,7 +126,7 @@ class complex_ADD_from_image_spec(sb.Spec):
             , conf = sb.any_spec()
             , path = formatted_string
             , images = sb.overridden(meta.everything.get("images", []))
-            , docker_context = sb.overridden(meta.everything["harpoon"].docker_context)
+            , docker_api = sb.overridden(meta.everything["harpoon"].docker_api)
             ).normalise(meta, val)
 
 class complex_ADD_spec(sb.Spec):

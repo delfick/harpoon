@@ -30,7 +30,7 @@ def docker_context():
     except (DockerException, APIError) as error:
         raise BadDockerConnection(error=error)
 
-    return client.api
+    return client
 
 class App(App):
     VERSION = VERSION

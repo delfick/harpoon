@@ -153,7 +153,7 @@ class Image(dictobj):
             return self._container_id
 
         try:
-            containers = self.harpoon.docker_context.containers(all=True)
+            containers = self.harpoon.docker_api.containers(all=True)
         except ValueError:
             log.warning("Failed to get a list of active docker files")
             containers = []
@@ -309,7 +309,7 @@ class Image(dictobj):
 
     def login(self, image_name, is_pushing):
         if self.authentication is not NotSpecified:
-            return self.authentication.login(self.harpoon.docker_context, image_name, is_pushing=is_pushing)
+            return self.authentication.login(self.harpoon.docker_api, image_name, is_pushing=is_pushing)
 
     @contextmanager
     def assumed_role(self):

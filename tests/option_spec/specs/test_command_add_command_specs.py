@@ -122,7 +122,7 @@ describe CommandCase, "Complex ADD spec":
 
             options = result.extra_context[0]
             self.assertIs(options.images, images)
-            self.assertIs(options.docker_context, self.harpoon.docker_context)
+            self.assertIs(options.docker_api, self.harpoon.docker_api)
             self.assertIs(type(options.conf), Image)
             self.assertEqual(options.conf.image_name, "blah2")
             self.assertEqual(options.path, "/somewhere/better")
@@ -226,14 +226,13 @@ describe CommandCase, "CommandContentAddDict":
         self.conf = mock.Mock(name="conf")
         self.path = mock.Mock(name="path")
         self.images = mock.Mock(name="images")
-        self.docker_context = mock.Mock(name="docker_context")
 
     it "resolves to itself":
-        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_context=self.docker_context)
+        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_api=self.docker_api)
         self.assertIs(obj.resolve(), obj)
 
     it "just uses image_name and path in for_json":
-        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_context=self.docker_context)
+        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_api=self.docker_api)
         image_name = self.unique_val()
         self.conf.image_name = image_name
         self.assertEqual(obj.for_json(), {"image": image_name, "path": self.path})

@@ -36,7 +36,7 @@ def SquashedBuilder(BuilderBase):
 
         log.info("Saving image\timage=%s", squashing.image_name)
         with hp.a_temp_file() as fle:
-            res = conf.harpoon.docker_context.get_image(squashing.image_name)
+            res = conf.harpoon.docker_api.get_image(squashing.image_name)
             fle.write(res.read())
             fle.close()
 
@@ -51,5 +51,5 @@ def SquashedBuilder(BuilderBase):
 
         if squashing is not conf:
             log.info("Removing intermediate image %s", squashing.image_name)
-            conf.harpoon.docker_context.remove_image(squashing.image_name)
+            conf.harpoon.docker_api.remove_image(squashing.image_name)
 

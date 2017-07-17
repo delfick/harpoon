@@ -83,7 +83,7 @@ describe HarpoonCase, "Persistence builds":
             , list(chain.from_iterable(
                 [(rt, ident) for rt in rts] for rts, ident in [
                   (i['RepoTags'], i['Id']) for i in
-                    conf.harpoon.docker_context.images()
+                    conf.harpoon.docker_api.images()
                 ]
             ))
         )
@@ -92,13 +92,13 @@ describe HarpoonCase, "Persistence builds":
             , [t2id[0] for t2id in originals["tags_to_ids"]]
             )
         set_original_images = lambda: originals.__setitem__("images"
-            , [i['Id'] for i in conf.harpoon.docker_context.images()]
+            , [i['Id'] for i in conf.harpoon.docker_api.images()]
             )
         set_original_volumes = lambda: originals.__setitem__("volumes"
-            , conf.harpoon.docker_context.volumes()['Volumes'] or []
+            , conf.harpoon.docker_api.volumes()['Volumes'] or []
             )
         set_original_containers = lambda: originals.__setitem__("containers"
-            , [c['Id'] for c in conf.harpoon.docker_context.containers(all=True)]
+            , [c['Id'] for c in conf.harpoon.docker_api.containers(all=True)]
             )
 
         setters = [set_tags_to_ids, set_original_tags, set_original_images, set_original_volumes, set_original_containers]
@@ -116,13 +116,13 @@ describe HarpoonCase, "Persistence builds":
         ########################
 
         def assert_same_volumes():
-            self.assertEqual(originals["volumes"], conf.harpoon.docker_context.volumes()["Volumes"] or [])
+            self.assertEqual(originals["volumes"], conf.harpoon.docker_api.volumes()["Volumes"] or [])
 
         def assert_same_containers():
-            self.assertEqual(originals["containers"], [i['Id'] for i in conf.harpoon.docker_context.containers(all=True)])
+            self.assertEqual(originals["containers"], [i['Id'] for i in conf.harpoon.docker_api.containers(all=True)])
 
         def assert_extra_tags(*extra):
-            new_tags = list(chain.from_iterable(i['RepoTags'] for i in conf.harpoon.docker_context.images()))
+            new_tags = list(chain.from_iterable(i['RepoTags'] for i in conf.harpoon.docker_api.images()))
             self.assertEqual(sorted(new_tags), sorted(originals["tags"] + list(extra)))
 
         def assert_only_extra_tags(*extra):
@@ -137,20 +137,20 @@ describe HarpoonCase, "Persistence builds":
         for container in originals["containers"]:
             print("Removing container: {0}".format(container))
             try:
-                conf.harpoon.docker_context.kill(container, 9)
+                conf.harpoon.docker_api.kill(container, 9)
             except:
                 pass
-            conf.harpoon.docker_context.remove_container(container)
+            conf.harpoon.docker_api.remove_container(container)
 
         for tag, ident in dict(originals["tags_to_ids"]).items():
             if tag == "<none>:<none>":
                 print("Removing <none>:<none> image: {0}".format(ident))
-                conf.harpoon.docker_context.remove_image(ident)
+                conf.harpoon.docker_api.remove_image(ident)
 
         for unwanted in (conf.image_name, "{0}:latest".format(conf.image_name), "{0}-tester:latest".format(conf.image_name)):
             if unwanted in originals["tags"]:
                 print("Removing unwanted image: {0}".format(unwanted))
-                conf.harpoon.docker_context.remove_image(unwanted)
+                conf.harpoon.docker_api.remove_image(unwanted)
 
         set_originals()
 
@@ -166,7 +166,7 @@ describe HarpoonCase, "Persistence builds":
 
             last_id = None
             commands = []
-            for line in conf.harpoon.docker_context.history(conf.image_name):
+            for line in conf.harpoon.docker_api.history(conf.image_name):
                 if os.environ["BASE_IMAGE"] in (line["Tags"] or []):
                     break
 
@@ -182,7 +182,7 @@ describe HarpoonCase, "Persistence builds":
 
             found = False
             tester_commands = []
-            for line in conf.harpoon.docker_context.history("{0}-tester:latest".format(conf.image_name)):
+            for line in conf.harpoon.docker_api.history("{0}-tester:latest".format(conf.image_name)):
                 if line['Id'] == last_id:
                     found = True
                     break
@@ -233,7 +233,7 @@ describe HarpoonCase, "Persistence builds":
             assert not cached, "But we changed the command!"
 
             commands = []
-            for line in conf.harpoon.docker_context.history(conf.image_name):
+            for line in conf.harpoon.docker_api.history(conf.image_name):
                 if os.environ["BASE_IMAGE"] in (line["Tags"] or []):
                     break
 
@@ -279,7 +279,7 @@ describe HarpoonCase, "Persistence builds":
             for image in collected['images']:
                 try:
                     log.info("Removing test image")
-                    conf.harpoon.docker_context.remove_image(image)
+                    conf.harpoon.docker_api.remove_image(image)
                 except Exception as error:
                     log.error("Failed to remove test image")
                     log.exception(error)

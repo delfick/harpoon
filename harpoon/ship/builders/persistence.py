@@ -19,7 +19,7 @@ class PersistenceBuilder(BuilderBase):
         existing_image = None
 
         # Find an existing image if it exists
-        for image in conf.harpoon.docker_context.images():
+        for image in conf.harpoon.docker_api.images():
             if image["RepoTags"]:
                 if "{0}:latest".format(conf.image_name) in image["RepoTags"]:
                     existing_image = image['Id']
@@ -45,7 +45,7 @@ class PersistenceBuilder(BuilderBase):
             # go through this dance again
             try:
                 if test_image_name:
-                    conf.harpoon.docker_context.remove_image(test_image_name)
+                    conf.harpoon.docker_api.remove_image(test_image_name)
             except Exception as inner_error:
                 log.exception(inner_error)
 
@@ -189,7 +189,7 @@ class PersistenceBuilder(BuilderBase):
             if first_conf:
                 Runner().stop_container(first_conf, remove_volumes=True)
                 try:
-                    conf.harpoon.docker_context.remove_image(first_conf.image_name)
+                    conf.harpoon.docker_api.remove_image(first_conf.image_name)
                 except DockerAPIError as error:
                     log.error(error)
 

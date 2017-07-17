@@ -20,7 +20,7 @@ class BuilderBase(object):
         current_ids = None
         if not conf.harpoon.keep_replaced:
             try:
-                current_id = conf.harpoon.docker_context.inspect_image(image_name)["Id"]
+                current_id = conf.harpoon.docker_api.inspect_image(image_name)["Id"]
             except docker.errors.APIError as error:
                 if str(error).startswith("404 Client Error: Not Found"):
                     current_id = None
@@ -32,11 +32,11 @@ class BuilderBase(object):
 
         if current_id and not info.get("cached"):
             log.info("Looking for replaced images to remove")
-            untagged = [image["Id"] for image in conf.harpoon.docker_context.images(filters={"dangling": True})]
+            untagged = [image["Id"] for image in conf.harpoon.docker_api.images(filters={"dangling": True})]
             if current_id in untagged:
                 log.info("Deleting replaced image\ttag=%s\told_hash=%s", "{0}".format(image_name), current_id)
                 try:
-                    conf.harpoon.docker_context.remove_image(current_id)
+                    conf.harpoon.docker_api.remove_image(current_id)
                 except Exception as error:
                     log.error("Failed to remove replaced image\thash=%s\terror=%s", current_id, error)
 

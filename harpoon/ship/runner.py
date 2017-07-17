@@ -78,7 +78,7 @@ class Runner(object):
             image = images[dependency_name]
             if image.deleteable_image:
                 log.info("Removing un-needed image {0}".format(image.image_name))
-                conf.harpoon.docker_context.remove_image(image.image_name)
+                conf.harpoon.docker_api.remove_image(image.image_name)
 
     def run_deps(self, conf, images):
         """Start containers for all our dependencies"""
@@ -102,7 +102,7 @@ class Runner(object):
     def wait_for_deps(self, conf, images):
         """Wait for all our dependencies"""
         from harpoon.option_spec.image_objs import WaitCondition
-        ctxt = conf.harpoon.docker_context_maker()
+        api = conf.harpoon.docker_context_maker().api
 
         waited = set()
         last_attempt = {}
@@ -129,7 +129,7 @@ class Runner(object):
 
                 image = images[dependency]
                 if dependency in wait_conditions:
-                    done = self.wait_for_dep(ctxt, image, wait_conditions[dependency], start, last_attempt.get(dependency))
+                    done = self.wait_for_dep(api, image, wait_conditions[dependency], start, last_attempt.get(dependency))
                     this_round.append(done)
                     if done is True:
                         waited.add(dependency)
@@ -177,14 +177,14 @@ class Runner(object):
                         container_id = container_ids[container]
                         container_name = image.container_name
                         hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
-                        for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
+                        for line in conf.harpoon.docker_api.logs(container_id).split("\n"):
                             hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
                         hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                     raise BadImage("One or more of the dependencies stopped running whilst waiting for other dependencies", stopped=list(couldnt_wait))
 
             time.sleep(0.1)
 
-    def wait_for_dep(self, ctxt, conf, wait_condition, start, last_attempt):
+    def wait_for_dep(self, api, conf, wait_condition, start, last_attempt):
         """Wait for this image"""
         from harpoon.option_spec.image_objs import WaitCondition
         conditions = list(wait_condition.conditions(start, last_attempt))
@@ -196,13 +196,13 @@ class Runner(object):
             log.debug("Running condition\tcondition=%s", condition)
             command = 'bash -c "{0}"'.format(condition)
             try:
-                exec_id = ctxt.exec_create(conf.container_id, command, tty=False)
+                exec_id = api.exec_create(conf.container_id, command, tty=False)
             except DockerAPIError as error:
                 log.error("Failed to run condition\tcondition=%s\tdependency=%s\terror=%s", condition, conf.name, error)
                 return False
 
-            output = ctxt.exec_start(exec_id).decode('utf-8')
-            inspection = ctxt.exec_inspect(exec_id)
+            output = api.exec_start(exec_id).decode('utf-8')
+            inspection = api.exec_inspect(exec_id)
             exit_code = inspection["ExitCode"]
             if exit_code != 0:
                 log.error("Condition says no\tcondition=%s\toutput:\n\t%s", condition, "\n\t".join(line for line in output.split('\n')))
@@ -267,7 +267,7 @@ class Runner(object):
         if volumes_from:
             log.info("\tVolumes from: %s", volumes_from)
 
-        host_config = conf.harpoon.docker_context.create_host_config(
+        host_config = conf.harpoon.docker_api.create_host_config(
               links = links
             , binds = binds
             , volumes_from = volumes_from
@@ -297,7 +297,7 @@ class Runner(object):
             , **conf.other_options.host_config
             )
 
-        container_id = conf.harpoon.docker_context.create_container(image_name
+        container_id = conf.harpoon.docker_api.create_container(image_name
             , name=container_name
             , detach=detach
             , command=command
@@ -336,7 +336,7 @@ class Runner(object):
     def start_container(self, conf, tty=True, detach=False, is_dependency=False, no_intervention=False):
         """Start up a single container"""
         # Make sure we can bind to our specified ports!
-        if not conf.harpoon.docker_context.base_url.startswith("http"):
+        if not conf.harpoon.docker_api.base_url.startswith("http"):
             self.find_bound_ports(conf.ports)
 
         container_id = conf.container_id
@@ -347,7 +347,7 @@ class Runner(object):
             if not detach and not is_dependency:
                 self.start_tty(conf, interactive=tty, **conf.other_options.start)
             else:
-                conf.harpoon.docker_context.start(container_id
+                conf.harpoon.docker_api.start(container_id
                     , **conf.other_options.start
                     )
         except docker.errors.APIError as error:
@@ -369,7 +369,7 @@ class Runner(object):
     def start_tty(self, conf, interactive):
         """Startup a tty"""
         try:
-            ctxt = conf.harpoon.docker_context_maker()
+            api = conf.harpoon.docker_context_maker().api
             container_id = conf.container_id
 
             stdin = conf.harpoon.tty_stdin
@@ -378,7 +378,7 @@ class Runner(object):
             if callable(stdin): stdin = stdin()
             if callable(stdout): stdout = stdout()
             if callable(stderr): stderr = stderr()
-            dockerpty.start(ctxt, container_id, interactive=interactive, stdout=stdout, stderr=stderr, stdin=stdin)
+            dockerpty.start(api, container_id, interactive=interactive, stdout=stdout, stderr=stderr, stdin=stdin)
         except KeyboardInterrupt:
             pass
 
@@ -392,7 +392,7 @@ class Runner(object):
         inspection = None
         for _ in until(timeout=timeout, action=message):
             try:
-                inspection = conf.harpoon.docker_context.inspect_container(container_id)
+                inspection = conf.harpoon.docker_api.inspect_container(container_id)
                 if not isinstance(inspection, dict):
                     log.error("Weird response from inspecting the container\tresponse=%s", inspection)
                 else:
@@ -447,7 +447,7 @@ class Runner(object):
 
                 if print_logs:
                     hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
-                    for line in conf.harpoon.docker_context.logs(container_id).split("\n"):
+                    for line in conf.harpoon.docker_api.logs(container_id).split("\n"):
                         hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
                     hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                 fail_reason = fail_reason or "Failed to run container"
@@ -455,22 +455,22 @@ class Runner(object):
         else:
             try:
                 log.info("Killing container %s:%s", container_name, container_id)
-                conf.harpoon.docker_context.kill(container_id, 9)
+                conf.harpoon.docker_api.kill(container_id, 9)
             except DockerAPIError:
                 pass
             self.wait_till_stopped(conf, container_id, timeout=10, message="waiting for container to die\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id))
 
         if tag:
             log.info("Tagging a container\tcontainer_id=%s\ttag=%s", container_id, tag)
-            new_id = conf.harpoon.docker_context.commit(container_id)["Id"]
+            new_id = conf.harpoon.docker_api.commit(container_id)["Id"]
             conf["committed"] = new_id
             if tag is not True:
                 the_tag = "latest" if conf.tag is NotSpecified else conf.tag
-                conf.harpoon.docker_context.tag(new_id, repository=tag, tag=the_tag, force=True)
+                conf.harpoon.docker_api.tag(new_id, repository=tag, tag=the_tag, force=True)
 
         mounts = []
         if remove_volumes:
-            inspection = conf.harpoon.docker_context.inspect_container(container_id)
+            inspection = conf.harpoon.docker_api.inspect_container(container_id)
             if "Mounts" in inspection:
                 for m in inspection["Mounts"]:
                     if "Name" in m:
@@ -482,7 +482,7 @@ class Runner(object):
             log.info("Removing container %s:%s", container_name, container_id)
             for _ in until(timeout=10, action="removing container\tcontainer_name={0}\tcontainer_id={1}".format(container_name, container_id)):
                 try:
-                    conf.harpoon.docker_context.remove_container(container_id)
+                    conf.harpoon.docker_api.remove_container(container_id)
                     break
                 except socket.timeout:
                     break
@@ -492,7 +492,7 @@ class Runner(object):
         for mount in mounts:
             try:
                 log.info("Cleaning up volume {0}".format(mount))
-                conf.harpoon.docker_context.remove_volume(mount)
+                conf.harpoon.docker_api.remove_volume(mount)
             except DockerAPIError as error:
                 log.warning("Failed to cleanup volume\tvolume=%s\terror=%s", mount, error)
 
@@ -504,7 +504,7 @@ class Runner(object):
         """Determine how a container exited"""
         for _ in until(timeout=0.5, step=0.1, silent=True):
             try:
-                inspection = conf.harpoon.docker_context.inspect_container(conf.container_id)
+                inspection = conf.harpoon.docker_api.inspect_container(conf.container_id)
                 if not isinstance(inspection, dict) or "State" not in inspection:
                     raise BadResult("Expected inspect result to be a dictionary with 'State' in it", found=inspection)
                 elif not inspection["State"]["Running"]:
@@ -560,11 +560,11 @@ class Runner(object):
             log.info("Removing bad container\thash=%s", container)
 
             try:
-                conf.harpoon.docker_context.kill(container, signal=9)
+                conf.harpoon.docker_api.kill(container, signal=9)
             except Exception as error:
                 log.error("Failed to kill dead container\thash=%s\terror=%s", container, error)
             try:
-                conf.harpoon.docker_context.remove_container(container)
+                conf.harpoon.docker_api.remove_container(container)
             except Exception as error:
                 log.error("Failed to remove dead container\thash=%s\terror=%s", container, error)
 
@@ -592,7 +592,7 @@ class Runner(object):
         """Commit this container id and run the provided command in it and clean up afterwards"""
         image_hash = None
         try:
-            image_hash = conf.harpoon.docker_context.commit(commit)["Id"]
+            image_hash = conf.harpoon.docker_api.commit(commit)["Id"]
 
             new_conf = conf.clone()
             new_conf.bash = NotSpecified
@@ -616,7 +616,7 @@ class Runner(object):
             try:
                 if image_hash:
                     log.info("Removing intervened image\thash=%s", image_hash)
-                    conf.harpoon.docker_context.remove_image(image_hash)
+                    conf.harpoon.docker_api.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
 

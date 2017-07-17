@@ -199,8 +199,8 @@ def list_tasks(collector, tasks, **kwargs):
 def delete_untagged(collector, **kwargs):
     """Find the untagged images and remove them"""
     configuration = collector.configuration
-    docker_context = configuration["harpoon"].docker_context
-    images = docker_context.images()
+    docker_api = configuration["harpoon"].docker_api
+    images = docker_api.images()
     found = False
     for image in images:
         if image["RepoTags"] == ["<none>:<none>"]:
@@ -208,7 +208,7 @@ def delete_untagged(collector, **kwargs):
             image_id = image["Id"]
             log.info("Deleting untagged image\thash=%s", image_id)
             try:
-                docker_context.remove_image(image["Id"])
+                docker_api.remove_image(image["Id"])
             except DockerAPIError as error:
                 log.error("Failed to delete image\thash=%s\terror=%s", image_id, error)
 
@@ -255,14 +255,14 @@ def print_all_dockerfiles(collector, **kwargs):
 @an_action()
 def read_login(collector, image, **kwargs):
     """Login to a docker registry with read permissions"""
-    docker_context = collector.configuration["harpoon"].docker_context
-    collector.configuration["authentication"].login(docker_context, image, is_pushing=False, global_docker=True)
+    docker_api = collector.configuration["harpoon"].docker_api
+    collector.configuration["authentication"].login(docker_api, image, is_pushing=False, global_docker=True)
 
 @an_action()
 def write_login(collector, image, **kwargs):
     """Login to a docker registry with write permissions"""
-    docker_context = collector.configuration["harpoon"].docker_context
-    collector.configuration["authentication"].login(docker_context, image, is_pushing=True, global_docker=True)
+    docker_api = collector.configuration["harpoon"].docker_api
+    collector.configuration["authentication"].login(docker_api, image, is_pushing=True, global_docker=True)
 
 @an_action(needs_image=True)
 def tag(collector, image, artifact, **kwargs):
@@ -277,7 +277,7 @@ def tag(collector, image, artifact, **kwargs):
     if image.tag is NotSpecified:
         tag = "{0}:latest".format(tag)
 
-    images = image.harpoon.docker_context.images()
+    images = image.harpoon.docker_api.images()
     current_tags = chain.from_iterable(image_conf["RepoTags"] for image_conf in images)
     if tag not in current_tags:
         raise BadOption("Please build or pull the image down to your local cache before tagging it")
@@ -288,7 +288,7 @@ def tag(collector, image, artifact, **kwargs):
             break
 
     log.info("Tagging {0} ({1}) as {2}".format(image_id, image.image_name, artifact))
-    image.harpoon.docker_context.tag(image_id, repository=image.image_name, tag=artifact, force=True)
+    image.harpoon.docker_api.tag(image_id, repository=image.image_name, tag=artifact, force=True)
 
     image.tag = artifact
     Syncer().push(image)
@@ -304,7 +304,7 @@ def retrieve(collector, image, artifact, **kwargs):
 
     content = {
           "conf": image
-        , "docker_context": collector.configuration["harpoon"].docker_context
+        , "docker_api": collector.configuration["harpoon"].docker_api
         , "images": collector.configuration["images"]
         , "image": image.image_name
         , "path": artifact

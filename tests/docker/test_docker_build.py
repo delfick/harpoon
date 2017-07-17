@@ -32,7 +32,7 @@ describe HarpoonCase, "Building docker images":
         ident = str(uuid.uuid1())
         ident_tag = "{0}:latest".format(ident)
 
-        images = self.docker_client.images()
+        images = self.docker_api.images()
         repo_tags = [image["RepoTags"] for image in images]
         assert all(ident_tag not in repo_tag_list for repo_tag_list in repo_tags), images
 
@@ -40,11 +40,11 @@ describe HarpoonCase, "Building docker images":
         conf.image_name = ident
         Builder().build_image(conf)
 
-        images = self.docker_client.images()
+        images = self.docker_api.images()
         repo_tags = [image["RepoTags"] for image in images]
         assert any(ident_tag in repo_tag_list for repo_tag_list in repo_tags), "Couldn't find {0} in {1}".format(ident_tag, images)
 
-        self.docker_client.remove_image(ident_tag)
+        self.docker_api.remove_image(ident_tag)
 
     it "knows if the build was cached":
         from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])

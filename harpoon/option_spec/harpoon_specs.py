@@ -59,6 +59,10 @@ class Harpoon(dictobj):
         , "docker_context_maker": "Function that makes a new docker context object (set internally)"
         }
 
+    @property
+    def docker_api(self):
+        return self.docker_context.api
+
 class other_options(dictobj):
     fields = {
           "start": "Extra options to pass into docker.start"

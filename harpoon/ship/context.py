@@ -135,7 +135,7 @@ class ContextBuilder(object):
                 content["conf"].command = "yes"
                 with Runner()._run_container(content["conf"], content["images"], detach=True, delete_anyway=True):
                     try:
-                        strm, stat = content["docker_context"].get_archive(content["conf"].container_id, content["path"])
+                        strm, stat = content["docker_api"].get_archive(content["conf"].container_id, content["path"])
                     except docker.errors.NotFound:
                         raise BadOption("Trying to get something from an image that don't exist!", path=content["path"], image=content["conf"].image_name)
                     else:
