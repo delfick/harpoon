@@ -42,6 +42,8 @@ class BuildProgressStream(ProgressStream):
         elif "status" in line_detail:
             self.interpret_status(line_detail["status"])
             self.last_line = line_detail["status"]
+        elif "aux" in line_detail:
+            log.info("Created image\t%s", line_detail["aux"].get("ID", ""))
         else:
             self.interpret_unknown(line_detail)
             self.last_line = str(line_detail)
