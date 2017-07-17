@@ -8,28 +8,29 @@ from harpoon.collector import Collector
 from harpoon import VERSION
 
 from input_algorithms.spec_base import NotSpecified
-from docker.client import Client as DockerClient
+from docker.errors import APIError, DockerException
 from delfick_app import App, DelayedFileType
-from docker.utils import kwargs_from_env
-import requests
 import logging
+import docker
 import os
 
 log = logging.getLogger("harpoon.executor")
 
 def docker_context():
     """Make a docker context"""
-    options = kwargs_from_env(assert_hostname=False)
-    options["version"] = "auto"
-    options["timeout"] = int(os.environ.get("DOCKER_CLIENT_TIMEOUT", 180))
-
-    client = DockerClient(**options)
     try:
+        client = docker.from_env(
+              version = "auto"
+            , timeout = int(os.environ.get("DOCKER_CLIENT_TIMEOUT", 180))
+            , assert_hostname = False
+            )
+
         info = client.info()
         log.info("Connected to docker daemon\tdriver=%s\tkernel=%s", info["Driver"], info["KernelVersion"])
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
-        raise BadDockerConnection(base_url=options.get('base_url'), error=error)
-    return client
+    except (DockerException, APIError) as error:
+        raise BadDockerConnection(error=error)
+
+    return client.api
 
 class App(App):
     VERSION = VERSION

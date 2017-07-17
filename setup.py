@@ -13,8 +13,7 @@ setup(
       , "input_algorithms==0.6.0"
       , "option_merge_addons==0.2"
 
-      , "docker-py==1.9.0"
-      #, "dockerpty==0.3.2"
+      , "docker==2.4.2"
 
       , "six"
       , "glob2"
