@@ -8,9 +8,9 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_app==0.9.4"
-      , "option_merge==1.4.4"
-      , "input_algorithms==0.5.8"
+      [ "delfick_app==0.9.5"
+      , "option_merge==1.6"
+      , "input_algorithms==0.6.0"
       , "option_merge_addons==0.2"
 
       , "docker-py==1.9.0"
@@ -20,13 +20,13 @@ setup(
       , "glob2"
       , "humanize"
 
-      , "boto3==1.2.3"
-      , "pyYaml==3.10"
+      , "boto3==1.4.4"
+      , "pyYaml==3.12"
       ]
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti>=1.5.0"
+        [ "noseOfYeti>=1.7"
         , "nose"
         , "mock==1.0.1"
         , "nose-pattern-exclude"

@@ -207,7 +207,7 @@ describe HarpoonCase, "Collector":
                         configuration = collector.collect_configuration(filename2, {})
                         as_dict = configuration.as_dict()
                         self.assertEqual(as_dict
-                            , { "one": 1, "two": {"three": 3, "six": 6, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve", "harpoon": {'extra_files': filename1}
+                            , { "one": 1, "two": {"three": 5, "six": 6, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve", "harpoon": {'extra_files': filename1}
                               , "collector": collector, "getpass": getpass, "args_dict": {}, "config_root": os.path.dirname(filename2), "mtime": as_dict["mtime"]
                               , "authentication": sb.NotSpecified, "content": sb.NotSpecified
                               }
