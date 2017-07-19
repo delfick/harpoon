@@ -559,9 +559,18 @@ Linking containers and volumes
 
 You have the following options available:
 
-link
-  A list of strings that are equivalent to the options you give link for
-  docker cli (https://docs.docker.com/userguide/dockerlinks/#container-linking)
+links
+  A list of strings representing the container name to link into the container
+
+  Or a list of list of strings of ``[container_name, link_name]`` where
+  ``container_name`` may be of the form ``{images.<image_name>}`` (i.e. a
+  reference to an image specified in the configuration.
+
+  Harpoon will spawn docker networks such that each container has it's own
+  network with the specified linked containers in it.
+
+  These networks are cleaned up when all the containers specified in it have
+  been stopped.
 
   For example::
 
@@ -572,7 +581,7 @@ link
         commands:
           ...
       app:
-        link:
+        links:
           - ["{images.db.container_name}", "dbhost"]
         commands:
           ...
