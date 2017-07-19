@@ -19,7 +19,6 @@ from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
-from docker.utils import utils
 from harpoon import dockerpty
 from six.moves import input
 import docker.errors
@@ -46,6 +45,7 @@ class Runner(object):
     @contextmanager
     def _run_container(self, conf, images, detach=False, started=None, dependency=False, tag=None, delete_anyway=False):
         if conf.container_id:
+            yield
             return
 
         try:
@@ -232,7 +232,6 @@ class Runner(object):
         with conf.assumed_role():
             env = dict(e.pair for e in conf.env)
 
-        links = [link.pair for link in conf.links]
         binds = conf.volumes.binds
         command = conf.formatted_command
         volume_names = conf.volumes.volume_names
@@ -258,8 +257,6 @@ class Runner(object):
             log.info("\tUsing volumes\tvolumes=%s", volume_names)
         if env:
             log.info("\tUsing environment\tenv=%s", sorted(env.keys()))
-        if links:
-            log.info("\tLinks: %s", links)
         if ports:
             log.info("\tUsing ports\tports=%s", ports)
         if port_bindings:
@@ -268,8 +265,7 @@ class Runner(object):
             log.info("\tVolumes from: %s", volumes_from)
 
         host_config = conf.harpoon.docker_api.create_host_config(
-              links = links
-            , binds = binds
+              binds = binds
             , volumes_from = volumes_from
             , port_bindings = port_bindings
 
@@ -341,6 +337,9 @@ class Runner(object):
 
         container_id = conf.container_id
         container_name = conf.container_name
+
+        conf.harpoon.network_manager.register(conf, container_name)
+
         log.info("Starting container %s (%s)", container_name, container_id)
 
         try:
@@ -495,6 +494,8 @@ class Runner(object):
                 conf.harpoon.docker_api.remove_volume(mount)
             except DockerAPIError as error:
                 log.warning("Failed to cleanup volume\tvolume=%s\terror=%s", mount, error)
+
+        conf.harpoon.network_manager.removed(container_name)
 
     ########################
     ###   UTILITY

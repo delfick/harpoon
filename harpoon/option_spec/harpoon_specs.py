@@ -20,8 +20,10 @@ from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Commands
 from harpoon.option_spec import authentication_objs
+from harpoon.ship.network import NetworkManager
 from harpoon.helpers import memoized_property
 from harpoon.option_spec import task_objs
+from harpoon import helpers as hp
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
@@ -58,6 +60,10 @@ class Harpoon(dictobj):
         , "intervene_afterwards": "Create an intervention image even if the image succeeds"
         , "docker_context_maker": "Function that makes a new docker context object (set internally)"
         }
+
+    @hp.memoized_property
+    def network_manager(self):
+        return NetworkManager(self.docker_api)
 
     @property
     def docker_api(self):
