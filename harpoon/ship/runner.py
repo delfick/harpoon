@@ -26,6 +26,7 @@ import logging
 import socket
 import uuid
 import time
+import six
 import os
 
 log = logging.getLogger("harpoon.ship.runner")
@@ -446,7 +447,10 @@ class Runner(object):
 
                 if print_logs:
                     hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
-                    for line in conf.harpoon.docker_api.logs(container_id).split("\n"):
+                    logs = conf.harpoon.docker_api.logs(container_id)
+                    if isinstance(logs, six.binary_type):
+                        logs = logs.decode()
+                    for line in logs.split("\n"):
                         hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
                     hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                 fail_reason = fail_reason or "Failed to run container"
@@ -620,4 +624,3 @@ class Runner(object):
                     conf.harpoon.docker_api.remove_image(image_hash)
             except Exception as error:
                 log.error("Failed to kill intervened image\thash=%s\terror=%s", image_hash, error)
-
