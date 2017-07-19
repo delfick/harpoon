@@ -5,7 +5,7 @@ The idea is that these understand the conditions around representation of the
 options.
 """
 
-from harpoon.option_spec.image_objs import Link, Mount, Environment, Port, ContainerPort
+from harpoon.option_spec.image_objs import Image, Link, Mount, Environment, Port, ContainerPort
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.errors import BadConfiguration
 
@@ -60,7 +60,7 @@ class env_spec(many_item_formatted_spec):
 
 class link_spec(many_item_formatted_spec):
     value_name = "Container link"
-    specs = [sb.string_spec()]
+    specs = [sb.match_spec((Image, sb.any_spec), fallback=sb.string_spec())]
     optional_specs = [sb.string_spec()]
     formatter = MergedOptionStringFormatter
 
