@@ -1,12 +1,13 @@
 #coding: spec
 
-from harpoon.errors import FailedImage, BadImage, AlreadyBoundPorts
+from harpoon.errors import FailedImage, BadImage, AlreadyBoundPorts, ProgrammerError
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.ship.runner import Runner
 
 from tests.helpers import HarpoonCase
 
 from option_merge.converter import Converter
+from input_algorithms import spec_base as sb
 from option_merge import MergedOptions
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
@@ -24,14 +25,26 @@ mtime = 1431170923
 log = logging.getLogger("tests.docker.test_docker_run")
 
 describe HarpoonCase, "Building docker images":
-    def make_image(self, options, harpoon_options=None):
+    def make_image(self, options, harpoon_options=None, harpoon=None):
         config_root = self.make_temp_dir()
-        if harpoon_options is None:
+        if harpoon_options is None and harpoon is None:
             harpoon_options = {}
-        harpoon_options["docker_context"] = self.docker_client
-        harpoon_options["docker_context_maker"] = self.new_docker_client
 
-        harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), harpoon_options)
+        if harpoon_options is not None:
+            harpoon_options["docker_context"] = self.docker_client
+            harpoon_options["docker_context_maker"] = self.new_docker_client
+        elif harpoon:
+            if harpoon.docker_context is sb.NotSpecified:
+                harpoon.docker_context = self.docker_client
+            if harpoon.docker_context_maker is sb.NotSpecified:
+                harpoon.docker_context_maker = self.new_docker_client
+
+        if harpoon_options and harpoon:
+            raise ProgrammerError("Please only specify one of harpoon_options and harpoon")
+
+        if harpoon is None:
+            harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), harpoon_options)
+
         if "harpoon" not in options:
             options["harpoon"] = harpoon
 
@@ -117,13 +130,17 @@ describe HarpoonCase, "Building docker images":
         fake_sys_stdout = self.make_temp_file()
         fake_sys_stderr = self.make_temp_file()
 
-        opts = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
-        with self.a_built_image({"name": "one", "context": False, "commands": commands1}, opts) as (_, conf1):
+        harpoon_options = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
+        harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), harpoon_options)
+
+        with self.a_built_image({"name": "one", "context": False, "commands": commands1}, harpoon=harpoon) as (_, conf1):
+            self.assertEqual(len(conf1.harpoon.docker_context.networks.list()), 3)
             links = [[conf1, "one"]]
-            with self.a_built_image({"name": "two", "links": links, "context": False, "commands": commands2}, opts) as (_, conf2):
+            with self.a_built_image({"name": "two", "links": links, "context": False, "commands": commands2}, harpoon=harpoon) as (_, conf2):
                 links = [[conf1, "one"], [conf2, "two"]]
-                with self.a_built_image({"name": "three", "context": False, "commands": commands3, "links": links}, opts) as (_, conf3):
+                with self.a_built_image({"name": "three", "context": False, "commands": commands3, "links": links}, harpoon=harpoon) as (_, conf3):
                     Runner().run_container(conf3, {conf1.name: conf1, conf2.name: conf2, conf3.name: conf3})
+        self.assertEqual(len(conf3.harpoon.docker_context.networks.list()), 3)
 
         with open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
