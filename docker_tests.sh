@@ -32,12 +32,15 @@ fi
 
 docker ps -aq | xargs docker kill
 docker ps -aq | xargs docker rm
-docker images | grep -v $BASE_TAG | awk '{print $3}' | tail -n +2 | xargs docker rmi
+docker images | grep -v $BASE_TAG | grep -v python | awk '{print $3}' | tail -n +2 | xargs docker rmi
 
 if [[ $(docker inspect $BASE_IMAGE | grep Id | cut -d'"' -f4) != "sha256:9875fb006e07a63f7e2a1713a8a73c71663be95bce7c122a36205cd1cd9c93eb" ]]; then
   echo "Making sure we have a base docker image"
   docker pull $BASE_IMAGE
 fi
+
+# We also need the python:3 image
+docker pull python:3
 
 export DESTRUCTIVE_DOCKER_TESTS=true
 nosetests --exclude-path harpoon --exclude-path docs --with-noy $exclusions $@

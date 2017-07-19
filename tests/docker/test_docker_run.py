@@ -94,6 +94,46 @@ describe HarpoonCase, "Building docker images":
 
         assert True
 
+    it "can has links":
+        commands1 = [
+              "FROM python:3"
+            , "EXPOSE 8000"
+            , "RUN echo hi1 > /one"
+            , "CMD python -m http.server"
+            ]
+
+        commands2 = [
+              "FROM python:3"
+            , "EXPOSE 8000"
+            , "RUN echo there2 > /two"
+            , "CMD python -m http.server"
+            ]
+
+        commands3 = [
+              "FROM python:3"
+            , "CMD sleep 1 && curl http://one:8000/one && curl http://two:8000/two"
+            ]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+
+        opts = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
+        with self.a_built_image({"name": "one", "context": False, "commands": commands1}, opts) as (_, conf1):
+            links = [[conf1, "one"]]
+            with self.a_built_image({"name": "two", "links": links, "context": False, "commands": commands2}, opts) as (_, conf2):
+                links = [[conf1, "one"], [conf2, "two"]]
+                with self.a_built_image({"name": "three", "context": False, "commands": commands3, "links": links}, opts) as (_, conf3):
+                    Runner().run_container(conf3, {conf1.name: conf1, conf2.name: conf2, conf3.name: conf3})
+
+        with open(fake_sys_stdout.name) as fle:
+            output = fle.read().strip()
+
+        if isinstance(output, six.binary_type):
+            output = output.decode('utf-8')
+        output = [line for line in output.split('\n') if "lxc-start" not in line]
+
+        self.assertEqual(output[-2:], ["hi1", "there2"])
+
     it "can intervene a broken build":
         called = []
         original_commit_and_run = Runner.commit_and_run
