@@ -198,7 +198,7 @@ For example, let's say you want to link one image into another::
         commands:
           - <commands here>
       app:
-        link:
+        links:
           - ["{images.db}", "dbhost"]
 
         commands:
@@ -534,7 +534,7 @@ Then your harpoon.yml may look like::
       context:
         parent_dir: "{folders.api_dir}"
 
-      link:
+      links:
         - ["{images.mysql}", "dbhost"]
 
       volumes:
@@ -645,7 +645,7 @@ may specify ``dependency_options``::
         - CMD activator run
 
     uitest:
-      link:
+      links:
         - ["{images.runner}", "running"]
 
       dependency_options:
