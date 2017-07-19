@@ -147,7 +147,7 @@ describe HarpoonCase, "Building docker images":
 
         if isinstance(output, six.binary_type):
             output = output.decode('utf-8')
-        output = [line for line in output.split('\n') if "lxc-start" not in line]
+        output = [line.strip() for line in output.split('\n') if "lxc-start" not in line]
 
         self.assertEqual(output[-2:], ["hi1", "there2"])
 
