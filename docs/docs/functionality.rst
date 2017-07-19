@@ -582,7 +582,7 @@ links
           ...
       app:
         links:
-          - ["{images.db.container_name}", "dbhost"]
+          - ["{images.db}", "dbhost"]
         commands:
           ...
 
