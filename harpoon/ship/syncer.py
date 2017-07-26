@@ -27,6 +27,10 @@ class SyncProgressStream(ProgressStream):
         self.last_status = None
 
     def interpret_line(self, line_detail):
+        if "aux" in line_detail:
+            self.add_line('\n' + str(line_detail["aux"]) + '\n')
+            return
+
         if "status" not in line_detail:
             self.add_line(str(line_detail) + '\n')
             return
@@ -94,23 +98,28 @@ class Syncer(object):
                         , tag = None if conf.tag is NotSpecified else conf.tag
                         , stream = True
                         ):
-                    try:
-                        sync_stream.feed(line)
-                    except Failure as error:
-                        if ignore_missing and action == "pull":
-                            log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
-                            break
-                        else:
-                            raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
-                    except Unknown as error:
-                        log.warning("Unknown line\tline=%s", error)
 
-                    for part in sync_stream.printable():
-                        if six.PY3:
-                            conf.harpoon.stdout.write(part)
-                        else:
-                            conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
-                    conf.harpoon.stdout.flush()
+                    for line in line.split(six.binary_type("\r\n", "utf-8")):
+                        if not line:
+                            continue
+
+                        try:
+                            sync_stream.feed(line)
+                        except Failure as error:
+                            if ignore_missing and action == "pull":
+                                log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
+                                break
+                            else:
+                                raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
+                        except Unknown as error:
+                            log.warning("Unknown line\tline=%s", error)
+
+                        for part in sync_stream.printable():
+                            if six.PY3:
+                                conf.harpoon.stdout.write(part)
+                            else:
+                                conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
+                        conf.harpoon.stdout.flush()
 
                 # And stop the loop!
                 break
