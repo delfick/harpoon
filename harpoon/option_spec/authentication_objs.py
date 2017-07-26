@@ -3,16 +3,24 @@ from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 
+from google.auth.transport.urllib3 import _make_default_http, Request as GoogleAuthRequest
 from six.moves.urllib.parse import urlparse
+import google.auth
+import urllib3
+import logging
 import time
 import os
 
-class Authentication(dictobj):
-     fields = ["registries"]
+log = logging.getLogger("harpoon.option_spec.authentication_objs")
 
-     def login(self, docker_api, image_name, is_pushing=False, global_docker=False):
-         registry = urlparse("https://{0}".format(image_name)).netloc
-         if registry in self.registries:
+class Authentication(dictobj):
+    fields = ["registries"]
+
+    def login(self, docker_api, image_name, is_pushing=False, global_docker=False):
+        registry = urlparse("https://{0}".format(image_name)).netloc
+
+        username = None
+        if registry in self.registries:
             if is_pushing:
                 authenticator = self.registries[registry]['writing']
             else:
@@ -20,11 +28,26 @@ class Authentication(dictobj):
 
             if authenticator is not NotSpecified:
                 username, password = authenticator.creds
-                if global_docker:
-                    cmd = "docker login -u {0} -p {1} -e {2} {3}".format(username, password, "emailnotneeded@goawaydocker.com", registry)
-                    os.system(cmd)
-                else:
-                    docker_api.login(username, password, registry=registry, reauth=True)
+
+        elif "gcr.io" in registry:
+            # login doesn't seem to work when using docker-py :(
+            global_docker = True
+            credentials, project = google.auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
+
+            log.info("Making credentials to log into gcr.io")
+            http = _make_default_http()
+            request = GoogleAuthRequest(http)
+            credentials.refresh(request)
+
+            username = "oauth2accesstoken"
+            password = credentials.token
+
+        if username is not None:
+            if global_docker:
+                cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)
+                os.system(cmd)
+            else:
+                docker_api.login(username, password, registry=registry, reauth=True)
 
 class PlainAuthentication(dictobj):
     fields = ["username", "password"]
