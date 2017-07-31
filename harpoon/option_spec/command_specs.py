@@ -118,7 +118,11 @@ class complex_ADD_from_image_spec(sb.Spec):
 
         img = val["conf"] = sb.set_options(image = formatted_string).normalise(meta, val)["image"]
         if isinstance(img, six.string_types):
-            val["conf"] = HarpoonSpec().image_spec.normalise(meta.at("image"), {"commands": ["FROM {0}".format(img)]})
+            val["conf"] = HarpoonSpec().image_spec.normalise(meta.at("image")
+                , { "harpoon": meta.everything["harpoon"]
+                  , "commands": ["FROM {0}".format(img)]
+                  }
+                )
             val["conf"].image_name = img
 
         return sb.create_spec(CommandContentAddDict
