@@ -6,9 +6,11 @@ from input_algorithms.dictobj import dictobj
 from google.auth.transport.urllib3 import _make_default_http, Request as GoogleAuthRequest
 from six.moves.urllib.parse import urlparse
 import google.auth
+import subprocess
 import urllib3
 import logging
 import time
+import six
 import os
 
 log = logging.getLogger("harpoon.option_spec.authentication_objs")
@@ -44,7 +46,18 @@ class Authentication(dictobj):
 
         if username is not None:
             if global_docker:
-                cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)
+                # First work out if docker login supports --email
+                # If it does we must supply it otherwise it will prompt the user for it
+                # If it doesn't support --email then we can't supply it....
+                process = subprocess.Popen(["docker", "login", "--help"], stdout=subprocess.PIPE)
+                out, _ = process.communicate()
+                if isinstance(out, six.binary_type):
+                    out = out.decode()
+
+                if "-e, --email" in out:
+                    cmd = "docker login -u {0} -p {1} -e emailnotneeded@goawaydocker.com {2}".format(username, password, registry)
+                else:
+                    cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)
                 os.system(cmd)
             else:
                 docker_api.login(username, password, registry=registry, reauth=True)
