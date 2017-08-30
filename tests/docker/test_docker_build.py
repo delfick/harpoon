@@ -33,7 +33,7 @@ describe HarpoonCase, "Building docker images":
         ident_tag = "{0}:latest".format(ident)
 
         images = self.docker_api.images()
-        repo_tags = [image["RepoTags"] for image in images]
+        repo_tags = [image["RepoTags"] for image in images if image["RepoTags"] is not None]
         assert all(ident_tag not in repo_tag_list for repo_tag_list in repo_tags), images
 
         conf = self.make_image({"context": False, "commands": ["FROM {0}".format(os.environ["BASE_IMAGE"])]})
@@ -41,7 +41,7 @@ describe HarpoonCase, "Building docker images":
         Builder().build_image(conf)
 
         images = self.docker_api.images()
-        repo_tags = [image["RepoTags"] for image in images]
+        repo_tags = [image["RepoTags"] for image in images if image["RepoTags"] is not None]
         assert any(ident_tag in repo_tag_list for repo_tag_list in repo_tags), "Couldn't find {0} in {1}".format(ident_tag, images)
 
         self.docker_api.remove_image(ident_tag)

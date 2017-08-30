@@ -83,7 +83,7 @@ describe HarpoonCase, "Persistence builds":
             , list(chain.from_iterable(
                 [(rt, ident) for rt in rts] for rts, ident in [
                   (i['RepoTags'], i['Id']) for i in
-                    conf.harpoon.docker_api.images()
+                    conf.harpoon.docker_api.images() if i['RepoTags'] is not None
                 ]
             ))
         )
@@ -122,7 +122,7 @@ describe HarpoonCase, "Persistence builds":
             self.assertEqual(originals["containers"], [i['Id'] for i in conf.harpoon.docker_api.containers(all=True)])
 
         def assert_extra_tags(*extra):
-            new_tags = list(chain.from_iterable(i['RepoTags'] for i in conf.harpoon.docker_api.images()))
+            new_tags = list(chain.from_iterable(i['RepoTags'] for i in conf.harpoon.docker_api.images() if i['RepoTags'] is not None))
             self.assertEqual(sorted(new_tags), sorted(originals["tags"] + list(extra)))
 
         def assert_only_extra_tags(*extra):
