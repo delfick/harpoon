@@ -88,10 +88,14 @@ class Syncer(object):
 
         sync_stream = SyncProgressStream()
 
-        # Login before pulling or pushing
-        conf.login(conf.image_name, is_pushing=action=='push')
-
         for attempt in range(3):
+            if attempt > 0:
+                log.info("Attempting sync again\taction=%s\tattempt=%d", action, attempt)
+
+            # Login before pulling or pushing
+            # Have this in the for loop incase it fails and the push/pull also fails as a result
+            conf.login(conf.image_name, is_pushing=action=='push')
+
             try:
                 for line in getattr(conf.harpoon.docker_api, action)(
                         conf.image_name
@@ -128,6 +132,5 @@ class Syncer(object):
                 raise
             except FailedImage as error:
                 log.exception(error)
-                if action == "push" or attempt == 2:
+                if attempt == 2:
                     raise
-
