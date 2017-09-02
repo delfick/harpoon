@@ -21,7 +21,10 @@ setup(
 
       , "boto3==1.4.4"
       , "pyYaml==3.12"
-      , "google-auth==1.0.1"
+      , "google-auth==1.0.2"
+
+      # google auth needs urllib3
+      , "urllib3==1.22"
       ]
 
     , extras_require =
