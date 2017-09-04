@@ -13,7 +13,7 @@ setup(
       , "input_algorithms==0.6.0"
       , "option_merge_addons==0.2"
 
-      , "docker==2.4.2"
+      , "docker==2.5.1"
 
       , "six"
       , "glob2"
