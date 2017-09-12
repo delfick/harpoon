@@ -235,8 +235,27 @@ container_name
 Environment variables
 ---------------------
 
-There is a special format ":env" that you can use to transform something into
-a bash variable.
+There are two special format options for environment variables. One for when the
+variable should be resolved in the container and one for when it should be
+resolved by harpoon.
+
+The one resolved by harpoon is ":from_env". This will complain if the variable
+you want is not in the environment given to harpoon. A good use case for this
+is modifying the image_index based on an environment variable::
+
+  ---
+
+  images:
+    blah
+      image_index: "{IMAGE_INDEX:from_env}"
+      commands:
+        ...
+
+This will complain if there is no ``IMAGE_INDEX`` environment variable and if it
+does exist will replace it with the value of that variable.
+
+Then there is ":env" that you can use to transform something into
+a bash variable. So "{BLAH:env}" transforms into "${BLAH}".
 
 For example::
 

@@ -71,3 +71,5 @@ class BadAmazon(HarpoonError):
 class AlreadyBoundPorts(HarpoonError):
     desc = "Ports are already bound by something else"
 
+class NoSuchEnvironmentVariable(HarpoonError):
+    desc = "Couldn't find environment variable"

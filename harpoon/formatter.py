@@ -15,8 +15,9 @@ of MergedOptions to do the lookup for us.
 """
 
 from option_merge.formatter import MergedOptionStringFormatter as StringFormatter
-from harpoon.errors import BadOptionFormat
+from harpoon.errors import BadOptionFormat, NoSuchEnvironmentVariable
 from input_algorithms.meta import Meta
+import os
 
 class MergedOptionStringFormatter(StringFormatter):
     """
@@ -65,7 +66,7 @@ class MergedOptionStringFormatter(StringFormatter):
 
     def special_get_field(self, value, args, kwargs, format_spec=None):
         """Also take the spec into account"""
-        if format_spec in ("env", ):
+        if format_spec in ("env", "from_env"):
             return value, ()
 
         if value in self.chain:
@@ -75,4 +76,7 @@ class MergedOptionStringFormatter(StringFormatter):
         """Know about any special formats"""
         if format_spec == "env":
             return "${{{0}}}".format(obj)
-
+        elif format_spec == "from_env":
+            if obj not in os.environ:
+                raise NoSuchEnvironmentVariable(wanted=obj)
+            return os.environ[obj]
