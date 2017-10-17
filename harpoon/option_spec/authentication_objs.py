@@ -59,6 +59,7 @@ class Authentication(dictobj):
                 else:
                     cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)
                 os.system(cmd)
+                docker_api.reload_config()
             else:
                 docker_api.login(username, password, registry=registry, reauth=True)
 
