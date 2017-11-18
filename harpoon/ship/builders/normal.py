@@ -5,6 +5,7 @@ from harpoon import helpers as hp
 
 from itertools import chain
 import logging
+import six
 
 log = logging.getLogger("harpoon.ship.builders.normal")
 
@@ -22,12 +23,14 @@ class NormalBuilder(BuilderBase):
 
         # Login into the correct registry
         current_tags = list(chain.from_iterable(image["RepoTags"] for image in conf.harpoon.docker_api.images() if image["RepoTags"]))
-        parent_image = conf.commands.parent_image
-        if ":" not in parent_image:
-            parent_image = "{0}:latest".format(parent_image)
 
-        if parent_image not in current_tags:
-            conf.login(conf.commands.parent_image, is_pushing=False)
+        for dep in conf.commands.dependent_images:
+            if isinstance(dep, six.string_types):
+                if ":" not in dep:
+                    dep = "{0}:latest".format(dep)
+
+                if dep not in current_tags:
+                    conf.login(dep, is_pushing=False)
 
         lines = conf.harpoon.docker_api.build(
               tag = image_name

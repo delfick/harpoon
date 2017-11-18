@@ -14,6 +14,16 @@ class Command(dictobj):
         return self._action
 
     @property
+    def dependent_image(self):
+        if self.action == "FROM":
+            return self.command
+        elif self.action == "ADD":
+            if self.extra_context is not NotSpecified:
+                options, _ = self.extra_context
+                if hasattr(options, "image"):
+                    return options.image
+
+    @property
     def instruction(self):
         return self._instruction
 
@@ -51,20 +61,28 @@ class Commands(dictobj):
         return self._commands
 
     @property
-    def parent_image(self):
-        """Determine the parent_image from the FROM command"""
-        for command in self.commands:
-            if command.action == "FROM":
-                return command.command
+    def external_dependencies(self):
+        """
+        Return all the external images this Dockerfile will depend on
+
+        These are images from self.dependent_images that aren't defined in this configuration.
+        """
+        for dep in self.dependent_images:
+            if isinstance(dep, six.string_types):
+                yield dep
 
     @property
-    def parent_image_name(self):
-        """Return the image name of the parent"""
-        parent = self.parent_image
-        if isinstance(parent, six.string_types):
-            return parent
-        else:
-            return parent.image_name
+    def dependent_images(self):
+        """
+        Determine the dependent images from these commands
+
+        This includes all the FROM statements
+        and any external image from a complex ADD instruction that copies from another container
+        """
+        for command in self.commands:
+            dep = command.dependent_image
+            if dep:
+                yield dep
 
     @property
     def docker_lines(self):

@@ -196,8 +196,9 @@ class Image(dictobj):
 
     def dependencies(self, images):
         """Yield just the dependency images"""
-        if not isinstance(self.commands.parent_image, six.string_types):
-            yield self.commands.parent_image.name
+        for dep in self.commands.dependent_images:
+            if not isinstance(dep, six.string_types):
+                yield dep.name
 
         for image, _ in self.dependency_images():
             yield image

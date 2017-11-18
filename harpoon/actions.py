@@ -106,16 +106,16 @@ def pull(collector, image, **kwargs):
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
 @an_action(needs_image=True)
-def pull_parent(collector, image, ignore_defined=False, **kwargs):
-    """Pull an image's parent image"""
-    parent_image = image.commands.parent_image
-    defined = False
-    if not isinstance(parent_image, six.string_types):
-        defined = True
-        parent_image = parent_image.image_name
+def pull_dependencies(collector, image, **kwargs):
+    """Pull an image's dependent images"""
+    for dep in image.commands.dependent_images:
+        pull_arbitrary(collector, dep, **kwargs)
 
-    if not ignore_defined or not defined:
-        pull_arbitrary(collector, parent_image, **kwargs)
+@an_action(needs_image=True)
+def pull_parent(collector, image, **kwargs):
+    """DEPRECATED - use pull_dependencies instead"""
+    log.warning("DEPRECATED - use pull_dependencies instead")
+    pull_dependencies(collector, image, **kwargs)
 
 @an_action()
 def pull_all(collector, image, **kwargs):
@@ -128,12 +128,24 @@ def pull_all(collector, image, **kwargs):
             pull(collector, image, **kwargs)
 
 @an_action()
-def pull_parents(collector, **kwargs):
-    """Pull all the parents of the images"""
+def pull_all_external(collector, **kwargs):
+    """Pull all the external dependencies of all the images"""
+    deps = set()
+
     images = collector.configuration["images"]
     for layer in Builder().layered(images, only_pushable=True):
         for image_name, image in layer:
-            pull_parent(collector, image, ignore_defined=True)
+            for dep in image.commands.external_dependencies:
+                deps.add(dep)
+
+    for dep in sorted(deps):
+        pull_arbitrary(collector, dep, **kwargs)
+
+@an_action()
+def pull_parents(collector, **kwargs):
+    """DEPRECATED - use pull_all_external instead"""
+    log.warning("DEPRECATED - use pull_all_external instead")
+    pull_all_external(collector, **kwargs)
 
 @an_action(needs_image=True)
 def make(collector, image, **kwargs):

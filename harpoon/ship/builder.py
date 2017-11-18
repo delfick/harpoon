@@ -112,12 +112,12 @@ class Builder(BuilderBase):
                 self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, pushing=pushing)
 
         if not ignore_parent:
-            parent_image = conf.commands.parent_image
-            if not isinstance(parent_image, six.string_types):
-                self.make_image(parent_image, images, chain, parent_chain + [conf.name], made=made, pushing=pushing)
+            for dep in conf.commands.dependent_images:
+                if not isinstance(dep, six.string_types):
+                    self.make_image(dep, images, chain, parent_chain + [conf.name], made=made, pushing=pushing)
 
         # Should have all our dependencies now
-        log.info("Making image for '%s' (%s) - FROM %s", conf.name, conf.image_name, conf.commands.parent_image_name)
+        log.info("Making image for '%s' (%s)", conf.name, conf.image_name)
         cached = self.build_image(conf, pushing=pushing)
         made[conf.name] = True
         return cached
