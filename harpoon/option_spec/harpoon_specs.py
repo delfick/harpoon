@@ -288,9 +288,9 @@ class HarpoonSpec(object):
                 )
 
             , cpu = create_spec(image_objs.Cpu
-                , cap_add = defaulted(boolean(), None)
+                , cap_add = defaulted(listof(string_spec()), None)
                 , cpuset = defaulted(listof(string_spec()), None)
-                , cap_drop = defaulted(boolean(), None)
+                , cap_drop = defaulted(listof(string_spec()), None)
                 , mem_limit = defaulted(integer_spec(), 0)
                 , cpu_shares = defaulted(integer_spec(), None)
                 , memswap_limit = defaulted(integer_spec(), 0)
