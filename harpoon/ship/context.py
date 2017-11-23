@@ -266,7 +266,7 @@ class ContextBuilder(object):
             raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
 
         if GitTimes is None:
-            raise HarpoonError("Please pip install harpoon[git] before using git options")
+            raise HarpoonError("Please pip install docker-harpoon[git] before using git options")
 
         options = {"include": context.include, "exclude": context.exclude, "timestamps_for": context.use_git_timestamps, "silent": silent_build}
         return dict(GitTimes(root_folder, os.path.relpath(parent_dir, root_folder), **options).find())
