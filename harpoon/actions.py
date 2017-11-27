@@ -109,7 +109,8 @@ def pull(collector, image, **kwargs):
 def pull_dependencies(collector, image, **kwargs):
     """Pull an image's dependent images"""
     for dep in image.commands.dependent_images:
-        pull_arbitrary(collector, dep, **kwargs)
+        kwargs["image"] = dep
+        pull_arbitrary(collector, **kwargs)
 
 @an_action(needs_image=True)
 def pull_parent(collector, image, **kwargs):
@@ -139,7 +140,8 @@ def pull_all_external(collector, **kwargs):
                 deps.add(dep)
 
     for dep in sorted(deps):
-        pull_arbitrary(collector, dep, **kwargs)
+        kwargs["image"] = dep
+        pull_arbitrary(collector, **kwargs)
 
 @an_action()
 def pull_parents(collector, **kwargs):
