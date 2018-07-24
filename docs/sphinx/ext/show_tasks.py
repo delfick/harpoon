@@ -2,7 +2,7 @@ from harpoon.task_finder import TaskFinder
 from harpoon.collector import Collector
 
 from docutils.statemachine import ViewList
-from sphinx.util.compat import Directive
+from docutils.parsers.rst import Directive
 from textwrap import dedent
 from docutils import nodes
 

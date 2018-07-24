@@ -3,7 +3,7 @@ from harpoon.option_spec.harpoon_specs import HarpoonSpec
 
 from input_algorithms import spec_base as sb
 from docutils.statemachine import ViewList
-from sphinx.util.compat import Directive
+from docutils.parsers.rst import Directive
 from textwrap import dedent
 from docutils import nodes
 import six
