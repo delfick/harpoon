@@ -20,7 +20,7 @@ setup(
       , "humanize"
 
       , "boto3==1.4.4"
-      , "pyYaml==3.12"
+      , "pyYaml==3.13"
       , "google-auth==1.0.2"
 
       # google auth needs urllib3
