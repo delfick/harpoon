@@ -194,7 +194,7 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output)
+        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
 
     it "can intervene a broken container":
         called = []
@@ -240,7 +240,7 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output)
+        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
 
     it "can intervene a broken container with the tty starting":
         called = []
@@ -288,5 +288,5 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output)
+        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
 

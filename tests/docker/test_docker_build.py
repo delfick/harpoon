@@ -12,6 +12,7 @@ import codecs
 import uuid
 import six
 import os
+import re
 
 mtime = 1431170923
 
@@ -138,4 +139,4 @@ describe HarpoonCase, "Building docker images":
         hehehe
         """
 
-        self.assertReMatchLines(expected, output)
+        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])

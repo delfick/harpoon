@@ -25,7 +25,7 @@ class AssertionsAssertionsMixin:
             print(json.dumps(two, indent=2, sort_keys=True))
             raise
 
-    def assertReMatchLines(self, expected, output):
+    def assertReMatchLines(self, expected, output, remove=None):
         """Assert that all the lines match each other in order"""
         expected = dedent(expected).strip()
         expected_lines = expected.split('\n')
@@ -33,6 +33,8 @@ class AssertionsAssertionsMixin:
 
         output = dedent(output).strip()
         output_lines = output.split('\n')
+        if remove:
+            output_lines = [line for line in output_lines if not any(r.match(line) for r in remove)]
         output = output.encode('utf-8')
 
         if len(expected_lines) != len(output_lines):
