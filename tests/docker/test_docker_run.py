@@ -194,7 +194,9 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
+        self.assertReMatchLines(expected, output
+            , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
+            )
 
     it "can intervene a broken container":
         called = []
@@ -232,7 +234,6 @@ describe HarpoonCase, "Building docker images":
          Step 2(/2)? : CMD ['sh', '-c', 'exit 1']
           ---> Running in .+
           --->
-         Removing intermediate container .+
          Successfully built .+
          !!!!
          Failed to run the container!
@@ -240,7 +241,9 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
+        self.assertReMatchLines(expected, output
+            , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
+            )
 
     it "can intervene a broken container with the tty starting":
         called = []
@@ -279,7 +282,6 @@ describe HarpoonCase, "Building docker images":
          Step 2(/2)? : CMD echo 'hi'; sleep 1; exit 1
           ---> Running in .+
           ---> .+
-         Removing intermediate container .+
          Successfully built .+
          hi
          !!!!
@@ -288,5 +290,7 @@ describe HarpoonCase, "Building docker images":
          intervention_goes_here
         """
 
-        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
+        self.assertReMatchLines(expected, output
+            , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
+            )
 

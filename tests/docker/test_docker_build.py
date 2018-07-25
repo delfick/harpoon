@@ -123,14 +123,11 @@ describe HarpoonCase, "Building docker images":
         .+
         Step 2(/4)? : .+
         .+
-        Removing .+
         Step 3(/4)? : .+
         .+
-        Removing .+
         Step 4(/4)? : .+
         .+
         .+
-        Removing .+
         Successfully built .+
         cat /tmp/copied/another/three /tmp/copied/one /tmp/copied/other /tmp/copied/two
         hahahha
@@ -139,4 +136,6 @@ describe HarpoonCase, "Building docker images":
         hehehe
         """
 
-        self.assertReMatchLines(expected, output, remove=[re.compile("^Successfully tagged .+")])
+        self.assertReMatchLines(expected, output
+            , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
+            )
