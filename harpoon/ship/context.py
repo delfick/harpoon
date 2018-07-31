@@ -142,7 +142,17 @@ class ContextBuilder(object):
                         log.debug(stat)
 
                         fo = BytesIO(strm.read())
-                        tf = tarfile.TarFile(fileobj=fo)
+
+                        # In newer docker the archive is a gzipped archive
+                        # But in older docker, it's a normal tar
+                        for mode in ("r:gz", "r"):
+                            try:
+                                tf = tarfile.open(fileobj=fo, mode=mode)
+                                break
+                            except tarfile.ReadError:
+                                if mode == "r":
+                                    raise
+                                fo.seek(0)
 
                         if tf.firstmember.isdir():
                             tf2 = tarfile.TarFile(fileobj=fle, mode='w')
