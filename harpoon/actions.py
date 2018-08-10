@@ -80,8 +80,13 @@ def pull_arbitrary(collector, image, **kwargs):
 
     authentication = collector.configuration.get("authentication", NotSpecified)
     for index, (image, image_index) in enumerate(image_indexes):
+        tag = sb.NotSpecified
+        if ":" in image:
+            image, tag = image.split(":", 1)
+
         image = {
               "image_name": image
+            , "tag": tag
             , "harpoon": collector.configuration["harpoon"]
             , "commands": ["FROM scratch"]
             , "image_index": image_index
