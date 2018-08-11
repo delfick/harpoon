@@ -3,9 +3,7 @@ from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 
-from google.auth.transport.urllib3 import _make_default_http, Request as GoogleAuthRequest
 from six.moves.urllib.parse import urlparse
-import google.auth
 import subprocess
 import urllib3
 import logging
@@ -30,19 +28,6 @@ class Authentication(dictobj):
 
             if authenticator is not NotSpecified:
                 username, password = authenticator.creds
-
-        elif "gcr.io" in registry:
-            # login doesn't seem to work when using docker-py :(
-            global_docker = True
-            credentials, project = google.auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
-
-            log.info("Making credentials to log into gcr.io")
-            http = _make_default_http()
-            request = GoogleAuthRequest(http)
-            credentials.refresh(request)
-
-            username = "oauth2accesstoken"
-            password = credentials.token
 
         if username is not None:
             if global_docker:

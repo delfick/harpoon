@@ -691,11 +691,12 @@ class DependencyOptions(dictobj):
 class Cpu(dictobj):
     """Cpu options"""
     fields = {
-          "cpuset": "cgroups Cpuset to use"
-        , "cap_add": "List of kernel capabilties to add to the container"
+          "cap_add": "List of kernel capabilties to add to the container"
         , "cap_drop": "List of kernel capabilties to drop from the container"
         , "mem_limit": "Memory limit in bytes"
         , "cpu_shares": "The CPU Shares for container (ie. the relative weight vs othercontainers)"
+        , "cpuset_cpus": "CPUs in which to allow execution (0-3, 0,1)."
+        , "cpuset_mems": "Memory nodes (MEMs) in which to allow execution (0-3, 0,1). Only effective on NUMA systems."
         , "memswap_limit": "Total memory usage (memory + swap); set -1 to disable swap"
         }
 

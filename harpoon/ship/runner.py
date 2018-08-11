@@ -284,6 +284,9 @@ class Runner(object):
             , cap_add = conf.cpu.cap_add
             , cap_drop = conf.cpu.cap_drop
             , mem_limit = conf.cpu.mem_limit
+            , cpu_shares = conf.cpu.cpu_shares
+            , cpuset_cpus = conf.cpu.cpuset_cpus
+            , cpuset_mems = conf.cpu.cpuset_mems
             , memswap_limit = conf.cpu.memswap_limit
 
             , ulimits = conf.ulimits
@@ -306,13 +309,9 @@ class Runner(object):
             , ports = ports
             , stdin_open = tty
 
-            , dns = conf.network.dns
             , hostname = conf.network.hostname
             , domainname = conf.network.domainname
             , network_disabled = conf.network.disabled
-
-            , cpuset = conf.cpu.cpuset
-            , cpu_shares = conf.cpu.cpu_shares
 
             , host_config = host_config
 

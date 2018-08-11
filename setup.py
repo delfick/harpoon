@@ -13,7 +13,7 @@ setup(
       , "input_algorithms==0.6.0"
       , "option_merge_addons==0.2"
 
-      , "docker==2.5.1"
+      , "docker==3.5.0"
 
       , "six"
       , "glob2"
@@ -21,10 +21,6 @@ setup(
 
       , "boto3==1.4.4"
       , "pyYaml==3.13"
-      , "google-auth==1.0.2"
-
-      # google auth needs urllib3
-      , "urllib3==1.22"
       ]
 
     , extras_require =
@@ -37,7 +33,7 @@ setup(
         , "tox"
         ]
       , "git":
-        [ "gitmit==0.3"
+        [ "gitmit==0.4.1"
         ]
       }
 

@@ -37,6 +37,10 @@ class BuildProgressStream(ProgressStream):
 
     def interpret_line(self, line_detail):
         if "stream" in line_detail:
+            if line_detail["stream"].strip() == "":
+                self.add_line(line_detail["stream"])
+                return
+
             self.interpret_stream(line_detail["stream"])
             self.last_line = line_detail["stream"]
         elif "status" in line_detail:

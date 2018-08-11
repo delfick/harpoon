@@ -141,7 +141,7 @@ class ContextBuilder(object):
                     else:
                         log.debug(stat)
 
-                        fo = BytesIO(strm.read())
+                        fo = BytesIO(b''.join(strm))
 
                         # In newer docker the archive is a gzipped archive
                         # But in older docker, it's a normal tar

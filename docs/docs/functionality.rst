@@ -834,10 +834,9 @@ Authentication
 Harpoon supports authentication for registries via plain credentials, Kms
 encrypted credentials or via a "slip" in an S3 bucket.
 
-It also supports loging into Google Container registry. Logging into gcr happens
-automatically and without user configuration if the image_index has gcr.io in
-it. (Note however, that this requires a `docker` binary to be installed on your
-PATH.
+It also supports the Google Container registry if you have run
+``gcloud auth configure-docker``
+(https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker)
 
 .. code-block:: yaml
 

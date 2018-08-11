@@ -39,7 +39,6 @@ class NormalBuilder(BuilderBase):
 
             , rm = True
             , pull = False
-            , stream = True
             )
 
         for found in lines:
