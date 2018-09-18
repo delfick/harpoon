@@ -3,6 +3,12 @@
 Persistence
 ===========
 
+This feature is deprecated and will be removed from future versions of harpoon.
+
+What I found in using it is that weird caching bugs would be painful and copying
+data around between images was slow and removed a large amount of the speed
+benefit.
+
 .. raw:: html
 
     <iframe width="560" height="315" src="https://www.youtube.com/embed/Rka_DAQQNro" frameborder="0" allowfullscreen></iframe>

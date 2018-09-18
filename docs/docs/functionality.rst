@@ -939,6 +939,8 @@ with the registry)
 Squashing containers
 --------------------
 
+This feature is deprecated and will be removed from future versions of harpoon.
+
 Currently if you want to squash your containers, you must rely on the third party
 `docker squash <https://github.com/jwilder/docker-squash>`_ tool.
 

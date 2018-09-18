@@ -16,6 +16,8 @@ def SquashedBuilder(BuilderBase):
 
     def build(self, conf, context, stream):
         """Do a squash build"""
+        log.warning("SQUASH DEPRECATED - This feature will be removed in a future version of harpoon.")
+
         squashing = conf
         output, status = command_output("which docker-squash")
         if status != 0:

@@ -16,6 +16,8 @@ log = logging.getLogger("harpoon.ship.builders.persistence")
 class PersistenceBuilder(BuilderBase):
     def build(self, conf, context, stream):
         """Do a persistence build!"""
+        log.warning("PERSISTENCE DEPRECATED - This feature will be removed in a future version of harpoon. It causes more problems then it solves")
+
         existing_image = None
 
         # Find an existing image if it exists
