@@ -16,7 +16,7 @@ class NormalBuilder(BuilderBase):
     def build(self, conf, context, stream):
         image_name = self.image_name
         if image_name is None:
-            image_name = conf.image_name
+            image_name = conf.image_name_with_tag
 
         context.close()
         self.log_context_size(context, conf)

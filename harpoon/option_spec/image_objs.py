@@ -120,6 +120,11 @@ class Image(dictobj):
         return self._image_name
 
     @property
+    def image_name_with_tag(self):
+        tag = "latest" if self.tag is NotSpecified else self.tag
+        return "{0}:{1}".format(self.image_name, tag)
+
+    @property
     def prefixed_image_name(self):
         if self.image_name_prefix not in (NotSpecified, "", None):
             return "{0}-{1}".format(self.image_name_prefix, self.name)
