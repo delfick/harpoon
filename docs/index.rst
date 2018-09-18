@@ -7,6 +7,7 @@
     docs/persistence
     docs/building_harpoon/index
     docs/code_swimming
+    docs/changelog
 
 .. _harpoon
 

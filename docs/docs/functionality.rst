@@ -111,6 +111,71 @@ For example::
       commands:
         [...]
 
+Cache from
+----------
+
+You can specify what images can be used as the --cache-from option when building
+a docker image.
+
+.. note:: docker will not pull down these images for you, if you specify an
+  image as cache_from then it'll only be used if it's already pulled down.
+
+This option can either be a boolean where True indicates use this image name as
+the cache. Or it can be a string or list of strings of images.
+
+For example:
+
+.. code-block:: yaml
+  
+  ---
+
+  image_index: gcr.io/somewhere/
+  image_name_prefix: example
+
+  images:
+    blah:
+      cache_from: true
+
+      commands:
+        [...]
+
+    meh:
+      cache_from: "{images.stuff}"
+
+      commands:
+        [...]
+
+    stuff:
+      cache_from: true
+
+      commands:
+        - [FROM, "{images.meh}"]
+        [...]
+
+    other:
+      cache_from: gcr.io/mygreatcompany/some_image
+
+      commands:
+        [...]
+
+In the example above, building the ``blah`` or ``stuff`` images will use any
+existing ``gcr.io/somewhere/example-blah`` or ``gcr.io/somewhere/example-stuff``
+images respectively. Building the ``meh`` image will use any existing
+``gcr.io/somewhere/example-stuff`` image for cache. And building the ``other``
+image will use ``gcr.io/mygreatcompany/some_image`` for cache.
+
+It is recommended doing something like the following::
+
+  $ harpoon pull_all_external --ignore-missing
+  $ harpoon pull my_image --tag latest --ignore-missing
+  $ harpoon push my_image --tag $(git rev-parse HEAD)
+  $ harpoon tag my_image latest --tag $(git rev-parse HEAD)
+
+This will make sure when we build the image we are using the latest parent images
+and that the latest tag of the image is pulled down if it exists, followed by
+creating and pushing a new image with the latest git revision as the tag, followed
+by pushing up a latest tag based off that image we just made.
+
 Controlling the context
 -----------------------
 
