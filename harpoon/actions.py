@@ -293,7 +293,9 @@ def tag(collector, image, artifact, **kwargs):
         raise BadOption("Please specify an image with an image_index option")
 
     tag = image.image_name
-    if image.tag is NotSpecified:
+    if collector.configuration["harpoon"].tag is not NotSpecified:
+        tag = "{0}:{1}".format(tag, collector.configuration["harpoon"].tag)
+    else:
         tag = "{0}:latest".format(tag)
 
     images = image.harpoon.docker_api.images()
