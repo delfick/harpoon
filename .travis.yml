@@ -17,8 +17,6 @@ before_install:
   - sudo apt-get install cmake -y
 
 install:
-  - sudo bash -c "wget https://github.com/libgit2/libgit2/archive/v0.26.0.tar.gz && tar xf v0.26.0.tar.gz && cd libgit2-0.26.0 && cmake . && make && make install"
-  - sudo ln -s -f /usr/local/lib/libgit2.so.0.26.0 /usr/lib/libgit2.so.26
   - pip install pip --upgrade
   - pip install -e .
   - pip install -e '.[git]'
