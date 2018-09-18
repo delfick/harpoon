@@ -48,6 +48,7 @@ class Image(dictobj):
         , "commands": "The commands that make up the Dockerfile for this image"
         , "lxc_conf": "The location to an lxc_conf file"
         , "key_name": "The name of the key this image was defined with in the configuration"
+        , "cache_from": "The images to use cache from"
         , "log_config": "Log configuration for the container"
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
@@ -207,6 +208,24 @@ class Image(dictobj):
 
         for image, _ in self.dependency_images():
             yield image
+
+    @property
+    def cache_from_names(self):
+        """Yield the image names to do --cache-from from"""
+        cache_from = self.cache_from()
+
+        if not cache_from:
+            return
+
+        if cache_from is True:
+            yield self.image_name
+            return
+
+        for thing in cache_from:
+            if not isinstance(thing, six.string_types):
+                yield thing.image_name
+            else:
+                yield thing
 
     def dependency_images(self, for_running=False):
         """

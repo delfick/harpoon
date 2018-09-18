@@ -32,10 +32,15 @@ class NormalBuilder(BuilderBase):
                 if dep not in current_tags:
                     conf.login(dep, is_pushing=False)
 
+        cache_from = list(conf.cache_from_names)
+        if cache_from:
+            log.info("Using cache from the following images\timages={0}".format(", ".join(cache_from)))
+
         lines = conf.harpoon.docker_api.build(
               tag = image_name
             , fileobj = context.tmpfile
             , custom_context = True
+            , cache_from = list(conf.cache_from_names)
 
             , rm = True
             , pull = False
