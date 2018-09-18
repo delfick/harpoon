@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.10.0 - TBD
+0.10.0 - 18 September 2018
     * ``harpoon make`` will now pay attention to --artifact or --tag to determine
       what tag to build the image with
     * Images now have a ``cache_from`` options. This can either be a boolean where

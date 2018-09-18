@@ -87,6 +87,11 @@ Is equivalent to::
 
     $ harpoon run my_amazing_image
 
+Changelog
+---------
+
+https://harpoon.readthedocs.io/en/latest/docs/changelog.html
+
 Tests
 -----
 
@@ -94,6 +99,7 @@ Install testing deps and run the helpful script::
 
     $ pip install -e .
     $ pip install -e ".[tests]"
+    $ pip install -e ".[git]"
     $ ./test.sh
     $ ./docker_tests.sh
 
@@ -101,4 +107,3 @@ Or use tox::
 
     $ pip install tox
     $ tox
-

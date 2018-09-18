@@ -48,6 +48,7 @@ setup(
     , author = "Stephen Moore"
     , author_email = "delfick755@gmail.com"
     , description = "Opinionated wrapper around docker"
+    , long_description = open("README.rst").read()
     , license = "MIT"
     , keywords = "docker"
     )
