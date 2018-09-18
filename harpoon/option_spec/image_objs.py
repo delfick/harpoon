@@ -123,7 +123,8 @@ class Image(dictobj):
     @property
     def image_name_with_tag(self):
         tag = "latest" if self.tag is NotSpecified else self.tag
-        return "{0}:{1}".format(self.image_name, tag)
+        if self.image_name:
+            return "{0}:{1}".format(self.image_name, tag)
 
     @property
     def prefixed_image_name(self):
@@ -214,7 +215,7 @@ class Image(dictobj):
         """Yield the image names to do --cache-from from"""
         cache_from = self.cache_from()
 
-        if not cache_from:
+        if not cache_from or cache_from is NotSpecified:
             return
 
         if cache_from is True:
