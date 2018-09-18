@@ -18,6 +18,7 @@ from six.moves.urllib.parse import urlparse
 from input_algorithms.meta import Meta
 from textwrap import dedent
 from itertools import chain
+import docker.errors
 import itertools
 import logging
 import shutil
@@ -289,6 +290,24 @@ def write_login(collector, image, **kwargs):
     """Login to a docker registry with write permissions"""
     docker_api = collector.configuration["harpoon"].docker_api
     collector.configuration["authentication"].login(docker_api, image, is_pushing=True, global_docker=True)
+
+@an_action(needs_image=True)
+def untag(collector, image, artifact, **kwargs):
+    """Tag an image!"""
+    if artifact in (None, "", NotSpecified):
+        artifact = collector.configuration["harpoon"].tag
+
+    if artifact is NotSpecified:
+        raise BadOption("Please specify a tag using the artifact or tag options")
+
+    image.tag = artifact
+    image_name = image.image_name_with_tag
+
+    log.info("Removing image\timage={0}".format(image_name))
+    try:
+        image.harpoon.docker_api.remove_image(image_name)
+    except docker.errors.ImageNotFound:
+        log.warning("No image was found to remove")
 
 @an_action(needs_image=True)
 def tag(collector, image, artifact, **kwargs):

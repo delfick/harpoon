@@ -170,11 +170,13 @@ It is recommended doing something like the following::
   $ harpoon pull my_image --tag latest --ignore-missing
   $ harpoon push my_image --tag $(git rev-parse HEAD)
   $ harpoon tag my_image latest --tag $(git rev-parse HEAD)
+  $ harpoon untag my_image --tag $(git rev-parse HEAD)
 
 This will make sure when we build the image we are using the latest parent images
 and that the latest tag of the image is pulled down if it exists, followed by
 creating and pushing a new image with the latest git revision as the tag, followed
-by pushing up a latest tag based off that image we just made.
+by pushing up a latest tag based off that image we just made. We then clean up
+the tag we created and pushed up so that it doesn't hang around taking up space.
 
 Controlling the context
 -----------------------
