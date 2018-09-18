@@ -33,7 +33,7 @@ setup(
         , "tox"
         ]
       , "git":
-        [ "gitmit==0.4.1"
+        [ "gitmit==0.5"
         ]
       }
 

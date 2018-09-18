@@ -10,6 +10,7 @@ Changelog
       strings are formatted so you can refer to other images by saying
       ``{images.other_image_name}`` or if the image isn't defined in this harpoon.yml
       then say ``gcr.io/company/image_name``.
+    * Updated default [git] install group to use gitmit==0.5.0
 
 Pre 0.10.0
     No Changelog was maintained
