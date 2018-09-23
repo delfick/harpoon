@@ -54,6 +54,9 @@ class Command(dictobj):
     @property
     def as_string(self):
         """Return the command as a single string for the docker file"""
+        if type(self.instruction) is str:
+            return self.instruction
+
         if self.action == "FROM" and not isinstance(self.command, six.string_types):
             extra = "" if self.extra is NotSpecified else " {0}".format(self.extra)
             return "{0} {1}{2}".format(self.action, self.command.from_name, extra)

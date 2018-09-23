@@ -227,7 +227,7 @@ describe HarpoonCase, "Persistence builds":
 
         @test
         it "takes persists the specified folders between builds":
-            conf.commands.commands[1].command = "echo    'a_line' > /tmp/lines"
+            conf.commands.commands[1].instruction = "RUN echo    'a_line' > /tmp/lines"
             del conf._docker_file
             cached = Builder().make_image(conf, {conf.name: conf})
             assert not cached, "But we changed the command!"

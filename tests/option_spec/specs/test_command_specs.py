@@ -163,7 +163,8 @@ describe CommandCase, "command_spec":
         meta = Meta(everything, [])
 
         commands = [
-              ["FROM", blah_image]
+              "FROM somewhere as base"
+            , ["FROM", blah_image]
             , "ADD something /somewhere"
             , "COPY --from=blah something /somewhere"
             , ["ENV ONE", "{one}"]
@@ -181,7 +182,8 @@ describe CommandCase, "command_spec":
 
         result = self.spec.normalise(meta.at("images").at("blah").at("commands"), commands)
         self.assertEqual([cmd.as_string for cmd in result.commands]
-            , [ "FROM {0}".format(blah_image)
+            , [ "FROM somewhere as base"
+              , "FROM {0}".format(blah_image)
               , "ADD something /somewhere"
               , "COPY --from=blah something /somewhere"
               , "ENV ONE 1"
@@ -202,7 +204,7 @@ describe CommandCase, "command_spec":
             )
 
         dependents = list(result.dependent_images)
-        self.assertEqual(dependents, [blah_image, blah2_image, blah3_image])
+        self.assertEqual(dependents, ["somewhere", blah_image, blah2_image, blah3_image])
 
         externals = list(result.external_dependencies)
-        self.assertEqual(externals, [blah_image])
+        self.assertEqual(externals, ["somewhere", blah_image])
