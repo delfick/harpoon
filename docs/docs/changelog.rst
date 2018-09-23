@@ -4,6 +4,8 @@ Changelog
 0.11.0 - TBD
     * Make staged builds in docker files a first class citizen to make it easier
       to reference images in your configuration
+    * The pull_all_external command will now also pull external parents from images
+      that don't define an image_index option
 
 0.10.0 - 18 September 2018
     * ``harpoon make`` will now pay attention to --artifact or --tag to determine

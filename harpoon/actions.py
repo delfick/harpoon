@@ -140,7 +140,7 @@ def pull_all_external(collector, **kwargs):
     deps = set()
 
     images = collector.configuration["images"]
-    for layer in Builder().layered(images, only_pushable=True):
+    for layer in Builder().layered(images):
         for image_name, image in layer:
             for dep in image.commands.external_dependencies:
                 deps.add(dep)
