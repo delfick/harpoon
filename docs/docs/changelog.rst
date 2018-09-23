@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.11.0 - TBD
+    * Make staged builds in docker files a first class citizen to make it easier
+      to reference images in your configuration
+
 0.10.0 - 18 September 2018
     * ``harpoon make`` will now pay attention to --artifact or --tag to determine
       what tag to build the image with

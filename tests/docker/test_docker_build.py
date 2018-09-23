@@ -139,3 +139,67 @@ describe HarpoonCase, "Building docker images":
         self.assertReMatchLines(expected, output
             , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
             )
+
+    it "can steal files from other images using staged builds":
+        from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
+
+        commands1 = [
+              from_line
+            , "RUN mkdir /tmp/blah"
+            , "RUN echo 'lol' > /tmp/blah/one"
+            , "RUN echo 'hehehe' > /tmp/blah/two"
+            , "RUN mkdir /tmp/blah/another"
+            , "RUN echo 'hahahha' > /tmp/blah/another/three"
+            , "RUN echo 'hello' > /tmp/other"
+            ]
+
+        conf1 = self.make_image({"context": False, "commands": commands1}, image_name="one")
+
+        commands2 = [
+              ["FROM", conf1, "as other_image"]
+
+            , from_line
+
+            , ["COPY", {"from": conf1, "path": "/tmp/blah", "to": "/tmp/copied"}]
+
+            , "COPY --from=other_image /tmp/other /tmp/copied/other"
+
+            , "CMD find /tmp/copied -type f | sort | xargs -t cat"
+            ]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+        harpoon_options = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
+        with self.a_built_image({"context": False, "commands": commands2}, harpoon_options=harpoon_options, images={"one": conf1}, image_name="two") as (_, conf2):
+            Runner().run_container(conf2, {"one": conf1, "two": conf2})
+
+        with codecs.open(fake_sys_stdout.name) as fle:
+            output = fle.read().strip()
+
+        if isinstance(output, six.binary_type):
+            output = output.decode('utf-8')
+        output = '\n'.join([line for line in output.split('\n') if "lxc-start" not in line])
+
+        expected = """
+        Step 1(/5)? : .+
+        .+
+        Step 2(/5)? : .+
+        .+
+        Step 3(/5)? : .+
+        .+
+        Step 4(/5)? : .+
+        .+
+        Step 5(/5)? : .+
+        .+
+        .+
+        Successfully built .+
+        cat /tmp/copied/another/three /tmp/copied/one /tmp/copied/other /tmp/copied/two
+        hahahha
+        lol
+        hello
+        hehehe
+        """
+
+        self.assertReMatchLines(expected, output
+            , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
+            )

@@ -406,6 +406,31 @@ Where instruction may be::
   Then the first instruction for the ``app`` Dockerfile will be a FROM command
   that uses the ``base`` image.
 
+[<string>, <string>, <string>]
+  
+  You can use three strings to specify a ``FROM {image} as something``. This is
+  so you can make a staged build from an image you've defined in your 
+  your configuration.
+
+  For example::
+
+    ---
+
+    image_name_prefix: amazing-project
+
+    images:
+      base:
+        commands:
+          <commands here>
+      app:
+        commands:
+          - [FROM, "{images.base}", "as base"]
+          - RUN some_command.sh
+
+          - FROM centos:7
+          - COPY --from=base /somefile /destination
+          - RUN cat /destination
+
 [<string>, [<string>, <string>, ...]]
   A list of a string and a list will use the first string as the command
   unmodified and it will then format each string and use that as a seperate
@@ -547,6 +572,78 @@ Where instruction may be::
       ADD app /app/app
       ADD lib /app/lib
       ADD spec /app/spec
+
+  [COPY, {"from": <image>, "path": <string>, "to": <string>}]
+
+    This allows us to pull from an image. ``<image>`` may be a string to the name
+    of some external image, or it may be a formatted string to an image you've
+    defined in this configuration. Path is the path in the image you want to
+    copy from, and to is the path you want to copy to.
+
+    For example::
+
+      ---
+
+      images:
+        one:
+          commands:
+            - FROM centos:7
+            - RUN echo 'blah' > /tmp/blah
+
+        two:
+          commands:
+            - FROM centos:7
+            - - COPY
+              - from: "{images.one}"
+                path: /tmp/blah
+                to: /tmp/copied
+            - RUN cat /tmp/copied
+
+Staged builds
+-------------
+
+Docker lets you specify staged builds, where you create an image with a name
+and then copy contents from that image in a new image below that. Harpoon lets
+you use these commands normally, but if you want to use images in your configuraion
+you may format them into the commands:
+
+For example::
+
+    ---
+
+    image_name_prefix: amazing-project
+
+    images:
+      base:
+        commands:
+          <commands here>
+      app:
+        commands:
+          - [FROM, "{images.base}", "as base"]
+          - RUN some_command.sh
+
+          - FROM centos:7
+          - COPY --from=base /somefile /destination
+          - RUN cat /destination
+
+Or if you don't need to run extra commands in your stage::
+
+    ---
+
+    image_name_prefix: amazing-project
+
+    images:
+      base:
+        commands:
+          <commands here>
+      app:
+        commands:
+          - FROM centos:7
+          - - COPY
+            - from: "{images.base}"
+              path: /somefile
+              to: /destination
+          - RUN cat /destination
 
 Dependant containers
 --------------------

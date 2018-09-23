@@ -4,7 +4,7 @@ import six
 
 class Command(dictobj):
     """Holds a single command"""
-    fields = ['instruction', ('extra_context', lambda: NotSpecified)]
+    fields = ['instruction', ('extra_context', lambda: NotSpecified), ('extra', lambda: NotSpecified)]
 
     def __repr__(self):
         return "<Command({0})>".format(self.instruction)
@@ -22,6 +22,11 @@ class Command(dictobj):
                 options, _ = self.extra_context
                 if hasattr(options, "image"):
                     return options.image
+        elif self.action == "COPY":
+            if self.extra_context is not NotSpecified:
+                options, _ = self.extra_context
+                if getattr(options, "image", NotSpecified) is not NotSpecified:
+                    return options.image
 
     @property
     def instruction(self):
@@ -32,15 +37,26 @@ class Command(dictobj):
         """Set the action and command from an instruction"""
         self._instruction = val
         if isinstance(val, tuple):
-            self._action, self.command = val
+            if len(val) is 2:
+                self._action, self.command = val
+            else:
+                self._action, self.command, self.extra = val
         else:
-            self._action, self.command = val.split(" ", 1)
+            split = val.split(" ", 1)
+            if split[0] == "FROM":
+                split = val.split(" ", 2)
+
+            if len(split) == 3:
+                self._action, self.command, self.extra = split
+            else:
+                self._action, self.command = split
 
     @property
     def as_string(self):
         """Return the command as a single string for the docker file"""
         if self.action == "FROM" and not isinstance(self.command, six.string_types):
-            return "{0} {1}".format(self.action, self.command.from_name)
+            extra = "" if self.extra is NotSpecified else " {0}".format(self.extra)
+            return "{0} {1}{2}".format(self.action, self.command.from_name, extra)
         else:
             return "{0} {1}".format(self.action, self.command)
 
@@ -67,9 +83,12 @@ class Commands(dictobj):
 
         These are images from self.dependent_images that aren't defined in this configuration.
         """
+        found = []
         for dep in self.dependent_images:
             if isinstance(dep, six.string_types):
-                yield dep
+                if dep not in found:
+                    yield dep
+                    found.append(dep)
 
     @property
     def dependent_images(self):
@@ -79,10 +98,13 @@ class Commands(dictobj):
         This includes all the FROM statements
         and any external image from a complex ADD instruction that copies from another container
         """
+        found = []
         for command in self.commands:
             dep = command.dependent_image
             if dep:
-                yield dep
+                if dep not in found:
+                    yield dep
+                    found.append(dep)
 
     @property
     def docker_lines(self):

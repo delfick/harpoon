@@ -8,6 +8,7 @@ from harpoon.option_spec.command_objs import Command
 
 from input_algorithms.many_item_spec import many_item_formatted_spec
 from input_algorithms.spec_base import NotSpecified
+from input_algorithms.errors import BadSpecValue
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
@@ -110,20 +111,43 @@ class CommandAddExtra(dictobj):
             dest = "{0}/{1}".format(self.prefix, val)
         return "{0} {1}".format(val, dest)
 
-class complex_ADD_from_image_spec(sb.Spec):
+class CommandCopyExtra(dictobj):
+    fields = {
+          "from_image": "The image to copy from"
+        , "path": "The path in the image to copy from"
+        , "to": "The path to copy into"
+        , "image": "The original image object"
+        }
+
+    def commands(self, meta):
+        if type(self.from_image) is int:
+            yield Command(("COPY", "--from={0} {1} {2}".format(self.from_image, self.path, self.to)))
+        else:
+            yield Command(("COPY", "--from={0} {1} {2}".format(self.from_image.from_name, self.path, self.to)), (self, ""))
+
+class complex_from_image_spec(sb.Spec):
     def normalise(self, meta, val):
         from harpoon.option_spec.harpoon_specs import HarpoonSpec
         from harpoon.option_spec.image_objs import Image
         formatted_string = sb.formatted(sb.or_spec(sb.string_spec(), sb.typed(Image)), formatter=MergedOptionStringFormatter)
 
-        img = val["conf"] = sb.set_options(image = formatted_string).normalise(meta, val)["image"]
+        img = conf = formatted_string.normalise(meta, val)
         if isinstance(img, six.string_types):
-            val["conf"] = HarpoonSpec().image_spec.normalise(meta.at("image")
+            conf = HarpoonSpec().image_spec.normalise(meta.at("image")
                 , { "harpoon": meta.everything["harpoon"]
                   , "commands": ["FROM {0}".format(img)]
                   }
                 )
-            val["conf"].image_name = img
+            conf.image_name = img
+
+        return img, conf
+
+class complex_ADD_from_image_spec(sb.Spec):
+    def normalise(self, meta, val):
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+
+        img, conf = complex_from_image_spec().normalise(meta.at("image"), val["image"])
+        val["conf"] = conf
 
         return sb.create_spec(CommandContentAddDict
             , image = sb.overridden(img)
@@ -132,6 +156,31 @@ class complex_ADD_from_image_spec(sb.Spec):
             , images = sb.overridden(meta.everything.get("images", []))
             , docker_api = sb.overridden(meta.everything["harpoon"].docker_api)
             ).normalise(meta, val)
+
+class complex_COPY_spec(sb.Spec):
+
+    def normalise(self, meta, val):
+        from harpoon.option_spec.harpoon_specs import HarpoonSpec
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+
+        if "from" not in val:
+            raise BadSpecValue("Specifying [COPY, {options}] must contain 'from' in the options", meta=meta)
+
+        if type(val["from"]) is int:
+            val["from_image"] = val["from"]
+        else:
+            img, conf = complex_from_image_spec().normalise(meta.at("from"), val["from"])
+            val["from_image"] = conf
+            val["image"] = img
+
+        val = sb.create_spec(CommandCopyExtra
+            , from_image = sb.any_spec()
+            , path = sb.required(sb.string_spec())
+            , to = sb.required(sb.string_spec())
+            , image = sb.optional_spec(sb.any_spec())
+            ).normalise(meta, val)
+
+        return list(val.commands(meta))
 
 class complex_ADD_spec(sb.Spec):
 
@@ -181,12 +230,23 @@ class array_command_spec(many_item_formatted_spec):
 
           # Second item is a required list of either dicts or strings
         , sb.required( sb.listof( sb.match_spec(
-              (dict, complex_ADD_spec())
+              (dict, sb.dictionary_spec())
             , (six.string_types + (list, ), sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
             )))
         ]
 
-    def create_result(self, action, command, meta, val, dividers):
+    optional_specs = [sb.string_spec()]
+
+    def alter_2(self, action, original_options, options, meta, val):
+        result = []
+        for o in options:
+            if type(o) is dict:
+                result.append(convert_dict_command_spec().normalise(meta, {action: o}))
+            else:
+                result.append(o)
+        return result
+
+    def create_result(self, action, command, extra, meta, val, dividers):
         if callable(command) or isinstance(command, six.string_types):
             command = [command]
 
@@ -199,20 +259,33 @@ class array_command_spec(many_item_formatted_spec):
                 if isinstance(c, Command):
                     result.append(c)
                 else:
-                    result.append(Command((action, c)))
+                    result.append(Command((action, c), extra=extra))
+
         return result
 
 class convert_dict_command_spec(sb.Spec):
-    def setup(self, spec):
-        self.spec = spec
-
     def normalise(self, meta, val):
+        val = sb.dictof(sb.string_spec(), sb.dictionary_spec()).normalise(meta, val)
+        if len(val) != 1:
+            raise BadSpecValue("Commands specified as [COMMAND, {options}] may only have one option (either ADD or COPY)", got=val, meta=meta)
+
+        items = list(val.items())[0]
+        if items[0] not in ("ADD", "COPY"):
+            raise BadSpecValue("Commands specified as [COMMAND, {options}] may only have one option (either ADD or COPY)", got=items[0], meta=meta)
+
+        if items[0] == "ADD":
+            spec = complex_ADD_spec()
+        else:
+            spec = complex_COPY_spec()
+
         result = []
-        for val in self.spec.normalise(meta, val).values():
+
+        for val in spec.normalise(meta.at(items[0]), items[1]):
             if isinstance(val, Command):
                 result.append(val)
             else:
                 result.extend(val)
+
         return result
 
 class has_a_space(validators.Validator):
@@ -223,16 +296,11 @@ class has_a_space(validators.Validator):
 
 string_command_spec = lambda: sb.container_spec(Command, sb.valid_string_spec(has_a_space()))
 
-# Only support ADD commands for the dictionary representation atm
-dict_key = sb.valid_string_spec(validators.choice("ADD"))
-dictionary_command_spec = lambda: convert_dict_command_spec(sb.dictof(dict_key, complex_ADD_spec()))
-
 # The main spec
 # We match against, strings, lists, dictionaries and Command objects with different specs
 command_spec = lambda: sb.match_spec(
       (six.string_types, string_command_spec())
     , (list, array_command_spec())
-    , (dict, dictionary_command_spec())
+    , (dict, convert_dict_command_spec())
     , (Command, sb.any_spec())
     )
-

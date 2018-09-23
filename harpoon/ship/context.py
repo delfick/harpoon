@@ -105,6 +105,9 @@ class ContextBuilder(object):
             if extra_context:
                 extra = list(extra_context)
                 for content, arcname in extra:
+                    if arcname == "":
+                        continue
+
                     mtime_match = re.search("mtime\((\d+)\)$", arcname)
                     specified_mtime = None if not mtime_match else int(mtime_match.groups()[0])
 
