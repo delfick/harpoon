@@ -228,6 +228,8 @@ class Runner(object):
 
         name = conf.name
         image_name = conf.image_name
+        if conf.tag is not NotSpecified:
+            image_name = conf.image_name_with_tag
         container_name = conf.container_name
 
         with conf.assumed_role():

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.11.1 - TBD
+    * retrieve now doesn't build the image you specify if you have set NO_BUILD=1
+      in your environment. It also pays attention to the --tag you provide
+
 0.11.0 - 23 September 2018
     * Make staged builds in docker files a first class citizen to make it easier
       to reference images in your configuration

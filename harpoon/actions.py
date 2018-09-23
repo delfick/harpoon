@@ -347,14 +347,18 @@ def retrieve(collector, image, artifact, **kwargs):
     if artifact in (None, "", NotSpecified):
         raise BadOption("Please specify what to retrieve using the artifact option")
 
+    if collector.configuration["harpoon"].tag is not NotSpecified:
+        image.tag = collector.configuration["harpoon"].tag
+
     # make sure the image is built
-    Builder().make_image(image, collector.configuration["images"])
+    if os.environ.get("NO_BUILD") is None:
+        Builder().make_image(image, collector.configuration["images"])
 
     content = {
           "conf": image
         , "docker_api": collector.configuration["harpoon"].docker_api
         , "images": collector.configuration["images"]
-        , "image": image.image_name
+        , "image": image.image_name_with_tag
         , "path": artifact
         }
 

@@ -122,9 +122,15 @@ class Image(dictobj):
 
     @property
     def image_name_with_tag(self):
+        image_name = self.image_name
+        if not image_name:
+            return
+
+        if image_name.startswith("sha256:"):
+            return image_name
+
         tag = "latest" if self.tag is NotSpecified else self.tag
-        if self.image_name:
-            return "{0}:{1}".format(self.image_name, tag)
+        return "{0}:{1}".format(image_name, tag)
 
     @property
     def prefixed_image_name(self):
