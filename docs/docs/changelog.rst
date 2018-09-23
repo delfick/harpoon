@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.11.0 - TBD
+0.11.0 - 23 September 2018
     * Make staged builds in docker files a first class citizen to make it easier
       to reference images in your configuration
     * The pull_all_external command will now also pull external parents from images
