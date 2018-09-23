@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.11.1 - TBD
+0.11.1 - 23 September 2018
     * retrieve now doesn't build the image you specify if you have set NO_BUILD=1
       in your environment. It also pays attention to the --tag you provide
 
