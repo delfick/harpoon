@@ -34,6 +34,7 @@ class BuildProgressStream(ProgressStream):
         self.last_line = ""
         self.current_action = ""
         self.current_container = None
+        self.last_created_image = None
         self.intermediate_images = []
 
     def interpret_line(self, line_detail):
@@ -54,16 +55,23 @@ class BuildProgressStream(ProgressStream):
             self.last_line = str(line_detail)
 
     def interpret_stream(self, line):
+        stripped = line.strip()
+        if stripped.startswith("--->") and " " in stripped:
+            self.last_created_image = stripped.split(" ", 1)[1]
+
         if line.startswith("Step "):
-            action = line[line.find(":")+1:].strip()
+            action = line[line.find(":") + 1:].strip()
             self.current_action = action[:action.find(" ")].strip()
-            if self.current_action == "FROM" and self.last_line.strip().startswith("--->"):
-                self.intermediate_images.append(self.last_line.strip().split(" ", 1)[1])
+            if self.current_action == "FROM" and self.last_created_image:
+                self.intermediate_images.append(self.last_created_image)
+
+            self.last_created_image = None
 
         if line.strip().startswith("---> Running in"):
             self.current_container = line[len("---> Running in "):].strip()
         elif line.strip().startswith("Successfully built"):
             self.current_container = line[len("Successfully built"):].strip()
+            self.last_created_image = None
 
         if self.last_line.startswith("Step ") and line.strip().startswith("---> "):
             if self.current_action == "FROM":
