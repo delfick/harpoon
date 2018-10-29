@@ -18,7 +18,6 @@ from harpoon.ship.runner import Runner
 from harpoon.layers import Layers
 
 from input_algorithms.spec_base import NotSpecified
-from itertools import chain
 import logging
 import six
 import sys
