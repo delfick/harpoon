@@ -26,6 +26,9 @@ class ProgressStream(object):
         if "errorDetail" in line_detail:
             raise Failure(line_detail["errorDetail"].get("message", line_detail["errorDetail"]))
 
+        if not line_detail:
+            return
+
         self.interpret_line(line_detail)
 
     def interpret_line(self, line_detail):
