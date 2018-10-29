@@ -34,6 +34,7 @@ class BuildProgressStream(ProgressStream):
         self.last_line = ""
         self.current_action = ""
         self.current_container = None
+        self.intermediate_images = []
 
     def interpret_line(self, line_detail):
         if "stream" in line_detail:
@@ -56,6 +57,8 @@ class BuildProgressStream(ProgressStream):
         if line.startswith("Step "):
             action = line[line.find(":")+1:].strip()
             self.current_action = action[:action.find(" ")].strip()
+            if self.current_action == "FROM" and self.last_line.strip().startswith("--->"):
+                self.intermediate_images.append(self.last_line.strip().split(" ", 1)[1])
 
         if line.strip().startswith("---> Running in"):
             self.current_container = line[len("---> Running in "):].strip()
@@ -146,6 +149,14 @@ class Builder(BuilderBase):
                     raise UserQuit()
                 else:
                     six.reraise(*exc_info)
+            finally:
+                if stream and stream.intermediate_images and conf.cleanup_intermediate_images:
+                    for image in stream.intermediate_images:
+                        log.info("Deleting intermediate image\timage=%s", image)
+                        try:
+                            conf.harpoon.docker_api.remove_image(image)
+                        except Exception as error:
+                            log.error("Failed to remove intermediate image\timage=%s\terror=%s", image, error)
 
             try:
                 for squash_options, condition in [(conf.squash_after, True), (conf.squash_before_push, pushing)]:

@@ -29,7 +29,7 @@ setup(
         , "nose"
         , "mock==1.0.1"
         , "nose-pattern-exclude"
-        , "nose-focus==0.1.2"
+        , "nose-focus==0.1.3"
         , "tox"
         ]
       , "git":

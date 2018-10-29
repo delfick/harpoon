@@ -69,6 +69,7 @@ class Image(dictobj):
         , "image_name_prefix": "The prefix given to the name of the image"
         , "dependency_options": "Any options to apply to our dependency containers"
         , "squash_before_push": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash before pushing an image"
+        , "cleanup_intermediate_images": "Whether to remove intermediate images from multi stage builds"
         }
 
     def __repr__(self):

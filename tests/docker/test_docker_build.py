@@ -140,6 +140,60 @@ describe HarpoonCase, "Building docker images":
             , remove=[re.compile("^Successfully tagged .+"), re.compile("^Removing intermediate container .+")]
             )
 
+    it "can cleanup intermediate images from multi stage builds":
+        from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
+
+        exist_before = [image["Id"] for image in self.docker_client.api.images()]
+        untagged_before = [image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})]
+
+        commands = [
+              "{0} as base".format(from_line)
+            , 'RUN echo "{0}" > /wat'.format(str(uuid.uuid1()))
+            , from_line
+            , "COPY --from=base /wat /wat"
+            ]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+        harpoon_options = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
+        with self.a_built_image({"context": False, "commands": commands}, harpoon_options=harpoon_options, image_name="one") as (_, conf):
+            assert conf.image_name not in exist_before, (exist_before, conf)
+
+        untagged = [image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})]
+        self.assertEqual(untagged, untagged_before)
+
+    it "can not cleanup intermediate images from multi stage builds":
+        from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
+
+        exist_before = [image["Id"] for image in self.docker_client.api.images()]
+        untagged_before = [image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})]
+
+        u = str(uuid.uuid1())
+
+        commands = [
+              "{0} as base".format(from_line)
+            , 'RUN echo "{0}" > /wat'.format(u)
+            , from_line
+            , "COPY --from=base /wat /wat"
+            ]
+
+        commands2 = [
+              from_line
+            , 'RUN echo "{0}" > /wat'.format(u)
+            ]
+
+        fake_sys_stdout = self.make_temp_file()
+        fake_sys_stderr = self.make_temp_file()
+        harpoon_options = {"no_intervention": True, "stdout": fake_sys_stdout, "tty_stdout": fake_sys_stdout, "tty_stderr": fake_sys_stderr}
+        with self.a_built_image({"cleanup_intermediate_images": False, "context": False, "commands": commands}, harpoon_options=harpoon_options, image_name="one") as (_, conf):
+            assert conf.image_name not in exist_before, (exist_before, conf)
+
+        untagged = [image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})]
+        self.assertEqual(len(untagged), len(untagged_before) + 1)
+
+        with self.a_built_image({"cleanup_intermediate_images": False, "context": False, "commands": commands2}, harpoon_options=harpoon_options, image_name="one") as (cached, _):
+            assert cached
+
     it "can steal files from other images using staged builds":
         from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
 

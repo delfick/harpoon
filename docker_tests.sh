@@ -44,4 +44,4 @@ fi
 docker pull python:3
 
 export DESTRUCTIVE_DOCKER_TESTS=true
-nosetests --exclude-path harpoon --exclude-path docs --with-noy $exclusions $@
+nosetests --exclude-path harpoon --exclude-path docs --with-noy $exclusions --with-focus $@

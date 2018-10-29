@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.11.3 - TBD
+    * Harpoon will now cleanup intermediate images from multi stage builds by
+      default. If you want to keep intermediate images then specify the
+      ``cleanup_intermediate_images`` as ``False`` for your image.
+
 0.11.2 - 23 September 2018
     * Fixed bug where commands specified as strings aren't put into the
       Dockerfile correctly
