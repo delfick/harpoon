@@ -12,15 +12,16 @@ Here we define the class that builds this "context" zip file.
 from harpoon.errors import HarpoonError, BadOption
 from harpoon.helpers import a_temp_file
 
-from delfick_app import command_output
 from contextlib import contextmanager
 from six import BytesIO
+import subprocess
 import tempfile
 import tarfile
 import fnmatch
 import logging
 import shutil
 import docker
+import shlex
 import six
 import os
 import re
@@ -35,6 +36,17 @@ regexes = {
     }
 
 log = logging.getLogger("harpoon.ship.context")
+
+def command_output(command, cwd=None):
+    try:
+        output = subprocess.check_output(shlex.split(command), cwd=cwd)
+        code = 0
+    except subprocess.CalledProcessError as error:
+        output = error.output
+        code = error.returncode
+
+    lines = [line for line in output.decode().split("\n") if line.strip()]
+    return lines, code
 
 class ContextWrapper(object):
     """Wraps a tarfile context, so we can continue changing it afterwards"""
