@@ -331,7 +331,7 @@ class ContextBuilder(object):
         valid = set()
         if context.use_gitignore:
             under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
-            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submoudles", cwd=context.git_root)]
+            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submodules", cwd=context.git_root)]
             git_submodules = [os.path.normpath(os.path.relpath(os.path.abspath(p), os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)))) for p in git_submodules]
 
             valid = under_source_control + untracked_files
