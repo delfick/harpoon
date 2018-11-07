@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.12.1 - 7 November 2018
+    * Fixed a bug when running git commands that meant lines were being split
+      where there wasn't a newline and causing exceptions to be raised
+
 0.12.0 - 29 October 2018
     * Harpoon will now cleanup intermediate images from multi stage builds by
       default. If you want to keep intermediate images then specify the
