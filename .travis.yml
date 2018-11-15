@@ -1,4 +1,6 @@
-sudo: required
+---
+
+dist: xenial
 
 services:
   - docker
@@ -8,13 +10,11 @@ language: python
 python:
   - "2.7"
   - "3.6"
+  - "3.7"
 
 env:
   global:
     - CI_SERVER=true
-
-before_install:
-  - sudo apt-get install cmake -y
 
 install:
   - pip install pip --upgrade
@@ -27,4 +27,3 @@ before_script:
 
 script:
   - ./test.sh && ./docker_tests.sh
-
