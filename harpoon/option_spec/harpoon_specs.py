@@ -192,7 +192,9 @@ class HarpoonSpec(object):
             , validators.deprecated_key("use_git_timestamps", "Use ``context.use_git_timestamps``")
             , validators.deprecated_key("respect_gitignore", "Use ``context.use_gitignore``")
             , validators.deprecated_key("parent_dir", "Use ``context.parent_dir``")
-            , validators.deprecated_key("recursive", "Use ``persistence``")
+            , validators.deprecated_key("persistence", "The persistence feature has been removed")
+            , validators.deprecated_key("squash_after", "The squash feature has been removed")
+            , validators.deprecated_key("squash_before_push", "The squash feature has been removed")
 
             # Changed how volumes_from works
             , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
@@ -230,19 +232,7 @@ class HarpoonSpec(object):
             , command = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
             , commands = required(container_spec(Commands, listof(command_spec())))
             , cache_from = delayed(or_spec(boolean(), listof(formatted(string_spec(), formatter=MergedOptionStringFormatter))))
-            , squash_after = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
-            , squash_before_push = optional_spec(or_spec(boolean(), container_spec(Commands, listof(command_spec()))))
             , cleanup_intermediate_images = defaulted(boolean(), True)
-            , persistence = optional_spec(create_spec(image_objs.Persistence
-                , validators.deprecated_key("persist", "Use ``folders``")
-                , action = required(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-                , folders = required(listof(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
-                , cmd = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-                , shell = delayed(persistence_shell_spec())
-                , noshell = defaulted(boolean(), False)
-                , no_volumes = defaulted(boolean(), False)
-                , image_name = delayed(many_format(overridden("images.{_key_name_2}.image_name"), formatter=MergedOptionStringFormatter))
-                ))
 
             , links = listof(specs.link_spec(), expect=image_objs.Link)
 

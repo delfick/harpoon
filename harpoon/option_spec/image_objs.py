@@ -52,10 +52,8 @@ class Image(dictobj):
         , "log_config": "Log configuration for the container"
         , "image_name": "The name of the image that is to be built"
         , "privileged": "Gives the container full access to the host"
-        , "persistence": "Options to allow certain folders to persist a particular command"
         , "assume_role": "An aws iam role to assume for running the container"
         , "image_index": "The index and prefix to push to. i.e. ``my_registry.com/myapp/``"
-        , "squash_after": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash after every build"
         , "security_opt": "A list of string values to customize labels for MLS systems, such as SELinux."
         , "no_tty_option": "Say False for tty when making the image but still use dockerpty"
         , "configuration": "The root configuration"
@@ -68,7 +66,6 @@ class Image(dictobj):
         , "deleteable_image": "Whether this image can be deleted after use"
         , "image_name_prefix": "The prefix given to the name of the image"
         , "dependency_options": "Any options to apply to our dependency containers"
-        , "squash_before_push": "Either a boolean or list of docker commands. Signifying that we want to use docker-squash before pushing an image"
         , "cleanup_intermediate_images": "Whether to remove intermediate images from multi stage builds"
         }
 
@@ -351,131 +348,6 @@ class Image(dictobj):
         else:
             with assumed_role(self.assume_role):
                 yield
-
-class Persistence(dictobj):
-    """Options to make an image be built with persisting folders"""
-    fields = {
-          "action": "The action that we are repeating"
-        , "folders": "The folders to persist between builds"
-        , "image_name": "A function that returns the image name of the persistence container"
-        , "cmd": "The default CMD to give the final image"
-        , "no_volumes": "Whether to make sure there are no volumes"
-        , ("shell", "/bin/bash"): "The default shell to use"
-        , ("noshell", False): "Don't use a shell with the command"
-        }
-
-    @property
-    def resolved_shell(self):
-        if getattr(self, "_resolved_shell", None) is None:
-            shell = self.shell
-            if callable(shell):
-                shell = shell()
-            self._resolved_shell = shell
-        return self._resolved_shell
-
-    @property
-    def resolved_command(self):
-        if self.noshell:
-            return str(shlex_quote(self.action.strip()))
-        return "{0} -c {1}".format(shlex_quote(self.resolved_shell), shlex_quote(self.action.strip()))
-
-    @property
-    def default_cmd(self):
-        if self.cmd in (None, "", NotSpecified):
-            return self.resolved_shell
-        else:
-            return self.cmd
-
-    def setup_lines(self):
-        """
-        Setup convenience lines for copying and waiting for copying
-        """
-        if getattr(self, "_setup_lines", None):
-            return
-        self._setup_lines = True
-
-        # Make the shared volume name same as this image name so it doesn't change every time
-        self["shared_name"] = self.image_name().replace('/', '__').replace(':', '___')
-
-        # underscored names for our folders
-        def without_last_slash(val):
-            while val and val.endswith("/"):
-                val = val[:-1]
-            return val
-        self["folders_underscored"] = [(shlex_quote(name.replace("_", "__").replace("/", "_")), shlex_quote(without_last_slash(name))) for name in self.folders]
-
-        self["move_from_volume"] = " ; ".join(
-              "echo {0} && rm -rf {0} && mkdir -p $(dirname {0}) && mv /{1}/{2} {0}".format(name, self.shared_name, underscored)
-              for underscored, name in self.folders_underscored
-            )
-
-        self["move_into_volume"] = " ; ".join(
-              "echo {0} && mkdir -p {0} && mv {0} /{1}/{2}".format(name, self.shared_name, underscored)
-              for underscored, name in self.folders_underscored
-            )
-
-    def make_test_dockerfile(self, docker_file):
-        """Used to determine if we need to rebuild the image"""
-        self.setup_lines()
-        docker_lines = docker_file.docker_lines + [
-            "RUN echo {0}".format(shlex_quote(self.action.strip()))
-          , "RUN echo {0}".format(" ".join(self.folders))
-          , "RUN echo {0}".format(shlex_quote(self.default_cmd))
-          ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
-
-    def make_first_dockerfile(self, docker_file):
-        """
-        Makes the dockerfile for when we don't already have this image
-        It will just perform the action after the normal docker lines.
-        """
-        self.setup_lines()
-        docker_lines = docker_file.docker_lines + [
-              "RUN {0}".format(self.resolved_command)
-            , "CMD {0}".format(self.default_cmd)
-            ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
-
-    def make_rerunner_prep_dockerfile(self, docker_file, existing_image):
-        """
-        Given an existing image:
-            * Create a VOLUME (happens last to capture the data)
-            * mv each folder from image into volume from folders
-
-        This will then get used as a provider for make_second_dockerfile
-        """
-        self.setup_lines()
-        docker_lines = [
-              "FROM {0}".format(existing_image)
-            , "RUN mkdir -p /{0}".format(self.shared_name)
-            , "RUN {0}".format(self["move_into_volume"])
-            , "VOLUME /{0}".format(self.shared_name)
-            ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
-
-    def make_second_dockerfile(self, docker_file):
-        """
-        Assumes volumes-from an image with a volume of the same name as self.shared_name
-
-        Will steal from that volume into place on this image before rerunning the action.
-        """
-        self.setup_lines()
-        docker_lines = docker_file.docker_lines + [
-              "CMD {0} && {1}".format(self["move_from_volume"], self.action)
-            ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
-
-    def make_final_dockerfile(self, docker_file, second_image):
-        """
-        Takes the committed image from second_dockerfile and adds a CMD to it
-        with the value of self.command
-        """
-        self.setup_lines()
-        docker_lines = [
-              "FROM {0}".format(second_image)
-            , "CMD {0}".format(self.default_cmd)
-            ]
-        return DockerFile(docker_lines=docker_lines, mtime=docker_file.mtime)
 
 class DockerFile(dictobj):
     """Understand about the dockerfile"""

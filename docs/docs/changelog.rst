@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.13.0 - TBD
+    * Removing persistence and squash features, I marked them as deprecated in
+      version 0.10.0
+
 0.12.1 - 7 November 2018
     * Fixed a bug when running git commands that meant lines were being split
       where there wasn't a newline and causing exceptions to be raised

@@ -6,8 +6,6 @@ Building an image requires building all dependent images, creating the necessary
 context, and actually building the current image.
 """
 
-from harpoon.ship.builders.persistence import PersistenceBuilder
-from harpoon.ship.builders.squashed import SquashedBuilder
 from harpoon.ship.builders.normal import NormalBuilder
 from harpoon.ship.builders.base import BuilderBase
 
@@ -142,10 +140,7 @@ class Builder(BuilderBase):
             try:
                 stream = BuildProgressStream(conf.harpoon.silent_build)
                 with self.remove_replaced_images(conf) as info:
-                    if conf.persistence is NotSpecified:
-                        cached = NormalBuilder().build(conf, context, stream)
-                    else:
-                        cached = PersistenceBuilder().build(conf, context, stream)
+                    cached = NormalBuilder().build(conf, context, stream)
                     info['cached'] = cached
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
@@ -164,20 +159,6 @@ class Builder(BuilderBase):
                             conf.harpoon.docker_api.remove_image(image)
                         except Exception as error:
                             log.error("Failed to remove intermediate image\timage=%s\terror=%s", image, error)
-
-            try:
-                for squash_options, condition in [(conf.squash_after, True), (conf.squash_before_push, pushing)]:
-                    if squash_options is not NotSpecified and condition:
-                        if type(squash_options) is command_objs.Commands:
-                            squash_commands = squash_options.docker_lines_list
-                        SquashedBuilder(squash_commands).build(conf, context, stream)
-                        cached = False
-            except (KeyboardInterrupt, Exception) as error:
-                exc_info = sys.exc_info()
-                if isinstance(error, KeyboardInterrupt):
-                    raise UserQuit()
-                else:
-                    six.reraise(*exc_info)
 
         return cached
 
