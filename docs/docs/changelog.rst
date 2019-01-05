@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.13.0 - TBD
+0.13.0 - 5 January 2019
     * Removing all traces of file modified time options. Since docker 1.8 the
       mtime of files is not taken into account when determining if the docker
       layer cache has been invalidated. Since that has been out since August
