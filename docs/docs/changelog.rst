@@ -2,6 +2,11 @@ Changelog
 =========
 
 0.13.0 - TBD
+    * Removing all traces of file modified time options. Since docker 1.8 the
+      mtime of files is not taken into account when determining if the docker
+      layer cache has been invalidated. Since that has been out since August
+      2015 I feel it's been out long enough that people don't use such an old
+      version anymore.
     * Removing persistence and squash features, I marked them as deprecated in
       version 0.10.0
 

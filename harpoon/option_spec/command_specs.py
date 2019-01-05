@@ -32,15 +32,9 @@ class CommandContent(dictobj):
             super(CommandContent, self).setup(*args, **kwargs)
 
     def context_name(self, meta):
-        mtime = self.mtime
-        if mtime is NotSpecified:
-            ctxt = type("Context", (object, ), {"use_git": True})()
-            mtime = meta.everything["mtime"](ctxt)
-
         hsh = self.make_hash()
         dst = self.dest.replace("/", "-").replace(" ", "--")
-
-        return "{0}-{1}-mtime({2})".format(hsh, dst, mtime)
+        return "{0}-{1}".format(hsh, dst)
 
     def make_hash(self):
         content_json = json.dumps({"content": self.for_json()}, sort_keys=True)
@@ -49,7 +43,6 @@ class CommandContent(dictobj):
 class CommandContextAdd(CommandContent):
     fields = {
           "dest": "The path in the container where the content will be put"
-        , "mtime": "The modified time given to the item put into the context"
         , "context": "Context options that creates a context tar that is added into the container"
         }
 
@@ -64,7 +57,6 @@ class CommandContextAdd(CommandContent):
 class CommandContentAdd(CommandContent):
     fields = {
           "dest": "The path in the container where the content will be put"
-        , "mtime": "The modified time given to the item put into the context"
         , "content": "The content to put into the context"
         , ("formatted", None): "Formatted string for content to put into the context"
         }
@@ -197,23 +189,26 @@ class complex_ADD_spec(sb.Spec):
 
         if "context" in val:
             val = sb.create_spec(CommandContextAdd
+                , validators.deprecated_key("mtime", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
+
                 , dest = sb.required(formatted_string)
-                , mtime = sb.optional_spec(sb.integer_spec())
                 , context = sb.required(HarpoonSpec().context_spec)
                 ).normalise(meta, val)
 
         if "formatted" in val:
             val = sb.create_spec(CommandContentAdd
+                , validators.deprecated_key("mtime", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
+
                 , dest = sb.required(formatted_string)
-                , mtime = sb.optional_spec(sb.integer_spec())
                 , content = sb.overridden(sb.NotSpecified)
                 , formatted = sb.container_spec(CommandContentAddString, formatted_string)
                 ).normalise(meta, val)
 
         if "content" in val:
             val = sb.create_spec(CommandContentAdd
+                , validators.deprecated_key("mtime", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
+
                 , dest = sb.required(formatted_string)
-                , mtime = sb.optional_spec(sb.integer_spec())
                 , content = sb.match_spec(
                       (six.string_types, sb.container_spec(CommandContentAddString, sb.string_spec()))
                     , fallback = complex_ADD_from_image_spec()

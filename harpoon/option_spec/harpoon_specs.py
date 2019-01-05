@@ -162,6 +162,8 @@ class HarpoonSpec(object):
         from harpoon.option_spec import image_objs
         return dict_from_bool_spec(lambda meta, val: {"enabled": val}
             , create_spec(image_objs.Context
+                , validators.deprecated_key("use_git_timestamps", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
+
                 , include = listof(string_spec())
                 , exclude = listof(string_spec())
                 , enabled = defaulted(boolean(), True)
@@ -169,7 +171,6 @@ class HarpoonSpec(object):
 
                 , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
                 , use_gitignore = defaulted(boolean(), False)
-                , use_git_timestamps = defaulted(or_spec(boolean(), listof(string_spec())), False)
                 , ignore_find_errors = defaulted(boolean(), False)
                 )
             )
@@ -187,11 +188,6 @@ class HarpoonSpec(object):
                 return shell
 
         return create_spec(image_objs.Image
-            # Change the context options
-            , validators.deprecated_key("exclude_context", "Use ``context.exclude``")
-            , validators.deprecated_key("use_git_timestamps", "Use ``context.use_git_timestamps``")
-            , validators.deprecated_key("respect_gitignore", "Use ``context.use_gitignore``")
-            , validators.deprecated_key("parent_dir", "Use ``context.parent_dir``")
             , validators.deprecated_key("persistence", "The persistence feature has been removed")
             , validators.deprecated_key("squash_after", "The squash feature has been removed")
             , validators.deprecated_key("squash_before_push", "The squash feature has been removed")
@@ -217,7 +213,6 @@ class HarpoonSpec(object):
             , no_tty_option = defaulted(formatted(boolean(), formatter=MergedOptionStringFormatter), False)
 
             , user = defaulted(string_spec(), None)
-            , mtime = defaulted(any_spec(), time.time())
             , configuration = any_spec()
 
             , vars = dictionary_spec()

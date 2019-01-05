@@ -30,7 +30,7 @@ describe HarpoonCase, "HarpoonSpec":
         self.assertEqual(type(as_dict["context"]), dict)
         self.assertEqual(
               sorted(as_dict["context"].keys())
-            , sorted(["enabled", "use_git_timestamps", "use_gitignore", "exclude", "include", "parent_dir", "find_options", "ignore_find_errors"])
+            , sorted(["enabled", "use_gitignore", "exclude", "include", "parent_dir", "find_options", "ignore_find_errors"])
             )
 
     describe "name_spec":

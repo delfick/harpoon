@@ -17,43 +17,27 @@ describe HarpoonCase, "Context object":
         self.enabled = mock.Mock(name="enabled")
         self.parent_dir = self.unique_val()
 
-    it "defaults use_gitignore and _use_git_timestamps to NotSpecified an include and exclude to None":
+    it "defaults _use_gitignore and to NotSpecified an include and exclude to None":
         ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
         self.assertIs(ctxt.enabled, self.enabled)
         self.assertEqual(ctxt.parent_dir, os.path.abspath(self.parent_dir))
         self.assertIs(ctxt.include, None)
         self.assertIs(ctxt.exclude, None)
         self.assertIs(ctxt._use_gitignore, NotSpecified)
-        self.assertIs(ctxt._use_git_timestamps, NotSpecified)
 
-    describe "use_git":
-        it "returns false if neither git options are specified":
-            ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
-            self.assertIs(ctxt.use_git, False)
+    describe "use_gitignore":
+        it "returns False if _use_gitignore is NotSpecified":
+            ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
+            self.assertIs(ctxt.use_gitignore, False)
 
-        it "returns false if either git options are specified but neither are True":
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_gitignore=False).use_git, False)
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_git_timestamps=False).use_git, False)
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_gitignore=False, use_git_timestamps=False).use_git, False)
+        it "returns the value of _use_gitignore otherwise":
+            ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
+            ugi = mock.Mock(name="use_gitignore")
+            ctxt.use_gitignore = ugi
+            self.assertIs(ctxt.use_gitignore, ugi)
 
-        it "returns true if either git option is specified and neither are False":
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_gitignore=True).use_git, True)
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_git_timestamps=True).use_git, True)
-            self.assertIs(objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_gitignore=True, use_git_timestamps=True).use_git, True)
-
-    describe "use_git_timestamps":
-        it "returns value of use_git if not specified":
-            use_git = mock.Mock(name="use_git")
-            ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
-            with mock.patch.object(objs.Context, "use_git", use_git):
-                self.assertIs(ctxt.use_git_timestamps, use_git)
-
-        it "returns the value of use_git_timestamps if it is set":
-            use_git = mock.Mock(name="use_git")
-            use_git_timestamps = mock.Mock(name="use_git_timestamps")
-            ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir, use_git_timestamps=use_git_timestamps)
-            with mock.patch.object(objs.Context, "use_git", use_git):
-                self.assertIs(ctxt.use_git_timestamps, use_git_timestamps)
+            ctxt = objs.Context(use_gitignore=ugi, enabled=True, parent_dir=self.parent_dir)
+            self.assertIs(ctxt.use_gitignore, ugi)
 
     describe "parent_dir":
         it "gets set as the abspath of the value":

@@ -14,8 +14,6 @@ import six
 import os
 import re
 
-mtime = 1431170923
-
 describe HarpoonCase, "Building docker images":
     def make_image(self, options, harpoon_options=None, image_name="awesome_image"):
         config_root = self.make_temp_dir()
@@ -26,7 +24,7 @@ describe HarpoonCase, "Building docker images":
         harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), harpoon_options)
         if "harpoon" not in options:
             options["harpoon"] = harpoon
-        everything = {"harpoon": harpoon, "mtime": mtime, "_key_name_1": image_name, "config_root": config_root}
+        everything = {"harpoon": harpoon, "_key_name_1": image_name, "config_root": config_root}
         return HarpoonSpec().image_spec.normalise(Meta(everything, []), options)
 
     it "Builds an image":
@@ -51,7 +49,7 @@ describe HarpoonCase, "Building docker images":
         from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
         commands1 = [from_line]
         commands2 = [from_line, "RUN echo {0}".format(uuid.uuid1())]
-        commands3 = commands2 + [["ADD", {"content": "blah", "dest": "/tmp/blah", "mtime": mtime}]]
+        commands3 = commands2 + [["ADD", {"content": "blah", "dest": "/tmp/blah"}]]
         with self.a_built_image({"context": False, "commands": commands1}) as (cached, conf1):
             assert cached
 
@@ -88,7 +86,6 @@ describe HarpoonCase, "Building docker images":
                   { "image": conf1
                   , "path": "/tmp/blah"
                   }
-                , "mtime": 1463473251
                 }
               ]
 
@@ -98,7 +95,6 @@ describe HarpoonCase, "Building docker images":
                   { "image": conf1
                   , "path": "/tmp/other"
                   }
-                , "mtime": 1463473251
                 }
               ]
 

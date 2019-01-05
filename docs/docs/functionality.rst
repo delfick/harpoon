@@ -60,57 +60,6 @@ when you quit the process.
 The only required option for an image is ``commands`` which is a list of commands
 as what you would have in a Dockerfile.
 
-Modified file times
--------------------
-
-We noticed that if you git clone a repository then git will set the modified
-times of all the files to the time at which you do the git clone.
-
-This means that even though the file contents are the same, docker will invalidate
-the cache when it adds these files.
-
-Harpoon provides an option ``context.use_git_timestamps`` which when set true will use
-git to determine the commit date for each file and when it creates the context to
-send to docker it will use the git date.
-
-for example::
-
-  ---
-
-  context:
-    use_git_timestamps: true
-
-  images:
-    blah:
-      commands:
-        [...]
-
-It will make sure to only do this to files that are controlled by git and which
-don't have any local modifications
-
-Note that if you have many files, you might decide that getting the commit date
-for all of them takes an unacceptably long time and that you only care about a
-certain subset of files.
-
-In this case, you may specify a list of globs that will be used to identify which
-files we set the modified times for (assuming they are also owned by git and don't
-have any local modifications.
-
-For example::
-
-  ---
-
-  context:
-    use_git_timestamps:
-      - gradle*
-      - settings.gradle
-      - buildSrc/**
-
-  images:
-    blah:
-      commands:
-        [...]
-
 Cache from
 ----------
 
@@ -460,7 +409,7 @@ Where instruction may be::
 [<string>, <dictionary>]
   This has special meaning depending on the first String.
 
-  [ADD, {content:<content>, mtime:<mtime>, dest:<dest>}]
+  [ADD, {content:<content>, dest:<dest>}]
 
     This will add a file to the context with the content specified and make
     sure that gets to the destination specified.
@@ -475,7 +424,6 @@ Where instruction may be::
             - FROM ubuntu
             - - ADD
               - dest: /tmp/blah
-                mtime: 1433139432
                 content: |
                   blah and
                   stuff
@@ -487,14 +435,10 @@ Where instruction may be::
       FROM ubuntu
       ADD DDC895F6-6F65-43C1-BDAA-00C4B3F9BB7B /tmp/blah
 
-    The mtime you specify will be the modified time that is given to this temp
-    file.
-
-  [ADD, {content: {image: <image>, path: <path>}, dest: <dest>, mtime: <mtime>}]
+  [ADD, {content: {image: <image>, path: <path>}, dest: <dest>}]
 
     This will add the files found in <image> at <path> to <dest>. It uses a tar
-    file to add in these files to the context and that tar file with have a
-    modified time of <mtime>
+    file to add in these files to the context.
 
     For example:
 
@@ -522,14 +466,12 @@ Where instruction may be::
                 content:
                   image: "{images.one}"
                   path: /tmp/blah
-                mtime: 1463473251
 
             - - ADD
               - dest: /tmp/copied/other
                 content:
                   image: "{images.one}"
                   path: /tmp/other
-                mtime: 1463473251
 
             - CMD find /tmp/copied -type f -exec echo {} \; -exec cat {} \;
 
@@ -540,7 +482,7 @@ Where instruction may be::
     Using this definition, we can now run ``harpoon cat`` and it will print out
     the files we stole from the ``one`` image!
 
-  [ADD, {context:<context>, mtime:<mtime>, dest:<dest>}]
+  [ADD, {context:<context>, dest:<dest>}]
 
     This is the same as specifying ``content`` instead of ``context``, however
     ``context`` is the same as the context options on the image and will create

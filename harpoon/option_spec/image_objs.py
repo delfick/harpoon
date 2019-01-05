@@ -36,7 +36,6 @@ class Image(dictobj):
         , "shell": "The shell to use for the bash option"
         , "user": "The user to use inside the container"
         , "ports": "The ports to expose"
-        , "mtime": "The mtime of the Dockerfile"
         , "links": "The containers to link into this container"
         , "context": "The context options for building the container"
         , "devices": "Devices to add to the container"
@@ -283,21 +282,6 @@ class Image(dictobj):
             msg.append("Pushes to {0}".format(self.image_name))
         return ' : '.join(msg)
 
-    @property
-    def mtime(self):
-        """Mtime is set as a function to make it lazily computed via this property"""
-        if callable(self._mtime):
-            self._mtime = self._mtime(self.context)
-
-        if self._mtime not in (NotSpecified, None) and type(self._mtime) is not int:
-            self._mtime = int(self._mtime)
-
-        return self._mtime
-
-    @mtime.setter
-    def mtime(self, val):
-        self._mtime = val
-
     def build_and_run(self, images):
         """Make this image and run it"""
         from harpoon.ship.builder import Builder
@@ -311,7 +295,7 @@ class Image(dictobj):
     @property
     def docker_file(self):
         if getattr(self, "_docker_file", NotSpecified) is NotSpecified:
-            self._docker_file = DockerFile(self.commands.docker_lines_list, self.mtime)
+            self._docker_file = DockerFile(self.commands.docker_lines_list)
         return self._docker_file
 
     @docker_file.setter
@@ -324,7 +308,6 @@ class Image(dictobj):
             log.debug("Context: ./Dockerfile")
             dockerfile.write("\n".join(docker_file.docker_lines).encode('utf-8'))
             dockerfile.seek(0)
-            os.utime(dockerfile.name, (docker_file.mtime, docker_file.mtime))
             tar.add(dockerfile.name, arcname="./Dockerfile")
 
     @contextmanager
@@ -351,7 +334,7 @@ class Image(dictobj):
 
 class DockerFile(dictobj):
     """Understand about the dockerfile"""
-    fields = ["docker_lines", "mtime"]
+    fields = ["docker_lines"]
 
 class WaitCondition(dictobj):
     """Options for waiting for images"""
@@ -421,7 +404,6 @@ class Context(dictobj):
         , ("exclude", None): "Globs of what to exclude from the context"
         , ("find_options", ""): "Extra options for the find command that's used to find the present files in the repo"
         , ("use_gitignore", lambda: NotSpecified): "Whether we should pay attention to git ignore logic"
-        , ("use_git_timestamps", lambda: NotSpecified): "Whether we should find commit timestamps for the files in the context"
         , ("ignore_find_errors", False): "A hack to ignore weird find errors"
         }
 
@@ -432,23 +414,6 @@ class Context(dictobj):
     @parent_dir.setter
     def parent_dir(self, val):
         self._parent_dir = os.path.abspath(val)
-
-    @property
-    def use_git(self):
-        use_git = False
-        if self._use_gitignore is not NotSpecified and self._use_gitignore:
-            use_git = True
-        if self._use_git_timestamps is not NotSpecified and self._use_git_timestamps:
-            use_git = True
-        return use_git
-
-    @property
-    def use_git_timestamps(self):
-        return self.use_git if self._use_git_timestamps is NotSpecified else self._use_git_timestamps
-
-    @use_git_timestamps.setter
-    def use_git_timestamps(self, val):
-        self._use_git_timestamps = val
 
     @property
     def use_gitignore(self):

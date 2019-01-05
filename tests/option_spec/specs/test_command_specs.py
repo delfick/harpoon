@@ -153,7 +153,7 @@ describe CommandCase, "command_spec":
         blah3_image = mock.Mock(name="blah3", image_name="blah3", from_name="somewhere-blah3")
 
         everything = MergedOptions.using(
-              { "mtime": lambda ctxt: 1430660297, "one": 1, "two": 2, "three": 3, "harpoon": self.harpoon, "config_root": "."
+              { "one": 1, "two": 2, "three": 3, "harpoon": self.harpoon, "config_root": "."
               , "images":
                 { "blah2": blah2_image
                 , "blah3": blah3_image
@@ -171,7 +171,7 @@ describe CommandCase, "command_spec":
             , ["ENV", ["TWO {two}", "THREE {three}"]]
             , ["ADD", {"get": ["blah", "and", "stuff"], "prefix": "/projects"}]
             , {"ADD": {"content": content, "dest": "the_destination"}}
-            , {"ADD": {"content": content, "dest": "the_destination2", "mtime": 1530660298}}
+            , {"ADD": {"content": content, "dest": "the_destination2"}}
             , {"ADD": {"content": {"image": "{images.blah2}", "path": "/tmp/stuff"}, "dest": "the_destination3"}}
             , {"COPY": {"from": "{images.blah2}", "path": "/tmp/stuff", "to": "copy_destination"}}
             , {"COPY": {"from": 1, "path": "/tmp/stuff", "to": "copy_destination"}}
@@ -192,9 +192,9 @@ describe CommandCase, "command_spec":
               , "ADD blah /projects/blah"
               , "ADD and /projects/and"
               , "ADD stuff /projects/stuff"
-              , "ADD {0}-the_destination-mtime(1430660297) the_destination".format(md5)
-              , "ADD {0}-the_destination2-mtime(1530660298) the_destination2".format(md5)
-              , "ADD {0}-the_destination3-mtime(1430660297) the_destination3".format(md52)
+              , "ADD {0}-the_destination the_destination".format(md5)
+              , "ADD {0}-the_destination2 the_destination2".format(md5)
+              , "ADD {0}-the_destination3 the_destination3".format(md52)
               , "COPY --from=somewhere-blah2 /tmp/stuff copy_destination"
               , "COPY --from=1 /tmp/stuff copy_destination"
               , "FROM somewhere-blah3 as wat"

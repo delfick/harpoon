@@ -32,9 +32,6 @@ setup(
         , "nose-focus==0.1.3"
         , "tox"
         ]
-      , "git":
-        [ "gitmit==0.5"
-        ]
       }
 
     , entry_points =

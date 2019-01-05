@@ -20,8 +20,6 @@ import six
 import os
 import re
 
-mtime = 1431170923
-
 log = logging.getLogger("tests.docker.test_docker_run")
 
 describe HarpoonCase, "Building docker images":
@@ -48,7 +46,7 @@ describe HarpoonCase, "Building docker images":
         if "harpoon" not in options:
             options["harpoon"] = harpoon
 
-        everything = MergedOptions.using({"harpoon": harpoon, "mtime": mtime, "_key_name_1": "awesome_image", "config_root": config_root})
+        everything = MergedOptions.using({"harpoon": harpoon, "_key_name_1": "awesome_image", "config_root": config_root})
 
         harpoon_converter = Converter(convert=lambda *args: harpoon, convert_path=["harpoon"])
         everything.add_converter(harpoon_converter)

@@ -61,16 +61,13 @@ describe CommandCase, "Complex ADD spec":
             dest = "/somewhere/nice and fun"
             command = {"context": {"parent_dir": parent_dir}, "dest": dest}
 
-            mtime = mock.Mock(name="mtime")
-            self.meta.everything["mtime"] = lambda ctxt: mtime
-
             with mock.patch("harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5):
                 result = self.spec.normalise(self.meta, command)
 
             self.assertEqual(len(result), 1)
             result = result[0]
             self.assertEqual(result.action, "ADD")
-            self.assertEqual(result.extra_context[1], "{0}--somewhere-nice--and--fun-mtime({1}).tar".format(md5, mtime))
+            self.assertEqual(result.extra_context[1], "{0}--somewhere-nice--and--fun.tar".format(md5))
 
             ctxt = result.extra_context[0]["context"]
             self.assertEqual(type(ctxt), Context)
@@ -82,20 +79,17 @@ describe CommandCase, "Complex ADD spec":
             content = "blah de blah blah da"
             command = {"content": content, "dest": dest}
 
-            mtime = mock.Mock(name="mtime")
-            self.meta.everything["mtime"] = lambda ctxt: mtime
-
             result = self.spec.normalise(self.meta, command)
             self.assertEqual(len(result), 1)
             result = result[0]
             self.assertEqual(result.action, "ADD")
             md5 = hashlib.md5(json.dumps({"content": content}).encode('utf-8')).hexdigest()
-            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun-mtime({1})".format(md5, mtime)))
+            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun".format(md5)))
 
         it "sets command as adding in context dest to actual dest":
             dest = "/somewhere/nice and fun"
             content = "blah de blah blah da"
-            command = {"content": content, "dest": dest, "mtime": 1430660233}
+            command = {"content": content, "dest": dest}
             result = self.spec.normalise(self.meta, command)
             self.assertEqual(len(result), 1)
             result = result[0]
@@ -108,8 +102,6 @@ describe CommandCase, "Complex ADD spec":
 
             md5 = self.unique_val()
             images = mock.Mock(name="images")
-            mtime = mock.Mock(name="mtime")
-            self.meta.everything["mtime"] = lambda ctxt: mtime
             self.meta.everything["images"] = images
 
             with mock.patch("harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5):
@@ -118,7 +110,7 @@ describe CommandCase, "Complex ADD spec":
             self.assertEqual(len(result), 1)
             result = result[0]
             self.assertEqual(result.action, "ADD")
-            self.assertEqual(result.extra_context[1], "{0}--somewhere-nice--and--fun-mtime({1})".format(md5, mtime))
+            self.assertEqual(result.extra_context[1], "{0}--somewhere-nice--and--fun".format(md5))
 
             options = result.extra_context[0]
             self.assertIs(options.images, images)
@@ -144,26 +136,14 @@ describe CommandCase, "CommandContent":
     it "has a context_name functionality":
         md5 = self.unique_val()
         class Subclass(cs.CommandContent):
-            fields = ["mtime", "dest"]
+            fields = ["dest"]
 
             def make_hash(self):
                 return md5
 
         meta = Meta({}, [])
-        sc = Subclass(123, "somewhere/nice")
-        self.assertEqual(sc.context_name(meta), "{0}-somewhere-nice-mtime(123)".format(md5))
-
-    it "uses the mtime on everything if no mtime is specified":
-        md5 = self.unique_val()
-        class Subclass(cs.CommandContent):
-            fields = ["mtime", "dest"]
-
-            def make_hash(self):
-                return md5
-
-        meta = Meta({"mtime": lambda ctxt: 435}, [])
-        sc = Subclass(NotSpecified, "somewhere/nice")
-        self.assertEqual(sc.context_name(meta), "{0}-somewhere-nice-mtime(435)".format(md5))
+        sc = Subclass("somewhere/nice")
+        self.assertEqual(sc.context_name(meta), "{0}-somewhere-nice".format(md5))
 
     it "makes a hash with a json dump sorting keys":
         class Subclass(cs.CommandContent):
@@ -178,7 +158,7 @@ describe CommandCase, "CommandContextAdd":
         it "returns context as a dict as a string":
             asd = self.unique_val()
             ctxt = mock.Mock(name="ctxt", as_dict=lambda: asd)
-            obj = cs.CommandContextAdd(dest="/somewhere", mtime=NotSpecified, context=ctxt)
+            obj = cs.CommandContextAdd(dest="/somewhere", context=ctxt)
             self.assertEqual(obj.for_json(), asd)
 
     describe "commands":
@@ -188,7 +168,7 @@ describe CommandCase, "CommandContextAdd":
             context_name = self.unique_val()
 
             with mock.patch("harpoon.option_spec.command_specs.CommandContent.context_name", lambda *args: context_name):
-                obj = cs.CommandContextAdd(dest="/somwehere", mtime=123, context=ctxt)
+                obj = cs.CommandContextAdd(dest="/somwehere", context=ctxt)
                 commands = list(obj.commands(meta))
                 self.assertEqual(len(commands), 1)
                 self.assertEqual(commands[0].instruction, ("ADD", "{0}.tar /somwehere".format(context_name)))
@@ -200,7 +180,7 @@ describe CommandCase, "CommandContentAdd":
         it "returns context as content.for_json":
             asd = self.unique_val()
             content = mock.Mock(name="ctxt", for_json=lambda: asd)
-            obj = cs.CommandContentAdd(dest="/somewhere", mtime=NotSpecified, content=content)
+            obj = cs.CommandContentAdd(dest="/somewhere", content=content)
             self.assertEqual(obj.for_json(), asd)
 
     describe "commands":
@@ -213,7 +193,7 @@ describe CommandCase, "CommandContentAdd":
             content.resolve.return_value = resolved
 
             with mock.patch("harpoon.option_spec.command_specs.CommandContent.context_name", lambda *args: context_name):
-                obj = cs.CommandContentAdd(dest="/somwehere", mtime=123, content=content)
+                obj = cs.CommandContentAdd(dest="/somwehere", content=content)
                 commands = list(obj.commands(meta))
                 self.assertEqual(len(commands), 1)
                 self.assertEqual(commands[0].instruction, ("ADD", "{0} /somwehere".format(context_name)))

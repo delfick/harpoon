@@ -209,19 +209,9 @@ class FilesAssertionsMixin:
             if six.PY2 and sys.version_info[1] == 6:
                 identity = "./{0}".format(identity)
             found.add(identity)
-            mtime = None
             contents = expected[identity]
-            if isinstance(contents, tuple):
-                mtime, contents = contents
-            if mtime:
-                self.assertEqual(tarinfo.mtime, mtime)
-                if data is not None or contents is not None:
-                    self.assertEqual(data.decode('utf-8'), contents)
-                if contents is None:
-                    self.assertIs(tarinfo.isdir(), True)
-            else:
-                if data is not None or contents is not None:
-                    self.assertEqual(data.decode('utf-8'), contents)
+            if data is not None or contents is not None:
+                self.assertEqual(data.decode('utf-8'), contents)
         self.assertEqual(found, set(expected.keys()))
 
     def extract_tar(self, location):

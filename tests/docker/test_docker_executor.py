@@ -14,8 +14,6 @@ import sys
 import six
 import os
 
-mtime = 1431170923
-
 describe HarpoonCase, "Executing harpoon":
     it "executes the given task":
         content = str(uuid.uuid1())
@@ -23,7 +21,7 @@ describe HarpoonCase, "Executing harpoon":
             { "blah":
               { "commands":
                 [ [ "FROM", os.environ["BASE_IMAGE"] ]
-                , [ "ADD", {"content": content, "dest": "/tmp/blah", "mtime": mtime } ]
+                , [ "ADD", {"content": content, "dest": "/tmp/blah"} ]
                 , "CMD cat /tmp/blah"
                 ]
               , "tasks":

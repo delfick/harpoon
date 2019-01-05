@@ -26,11 +26,6 @@ import six
 import os
 import re
 
-try:
-    from gitmit.mit import GitTimes
-except ImportError:
-    GitTimes = None
-
 regexes = {
       "whitespace": re.compile("\s+")
     }
@@ -93,9 +88,6 @@ class ContextBuilder(object):
         context - ``harpoon.option_spec.image_objs.Context``
             Knows all the context related options
 
-        docker_file - ``harpoon.option_spec.image_objs.Dockerfile``
-            Knows what is in the dockerfile and it's mtime
-
         silent_build - boolean
             If True, then suppress printing out information
 
@@ -107,10 +99,7 @@ class ContextBuilder(object):
         """
         with a_temp_file() as tmpfile:
             t = tarfile.open(mode='w', fileobj=tmpfile)
-            for thing, mtime, arcname in self.find_mtimes(context, silent_build):
-                if mtime:
-                    os.utime(thing, (mtime, mtime))
-
+            for thing, arcname in self.find_files_for_tar(context, silent_build):
                 log.debug("Context: {0}".format(arcname))
                 t.add(thing, arcname=arcname)
 
@@ -120,13 +109,7 @@ class ContextBuilder(object):
                     if arcname == "":
                         continue
 
-                    mtime_match = re.search("mtime\((\d+)\)$", arcname)
-                    specified_mtime = None if not mtime_match else int(mtime_match.groups()[0])
-
                     with self.the_context(content, silent_build=silent_build) as fle:
-                        if specified_mtime:
-                            os.utime(fle.name, (specified_mtime, specified_mtime))
-
                         log.debug("Context: {0}".format(arcname))
                         t.add(fle.name, arcname=arcname)
 
@@ -191,32 +174,20 @@ class ContextBuilder(object):
                 fle.seek(0)
                 yield fle
 
-    def find_mtimes(self, context, silent_build):
+    def find_files_for_tar(self, context, silent_build):
         """
-        Return [(filename, mtime), ...] for all the files.
-
-        Where the mtime comes from git or is None depending on the value of
-        use_git_timestamps
-
-        use_git_timestamps can be True indicating all files or it can be a list
-        of globs indicating which files should receive git timestamps.
+        Return [(filename, arcname), ...] for all the files.
         """
         if not context.enabled:
             return
 
-        mtimes = {}
-        if context.use_git:
-            mtimes = self.find_git_mtimes(context, silent_build)
-        files, mtime_ignoreable = self.find_files(context, silent_build)
+        files = self.find_files(context, silent_build)
 
         for path in files:
             relname = os.path.relpath(path, context.parent_dir)
             arcname = "./{0}".format(relname.encode('utf-8').decode('ascii', 'ignore'))
             if os.path.exists(path):
-                if not context.use_git_timestamps or relname in mtime_ignoreable:
-                    yield path, None, arcname
-                else:
-                    yield path, mtimes.get(relname), arcname
+                yield path, arcname
 
     def find_files(self, context, silent_build):
         """
@@ -233,15 +204,13 @@ class ContextBuilder(object):
         total_files = set(all_files)
 
         combined = set(all_files)
-        mtime_ignoreable = set()
 
-        if context.use_git:
-            if context.use_gitignore and context.parent_dir == context.git_root:
+        if context.use_gitignore:
+            if context.parent_dir == context.git_root:
                 all_files = set([path for path in all_files if not path.startswith(".git")])
 
             combined = set(all_files)
-            changed_files, untracked_files, valid_files = self.find_ignored_git_files(context, silent_build)
-            mtime_ignoreable = set(list(changed_files) + list(untracked_files))
+            valid_files = self.find_notignored_git_files(context, silent_build)
 
             removed = set()
             if valid_files:
@@ -273,28 +242,7 @@ class ContextBuilder(object):
 
         files = sorted(os.path.join(context.parent_dir, filename) for filename in combined)
         if not silent_build: log.info("Adding %s things from %s to the context", len(files), context.parent_dir)
-        return files, mtime_ignoreable
-
-    def find_git_mtimes(self, context, silent_build):
-        """
-        Use git to find the mtimes of the files we care about
-        """
-        if not context.use_git_timestamps:
-            return {}
-
-        parent_dir = context.parent_dir
-        root_folder = context.git_root
-
-        # Can't use git timestamps if it's just a shallow clone
-        # Otherwise all the files get the timestamp of the latest commit
-        if context.use_git_timestamps and os.path.exists(os.path.join(root_folder, ".git", "shallow")):
-            raise HarpoonError("Can't get git timestamps from a shallow clone", directory=parent_dir)
-
-        if GitTimes is None:
-            raise HarpoonError("Please pip install docker-harpoon[git] before using git options")
-
-        options = {"include": context.include, "exclude": context.exclude, "timestamps_for": context.use_git_timestamps, "silent": silent_build}
-        return dict(GitTimes(root_folder, os.path.relpath(parent_dir, root_folder), **options).find())
+        return files
 
     def convert_nonascii(self, lst):
         """Convert the strange outputs from git commands"""
@@ -305,15 +253,9 @@ class ContextBuilder(object):
             else:
                 yield item.encode('utf-8').decode('unicode-escape')
 
-    def find_ignored_git_files(self, context, silent_build):
+    def find_notignored_git_files(self, context, silent_build):
         """
-        And all the files that are untracked
-
-        And all the files that have been changed
-
-        And find the files that are either under source control or untracked
-
-        return (changed_files, untracked_files, valid_files)
+        Return a list of files that are not ignored by git
         """
         def git(args, error_message, cwd=context.parent_dir, **error_kwargs):
             output, status = command_output("git {0}".format(args), cwd=cwd)
@@ -323,45 +265,41 @@ class ContextBuilder(object):
                 raise HarpoonError(error_message, **error_kwargs)
             return output
 
-        # Dulwich doesn't include gitignore functionality and so has to be implemented here
-        # I don't feel confident in my ability to implement that detail, so we just ask git for that information
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
         untracked_files = git("ls-files --others --exclude-standard", "Failed to find untracked files")
 
         valid = set()
-        if context.use_gitignore:
-            under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
-            git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submodules", cwd=context.git_root)]
-            git_submodules = [os.path.normpath(os.path.relpath(os.path.abspath(p), os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)))) for p in git_submodules]
+        under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
+        git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submodules", cwd=context.git_root)]
+        git_submodules = [os.path.normpath(os.path.relpath(os.path.abspath(p), os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)))) for p in git_submodules]
 
-            valid = under_source_control + untracked_files
+        valid = under_source_control + untracked_files
 
-            for filename in list(valid):
-                matched = False
-                if context.exclude:
-                    for excluder in context.exclude:
-                        if fnmatch.fnmatch(filename, excluder):
-                            matched = True
-                            break
+        for filename in list(valid):
+            matched = False
+            if context.exclude:
+                for excluder in context.exclude:
+                    if fnmatch.fnmatch(filename, excluder):
+                        matched = True
+                        break
 
-                if matched:
-                    continue
+            if matched:
+                continue
 
-                location = os.path.join(context.parent_dir, filename)
-                if os.path.islink(location) and os.path.isdir(location):
-                    actual_path = os.path.abspath(os.path.realpath(location))
-                    parent_dir = os.path.abspath(os.path.realpath(context.parent_dir))
-                    include_from = os.path.relpath(actual_path, parent_dir)
+            location = os.path.join(context.parent_dir, filename)
+            if os.path.islink(location) and os.path.isdir(location):
+                actual_path = os.path.abspath(os.path.realpath(location))
+                parent_dir = os.path.abspath(os.path.realpath(context.parent_dir))
+                include_from = os.path.relpath(actual_path, parent_dir)
 
-                    to_include = git("ls-files --exclude-standard -- {0}".format(include_from), "Failed to find files under a symlink")
-                    for found in to_include:
-                        valid += [os.path.join(filename, os.path.relpath(found, include_from))]
-                elif os.path.isdir(location) and filename in git_submodules:
-                    to_include = git("ls-files --exclude-standard", "Failed to find files in a submodule", cwd=location)
-                    valid = [v for v in valid if v != filename]
-                    for found in to_include:
-                        valid.append(os.path.join(filename, found))
+                to_include = git("ls-files --exclude-standard -- {0}".format(include_from), "Failed to find files under a symlink")
+                for found in to_include:
+                    valid += [os.path.join(filename, os.path.relpath(found, include_from))]
+            elif os.path.isdir(location) and filename in git_submodules:
+                to_include = git("ls-files --exclude-standard", "Failed to find files in a submodule", cwd=location)
+                valid = [v for v in valid if v != filename]
+                for found in to_include:
+                    valid.append(os.path.join(filename, found))
 
-        to_set = lambda lst: set(self.convert_nonascii(lst))
-        return to_set(changed_files), to_set(untracked_files), to_set(valid)
+        return set(self.convert_nonascii(valid))
 

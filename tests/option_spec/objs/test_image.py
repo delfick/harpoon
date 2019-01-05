@@ -17,7 +17,6 @@ import os
 
 describe HarpoonCase, "Image object":
 	before_each:
-		self.mtime = int(datetime.datetime.now().strftime("%s"))
 		self.silent_build = False
 
 	def make_image(self, options):
@@ -25,14 +24,13 @@ describe HarpoonCase, "Image object":
 		harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), {"silent_build": self.silent_build})
 		if "harpoon" not in options:
 			options["harpoon"] = harpoon
-		return HarpoonSpec().image_spec.normalise(Meta({"mtime": self.mtime, "_key_name_1": "awesome_image", "config_root": config_root}, []), options)
+		return HarpoonSpec().image_spec.normalise(Meta({"_key_name_1": "awesome_image", "config_root": config_root}, []), options)
 
 	describe "Docker file":
 		it "Creates a dockerfile object from the commands":
 			image = self.make_image({"commands": ["FROM ubuntu:14.04"]})
 			docker_file = image.docker_file
 			self.assertIs(type(docker_file), objs.DockerFile)
-			self.assertEqual(docker_file.mtime, self.mtime)
 			self.assertEqual(docker_file.docker_lines, ["FROM ubuntu:14.04"])
 
 	describe "Context":
@@ -99,5 +97,5 @@ describe HarpoonCase, "Image object":
 				image.add_docker_file_to_tarfile(image.docker_file, tar)
 				tar.close()
 
-				self.assertTarFileContent(tar.name, {"./Dockerfile": (self.mtime, "RUN one\nRUN two")})
+				self.assertTarFileContent(tar.name, {"./Dockerfile": "RUN one\nRUN two"})
 

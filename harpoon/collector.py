@@ -181,16 +181,6 @@ class Collector(Collector):
                 , error="{0}{1}".format(error.problem, error.problem_mark)
                 )
 
-    def get_committime_or_mtime(self, context, location):
-        """Get the commit time of some file or the modified time of of it if can't get from git"""
-        status, date = 0, None
-        if context.use_git:
-            date, status = command_output("git show -s --format=%at -n1 -- {0}".format(os.path.basename(location)), cwd=os.path.dirname(location))
-        if status == 0 and date:
-            return int(date[0])
-        else:
-            return os.path.getmtime(location)
-
     def add_configuration(self, configuration, collect_another_source, done, result, src):
         """
         Used to add a file to the configuration, result here is the yaml.load
@@ -201,10 +191,6 @@ class Collector(Collector):
 
         We also take extra files to collector from result["images"]["__images_from__"]
         """
-        def make_mtime_func(source):
-            """Lazily calculate the mtime to avoid wasted computation"""
-            return lambda context: self.get_committime_or_mtime(context, source)
-
         # Make sure to maintain the original config_root
         if "config_root" in configuration:
             # if we already have a config root then we only keep new config root if it's not the home location
@@ -212,9 +198,6 @@ class Collector(Collector):
             if configuration["config_root"] != os.path.dirname(self.home_dir_configuration_location()):
                 if "config_root" in result:
                     del result["config_root"]
-
-        if "mtime" not in result:
-            result["mtime"] = make_mtime_func(src)
 
         config_root = configuration.get("config_root")
         if config_root and src.startswith(config_root):
@@ -244,7 +227,6 @@ class Collector(Collector):
                         if fle.endswith(".yml") or fle.endswith(".yaml"):
                             collect_another_source(location
                                 , prefix = ["images", os.path.splitext(os.path.basename(fle))[0]]
-                                , extra = {"mtime": make_mtime_func(location)}
                                 )
 
             del result["images"]["__images_from__"]

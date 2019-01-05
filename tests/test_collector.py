@@ -142,36 +142,6 @@ describe HarpoonCase, "Collector":
                     with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ParserError", error="expected ',' or '}}', but got '<stream end>'  in \"{0}\", line 3, column 11".format(filename)):
                         readed = collector.read_file(filename)
 
-        describe "Getting committime or mtime":
-            it "uses git if context.use_git else just gets mtime":
-                with self.a_temp_dir() as directory:
-                    def cmd(command):
-                        output, status = command_output(command, cwd=directory)
-                        print(output)
-                        assert status is 0
-                        return output
-                    cmd("git init .")
-                    cmd("touch blah")
-                    cmd("git add blah")
-                    cmd("git config user.email 'blah@blah.com'")
-                    cmd("git config user.name 'my name'")
-                    os.utime(os.path.join(directory, "blah"), (13456789, 13456789))
-                    cmd("git commit -am 'stuff'")
-                    output = cmd("git log --pretty=%at")
-
-                    expected = int(output[0])
-                    self.assertNotEqual(expected, 13456789)
-
-                    collector = Collector()
-
-                    ctxt = mock.Mock(name="context")
-                    ctxt.use_git = True
-                    self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), expected)
-
-                    # And without git
-                    ctxt.use_git = False
-                    self.assertEqual(collector.get_committime_or_mtime(ctxt, os.path.join(directory, "blah")), 13456789)
-
         describe "Adding configuration":
             it "merges from extra_files":
                 config1 = dedent("""
@@ -208,27 +178,10 @@ describe HarpoonCase, "Collector":
                         as_dict = configuration.as_dict()
                         self.assertEqual(as_dict
                             , { "one": 1, "two": {"three": 5, "six": 6, "four": 4}, "five": "six\nseven\neight\n", "nine": "ten eleven twelve", "harpoon": {'extra_files': filename1}
-                              , "collector": collector, "getpass": getpass, "args_dict": {}, "config_root": os.path.dirname(filename2), "mtime": as_dict["mtime"]
+                              , "collector": collector, "getpass": getpass, "args_dict": {}, "config_root": os.path.dirname(filename2)
                               , "authentication": sb.NotSpecified, "content": sb.NotSpecified
                               }
                             )
-
-            it "adds in an mtime function":
-                collector = Collector()
-                configuration = collector.start_configuration()
-                collect_another_source = mock.Mock(name="collect_another_source")
-                src = mock.Mock(name="src")
-                result = {"one": 1}
-
-                collector.add_configuration(configuration, collect_another_source, {}, result, src)
-                self.assertEqual(configuration["one"], 1)
-                self.assertEqual(configuration.storage.data[0][2], src)
-
-                ctxt = mock.Mock(name="context")
-                get_committime_or_mtime = mock.Mock(name="get_committime_or_mtime", return_value=13456789)
-                with mock.patch.object(collector, "get_committime_or_mtime", get_committime_or_mtime):
-                    self.assertEqual(configuration["mtime"](ctxt), 13456789)
-                get_committime_or_mtime.assert_called_once_with(ctxt, src)
 
             it "collects files in folders specified by images.__images_from__":
                 root, folders = self.setup_directory({"one": {"two": {"three.yml":"", "four.yml":""}, "five": [], "six": {"seven.yml":""}, "eight.yml": ""}, "two": {"notseen.yml":""}})
@@ -242,10 +195,11 @@ describe HarpoonCase, "Collector":
                 collector.add_configuration(configuration, collect_another_source, done, result, src)
 
                 self.assertEqual(sorted(collect_another_source.mock_calls)
-                    , sorted([ mock.call(folders["one"]["eight.yml"]["/file/"], prefix=["images", "eight"], extra={"mtime": mock.ANY})
-                      , mock.call(folders["one"]["two"]['four.yml']["/file/"], prefix=["images", "four"], extra={"mtime": mock.ANY})
-                      , mock.call(folders["one"]["two"]['three.yml']["/file/"], prefix=["images", "three"], extra={"mtime": mock.ANY})
-                      , mock.call(folders["one"]["six"]['seven.yml']["/file/"], prefix=["images", "seven"], extra={"mtime": mock.ANY})
+                    , sorted(
+                      [ mock.call(folders["one"]["eight.yml"]["/file/"], prefix=["images", "eight"])
+                      , mock.call(folders["one"]["two"]['four.yml']["/file/"], prefix=["images", "four"])
+                      , mock.call(folders["one"]["two"]['three.yml']["/file/"], prefix=["images", "three"])
+                      , mock.call(folders["one"]["six"]['seven.yml']["/file/"], prefix=["images", "seven"])
                       ])
                     )
 
@@ -257,7 +211,6 @@ describe HarpoonCase, "Collector":
                     collector = Collector()
                     collector.prepare(filename, {"harpoon": {}, "bash": None, "command": None, "assume_role": None})
                     cfg = json.loads(config)
-                    cfg["mtime"] = mock.ANY
 
                     cfg_three = dict(cfg)
                     cfg_four = dict(cfg)
