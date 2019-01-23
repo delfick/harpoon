@@ -127,7 +127,7 @@ describe HarpoonCase, "Collector":
 
                 with self.a_temp_file(config) as filename:
                     collector = Collector()
-                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ScannerError", error="expected chomping or indentation indicators, but found '>'  in \"{0}\", line 3, column 8".format(filename)):
+                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ScannerError", error="did not find expected comment or line break  in \"{0}\", line 3, column 8".format(filename)):
                         readed = collector.read_file(filename)
 
             it "complains about parser errors":
@@ -139,7 +139,7 @@ describe HarpoonCase, "Collector":
 
                 with self.a_temp_file(config) as filename:
                     collector = Collector()
-                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ParserError", error="expected ',' or '}}', but got '<stream end>'  in \"{0}\", line 3, column 11".format(filename)):
+                    with self.fuzzyAssertRaisesError(collector.BadFileErrorKls, "Failed to read yaml", location=filename, error_type="ParserError", error="did not find expected ',' or '}}'  in \"{0}\", line 4, column 1".format(filename)):
                         readed = collector.read_file(filename)
 
         describe "Adding configuration":

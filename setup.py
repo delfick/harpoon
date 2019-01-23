@@ -20,7 +20,7 @@ setup(
       , "humanize"
 
       , "boto3==1.4.4"
-      , "pyYaml==3.13"
+      , "ruamel.yaml==0.15.87"
       ]
 
     , extras_require =

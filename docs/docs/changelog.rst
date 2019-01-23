@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.14.0 - 23 January 2019
+    * Started using ruamel.yaml instead of PyYaml to load configuration
+
 0.13.0 - 5 January 2019
     * Removing all traces of file modified time options. Since docker 1.8 the
       mtime of files is not taken into account when determining if the docker
