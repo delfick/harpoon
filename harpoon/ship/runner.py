@@ -178,8 +178,13 @@ class Runner(object):
                         container_id = container_ids[container]
                         container_name = image.container_name
                         hp.write_to(conf.harpoon.stdout, "=================== Logs for failed container {0} ({1})\n".format(container_id, container_name))
-                        for line in conf.harpoon.docker_api.logs(container_id).split("\n"):
+
+                        logs = conf.harpoon.docker_api.logs(container_id)
+                        if isinstance(logs, six.binary_type):
+                            logs = logs.decode()
+                        for line in logs.split("\n"):
                             hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
+
                         hp.write_to(conf.harpoon.stdout, "------------------- End logs for failed container\n")
                     raise BadImage("One or more of the dependencies stopped running whilst waiting for other dependencies", stopped=list(couldnt_wait))
 
