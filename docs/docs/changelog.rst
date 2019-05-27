@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.14.1 - 27 May 2019
+    * Fix printing out logs when a container fails during a wait condition
+
 0.14.0 - 23 January 2019
     * Started using ruamel.yaml instead of PyYaml to load configuration
 
