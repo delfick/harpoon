@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.14.2 - 4 August 2019
+     * Update delfick_app dependency
+
 0.14.1 - 27 May 2019
     * Fix printing out logs when a container fails during a wait condition
 
