@@ -10,8 +10,8 @@ import sys
 import six
 import os
 
-class FilesAssertionsMixin:
 
+class FilesAssertionsMixin:
     def unique_val(self):
         """Return a uuid1 value"""
         return str(uuid.uuid1())
@@ -26,7 +26,7 @@ class FilesAssertionsMixin:
 
         tmp = tempfile.NamedTemporaryFile(delete=False)
         if content:
-            with open(tmp.name, 'w') as fle:
+            with open(tmp.name, "w") as fle:
                 fle.write(content)
         self._temp_files.append(tmp.name)
         return tmp
@@ -53,6 +53,7 @@ class FilesAssertionsMixin:
                     shutil.rmtree(tmp)
                 else:
                     os.remove(tmp)
+
     cleanup_temp_things._harpoon_case_teardown = True
 
     @contextmanager
@@ -64,7 +65,7 @@ class FilesAssertionsMixin:
         try:
             filename = tempfile.NamedTemporaryFile(delete=False).name
             if body:
-                with open(filename, 'w') as fle:
+                with open(filename, "w") as fle:
                     fle.write(body)
             if removed:
                 os.remove(filename)
@@ -112,22 +113,22 @@ class FilesAssertionsMixin:
                 os.makedirs(dirname)
 
             nxt = record
-            if nxt is not None and dirname != nxt['/folder/']:
-                for part in os.path.relpath(dirname, nxt['/folder/']).split(os.path.sep):
+            if nxt is not None and dirname != nxt["/folder/"]:
+                for part in os.path.relpath(dirname, nxt["/folder/"]).split(os.path.sep):
                     if part in nxt:
                         nxt = nxt[part]
                     else:
-                        nxt = nxt[part] = {"/folder/": os.path.join(nxt['/folder/'], part)}
+                        nxt = nxt[part] = {"/folder/": os.path.join(nxt["/folder/"], part)}
 
             if filename:
-                with open(location, 'w') as fle:
+                with open(location, "w") as fle:
                     if contents:
                         fle.write(contents)
                     else:
                         fle.write("")
 
                     if nxt:
-                        nxt[filename] = {'/file/': os.path.join(nxt['/folder/'], filename)}
+                        nxt[filename] = {"/file/": os.path.join(nxt["/folder/"], filename)}
 
         for file_spec in files_list:
             if isinstance(file_spec, six.string_types):
@@ -174,27 +175,27 @@ class FilesAssertionsMixin:
             root = self.make_temp_dir()
 
         if record is None:
-            record = {'/folder/': root}
+            record = {"/folder/": root}
 
         if type(heirarchy) in (list, tuple):
             heirarchy = dict((k, None) for k in heirarchy)
 
         for key, val in heirarchy.items():
             path = os.path.join(root, key)
-            if isinstance(val, (six.string_types + (list, tuple))) and not key.endswith('/'):
+            if isinstance(val, (six.string_types + (list, tuple))) and not key.endswith("/"):
                 if isinstance(val, six.string_types):
                     val = [(key, val)]
                 elif isinstance(val, tuple):
                     val = [val]
                 self.touch_files(root, val, record=record)
             else:
-                record[key] = {'/folder/' : path}
+                record[key] = {"/folder/": path}
                 os.makedirs(path)
                 if val:
                     self.setup_directory(val, path, record[key])
 
-        if '/folder/' not in record:
-            record['/folder/'] = root
+        if "/folder/" not in record:
+            record["/folder/"] = root
 
         return root, record
 
@@ -211,7 +212,7 @@ class FilesAssertionsMixin:
             found.add(identity)
             contents = expected[identity]
             if data is not None or contents is not None:
-                self.assertEqual(data.decode('utf-8'), contents)
+                self.assertEqual(data.decode("utf-8"), contents)
         self.assertEqual(found, set(expected.keys()))
 
     def extract_tar(self, location):
@@ -229,4 +230,3 @@ class FilesAssertionsMixin:
         finally:
             if trf:
                 trf.close()
-

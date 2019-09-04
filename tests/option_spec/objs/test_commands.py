@@ -41,8 +41,12 @@ describe HarpoonCase, "Commands":
     before_each:
         self.config_root = self.make_temp_dir()
         self.docker_context = mock.Mock(name="docker_context")
-        self.harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), {"docker_context": self.docker_context})
-        self.meta = Meta({"harpoon": self.harpoon, "mtime": lambda c: 123, "config_root": self.config_root}, [])
+        self.harpoon = HarpoonSpec().harpoon_spec.normalise(
+            Meta({}, []), {"docker_context": self.docker_context}
+        )
+        self.meta = Meta(
+            {"harpoon": self.harpoon, "mtime": lambda c: 123, "config_root": self.config_root}, []
+        )
 
     def make_image(self, name, options):
         if "harpoon" not in options:
@@ -57,24 +61,51 @@ describe HarpoonCase, "Commands":
 
     describe "commands":
         it "goes through all the orig_commands and flattens the commands":
-            orig_commands = [[co.Command("1 2"), co.Command("3 4")], co.Command("5 6"), [co.Command("7 8"), co.Command("9 10")]]
-            self.assertEqual(co.Commands(orig_commands).commands, [co.Command("1 2"), co.Command("3 4"), co.Command("5 6"), co.Command("7 8"), co.Command("9 10")])
+            orig_commands = [
+                [co.Command("1 2"), co.Command("3 4")],
+                co.Command("5 6"),
+                [co.Command("7 8"), co.Command("9 10")],
+            ]
+            self.assertEqual(
+                co.Commands(orig_commands).commands,
+                [
+                    co.Command("1 2"),
+                    co.Command("3 4"),
+                    co.Command("5 6"),
+                    co.Command("7 8"),
+                    co.Command("9 10"),
+                ],
+            )
 
     describe "docker_lines":
         it "returns newline seperated as_string of all the commands":
-            orig_commands = [[co.Command("1 2"), co.Command("3 4")], co.Command("5 6"), [co.Command("7 8"), co.Command("9 10")]]
+            orig_commands = [
+                [co.Command("1 2"), co.Command("3 4")],
+                co.Command("5 6"),
+                [co.Command("7 8"), co.Command("9 10")],
+            ]
             self.assertEqual(co.Commands(orig_commands).docker_lines, "1 2\n3 4\n5 6\n7 8\n9 10")
 
     describe "docker_lines_list":
         it "returns list of as_string of all the commands":
-            orig_commands = [[co.Command("1 2"), co.Command("3 4")], co.Command("5 6"), [co.Command("7 8"), co.Command("9 10")]]
-            self.assertEqual(co.Commands(orig_commands).docker_lines_list, ["1 2", "3 4", "5 6", "7 8", "9 10"])
+            orig_commands = [
+                [co.Command("1 2"), co.Command("3 4")],
+                co.Command("5 6"),
+                [co.Command("7 8"), co.Command("9 10")],
+            ]
+            self.assertEqual(
+                co.Commands(orig_commands).docker_lines_list, ["1 2", "3 4", "5 6", "7 8", "9 10"]
+            )
 
     describe "extra_context":
         it "yields all the extra_context found on commands":
             ec1 = mock.Mock(name="ec1")
             ec2 = mock.Mock(name="ec2")
-            orig_commands = [[co.Command("1 2", ec1), co.Command("3 4")], co.Command("5 6", ec2), [co.Command("7 8"), co.Command("9 10")]]
+            orig_commands = [
+                [co.Command("1 2", ec1), co.Command("3 4")],
+                co.Command("5 6", ec2),
+                [co.Command("7 8"), co.Command("9 10")],
+            ]
             self.assertEqual(list(co.Commands(orig_commands).extra_context), [ec1, ec2])
 
     describe "dependent_images":
@@ -89,50 +120,54 @@ describe HarpoonCase, "Commands":
 
         it "yields if we have staged FROMs":
             image = mock.Mock(name="image")
-            orig_commands = [
-                  co.Command(("FROM", image))
-                , co.Command("3 4"), co.Command("5 6")]
+            orig_commands = [co.Command(("FROM", image)), co.Command("3 4"), co.Command("5 6")]
             self.assertEqual(list(co.Commands(orig_commands).dependent_images), [image])
 
         it "yields all if there are many FROMS":
             image = mock.Mock(name="image")
             orig_commands = [
-                  co.Command(("FROM", image), extra="as wat")
-                , co.Command("3 4")
-                , co.Command("5 6")
-
-                , co.Command("FROM meh:14 as stuff")
-                , co.Command("3 4")
-                , co.Command("5 6")
-
-                , co.Command("FROM another")
-                , co.Command("3 4")
-                , co.Command("5 6")
-                ]
-            self.assertEqual(list(co.Commands(orig_commands).dependent_images), [image, "meh:14", "another"])
+                co.Command(("FROM", image), extra="as wat"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                co.Command("FROM meh:14 as stuff"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                co.Command("FROM another"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+            ]
+            self.assertEqual(
+                list(co.Commands(orig_commands).dependent_images), [image, "meh:14", "another"]
+            )
 
         it "yields from ADDs that have images":
             harpoon = mock.Mock(name="harpoon")
             image = self.make_image("image1", {"commands": ["FROM elsewhere"]})
             image2 = self.make_image("image2", {"commands": ["FROM elsewhere"]})
 
-            add1 = self.make_add_command({"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}})
-            add2 = self.make_add_command({"dest": "/", "content": {"image": image2, "path": "/thing"}})
+            add1 = self.make_add_command(
+                {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
+            )
+            add2 = self.make_add_command(
+                {"dest": "/", "content": {"image": image2, "path": "/thing"}}
+            )
             add3 = self.make_add_command({"dest": "/", "content": "blah"})
 
             orig_commands = [
-                  co.Command(("FROM", image))
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , add1
-
-                , co.Command("FROM meh:14")
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , add2
-                , add3
-                ]
-            self.assertEqual(list(co.Commands(orig_commands).dependent_images), [image, "thing:latest", "meh:14", image2])
+                co.Command(("FROM", image)),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                add1,
+                co.Command("FROM meh:14"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                add2,
+                add3,
+            ]
+            self.assertEqual(
+                list(co.Commands(orig_commands).dependent_images),
+                [image, "thing:latest", "meh:14", image2],
+            )
 
         it "yields from COPYs that have images":
             harpoon = mock.Mock(name="harpoon")
@@ -143,17 +178,19 @@ describe HarpoonCase, "Commands":
             copy2 = self.make_copy_command({"from": image2, "to": "/", "path": "/thing"})
 
             orig_commands = [
-                  co.Command(("FROM", image))
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , copy1
-
-                , co.Command("FROM meh:14")
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , copy2
-                ]
-            self.assertEqual(list(co.Commands(orig_commands).dependent_images), [image, "thing:latest", "meh:14", image2])
+                co.Command(("FROM", image)),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                copy1,
+                co.Command("FROM meh:14"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                copy2,
+            ]
+            self.assertEqual(
+                list(co.Commands(orig_commands).dependent_images),
+                [image, "thing:latest", "meh:14", image2],
+            )
 
     describe "external_dependencies":
         it "returns the string deps from dependent_images":
@@ -161,20 +198,25 @@ describe HarpoonCase, "Commands":
             image = self.make_image("image1", {"commands": ["FROM elsewhere"]})
             image2 = self.make_image("image2", {"commands": ["FROM elsewhere"]})
 
-            add1 = self.make_add_command({"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}})
-            add2 = self.make_add_command({"dest": "/", "content": {"image": image2, "path": "/thing"}})
+            add1 = self.make_add_command(
+                {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
+            )
+            add2 = self.make_add_command(
+                {"dest": "/", "content": {"image": image2, "path": "/thing"}}
+            )
             add3 = self.make_add_command({"dest": "/", "content": "blah"})
 
             orig_commands = [
-                  co.Command(("FROM", image))
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , add1
-
-                , co.Command("FROM meh:14")
-                , co.Command("3 4")
-                , co.Command("5 6")
-                , add2
-                , add3
-                ]
-            self.assertEqual(list(co.Commands(orig_commands).external_dependencies), ["thing:latest", "meh:14"])
+                co.Command(("FROM", image)),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                add1,
+                co.Command("FROM meh:14"),
+                co.Command("3 4"),
+                co.Command("5 6"),
+                add2,
+                add3,
+            ]
+            self.assertEqual(
+                list(co.Commands(orig_commands).external_dependencies), ["thing:latest", "meh:14"]
+            )

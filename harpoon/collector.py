@@ -31,6 +31,7 @@ import os
 
 log = logging.getLogger("harpoon.collector")
 
+
 class Collector(Collector):
     """
     This is based off
@@ -46,6 +47,7 @@ class Collector(Collector):
 
     .. automethod:: harpoon.collector.Collector.add_configuration
     """
+
     _merged_options_formattable = True
 
     BadFileErrorKls = BadYaml
@@ -56,10 +58,8 @@ class Collector(Collector):
 
     def alter_clone_args_dict(self, new_collector, new_args_dict, options=None):
         return MergedOptions.using(
-              new_args_dict
-            , {"harpoon": self.configuration["harpoon"].as_dict()}
-            , options or {}
-            )
+            new_args_dict, {"harpoon": self.configuration["harpoon"].as_dict()}, options or {}
+        )
 
     def extra_prepare(self, configuration, args_dict):
         """
@@ -97,23 +97,23 @@ class Collector(Collector):
 
         # Add our special stuff to the configuration
         self.configuration.update(
-            { "$@": harpoon.get("extra", "")
-            , "bash": args_dict["bash"] or sb.NotSpecified
-            , "harpoon": harpoon
-            , "assume_role": args_dict["assume_role"] or NotSpecified
-            , "command": args_dict['command'] or sb.NotSpecified
-            , "collector": self
-            }
-        , source = "<args_dict>"
+            {
+                "$@": harpoon.get("extra", ""),
+                "bash": args_dict["bash"] or sb.NotSpecified,
+                "harpoon": harpoon,
+                "assume_role": args_dict["assume_role"] or NotSpecified,
+                "command": args_dict["command"] or sb.NotSpecified,
+                "collector": self,
+            },
+            source="<args_dict>",
         )
 
     def find_harpoon_options(self, configuration, args_dict):
         """Return us all the harpoon options"""
         d = lambda r: {} if r in (None, "", NotSpecified) else r
         return MergedOptions.using(
-              dict(d(configuration.get('harpoon')).items())
-            , dict(d(args_dict.get("harpoon")).items())
-            ).as_dict()
+            dict(d(configuration.get("harpoon")).items()), dict(d(args_dict.get("harpoon")).items())
+        ).as_dict()
 
     def setup_addon_register(self, harpoon):
         """Setup our addon register"""
@@ -149,10 +149,13 @@ class Collector(Collector):
 
         We also create a ``task_finder`` for doing task finding related duties.
         """
+
         def task_maker(name, description=None, action=None, label="Project", **options):
             if not action:
                 action = name
-            self.task_overrides[name] = Task(action=action, description=description, options=options, label=label)
+            self.task_overrides[name] = Task(
+                action=action, description=description, options=options, label=label
+            )
             return self.task_overrides[name]
 
         # Post register our addons
@@ -174,13 +177,14 @@ class Collector(Collector):
     def read_file(self, location):
         """Read in a yaml file and return as a python object"""
         try:
-            return YAML(typ='safe').load(open(location))
+            return YAML(typ="safe").load(open(location))
         except (ruamel.yaml.parser.ParserError, ruamel.yaml.scanner.ScannerError) as error:
-            raise self.BadFileErrorKls("Failed to read yaml"
-                , location=location
-                , error_type=error.__class__.__name__
-                , error="{0}{1}".format(error.problem, error.problem_mark)
-                )
+            raise self.BadFileErrorKls(
+                "Failed to read yaml",
+                location=location,
+                error_type=error.__class__.__name__,
+                error="{0}{1}".format(error.problem, error.problem_mark),
+            )
 
     def add_configuration(self, configuration, collect_another_source, done, result, src):
         """
@@ -196,13 +200,15 @@ class Collector(Collector):
         if "config_root" in configuration:
             # if we already have a config root then we only keep new config root if it's not the home location
             # i.e. if it is the home configuration, we don't delete the new config_root
-            if configuration["config_root"] != os.path.dirname(self.home_dir_configuration_location()):
+            if configuration["config_root"] != os.path.dirname(
+                self.home_dir_configuration_location()
+            ):
                 if "config_root" in result:
                     del result["config_root"]
 
         config_root = configuration.get("config_root")
         if config_root and src.startswith(config_root):
-            src = "{{config_root}}/{0}".format(src[len(config_root) + 1:])
+            src = "{{config_root}}/{0}".format(src[len(config_root) + 1 :])
 
         if "images" in result and "__images_from__" in result["images"]:
             images_from_path = result["images"]["__images_from__"]
@@ -217,18 +223,19 @@ class Collector(Collector):
 
                 if not os.path.exists(ifp) or not os.path.isdir(ifp):
                     raise self.BadConfigurationErrorKls(
-                          "Specified folder for other configuration files points to a folder that doesn't exist"
-                        , path="images.__images_from__"
-                        , value=ifp
-                        )
+                        "Specified folder for other configuration files points to a folder that doesn't exist",
+                        path="images.__images_from__",
+                        value=ifp,
+                    )
 
                 for root, dirs, files in os.walk(ifp):
                     for fle in files:
                         location = os.path.join(root, fle)
                         if fle.endswith(".yml") or fle.endswith(".yaml"):
-                            collect_another_source(location
-                                , prefix = ["images", os.path.splitext(os.path.basename(fle))[0]]
-                                )
+                            collect_another_source(
+                                location,
+                                prefix=["images", os.path.splitext(os.path.basename(fle))[0]],
+                            )
 
             del result["images"]["__images_from__"]
 
@@ -236,13 +243,23 @@ class Collector(Collector):
 
         if "harpoon" in result:
             if "extra_files" in result["harpoon"]:
-                spec = sb.listof(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
-                config_root = {"config_root": result.get("config_root", configuration.get("config_root"))}
-                meta = Meta(MergedOptions.using(result, config_root), []).at("harpoon").at("extra_files")
+                spec = sb.listof(
+                    sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+                )
+                config_root = {
+                    "config_root": result.get("config_root", configuration.get("config_root"))
+                }
+                meta = (
+                    Meta(MergedOptions.using(result, config_root), [])
+                    .at("harpoon")
+                    .at("extra_files")
+                )
                 for extra in spec.normalise(meta, result["harpoon"]["extra_files"]):
                     if os.path.abspath(extra) not in done:
                         if not os.path.exists(extra):
-                            raise BadConfiguration("Specified extra file doesn't exist", extra=extra, source=src)
+                            raise BadConfiguration(
+                                "Specified extra file doesn't exist", extra=extra, source=src
+                            )
                         collect_another_source(extra)
 
     def extra_configuration_collection(self, configuration):
@@ -251,16 +268,19 @@ class Collector(Collector):
         """
         harpoon_spec = HarpoonSpec()
 
-        for image in configuration.get('images', {}).keys():
+        for image in configuration.get("images", {}).keys():
             self.make_image_converters(image, configuration, harpoon_spec)
 
         self.register_converters(
-              { (0, ("content", )): sb.dictof(sb.string_spec(), sb.string_spec())
-              , (0, ("harpoon", )): harpoon_spec.harpoon_spec
-              , (0, ("authentication", )): harpoon_spec.authentications_spec
-              }
-            , Meta, configuration, sb.NotSpecified
-            )
+            {
+                (0, ("content",)): sb.dictof(sb.string_spec(), sb.string_spec()),
+                (0, ("harpoon",)): harpoon_spec.harpoon_spec,
+                (0, ("authentication",)): harpoon_spec.authentications_spec,
+            },
+            Meta,
+            configuration,
+            sb.NotSpecified,
+        )
 
         # Some other code works better when harpoon no existy
         if configuration["harpoon"] is sb.NotSpecified:
@@ -268,6 +288,7 @@ class Collector(Collector):
 
     def make_image_converters(self, image, configuration, harpoon_spec):
         """Make converters for this image and add them to the configuration"""
+
         def convert_image(path, val):
             log.info("Converting %s", path)
             everything = path.configuration.root().wrapped()

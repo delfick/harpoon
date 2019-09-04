@@ -26,11 +26,10 @@ import six
 import os
 import re
 
-regexes = {
-      "whitespace": re.compile("\s+")
-    }
+regexes = {"whitespace": re.compile("\s+")}
 
 log = logging.getLogger("harpoon.ship.context")
+
 
 def command_output(command, cwd=None):
     try:
@@ -43,8 +42,10 @@ def command_output(command, cwd=None):
     lines = [line for line in output.decode().split("\n") if line.strip()]
     return lines, code
 
+
 class ContextWrapper(object):
     """Wraps a tarfile context, so we can continue changing it afterwards"""
+
     def __init__(self, t, tmpfile):
         self.t = t
         self.tmpfile = tmpfile
@@ -72,12 +73,14 @@ class ContextWrapper(object):
                 conf.add_docker_file_to_tarfile(docker_file, t)
                 yield ContextWrapper(t, tmpfile)
 
+
 class ContextBuilder(object):
     """
     Understands how to build a context
 
     Can take into account git to determine what to include and exclude.
     """
+
     @contextmanager
     def make_context(self, context, silent_build=False, extra_context=None):
         """
@@ -98,7 +101,7 @@ class ContextBuilder(object):
             The second string represents where in the context this extra file should go
         """
         with a_temp_file() as tmpfile:
-            t = tarfile.open(mode='w', fileobj=tmpfile)
+            t = tarfile.open(mode="w", fileobj=tmpfile)
             for thing, arcname in self.find_files_for_tar(context, silent_build):
                 log.debug("Context: {0}".format(arcname))
                 t.add(thing, arcname=arcname)
@@ -120,26 +123,37 @@ class ContextBuilder(object):
         """Return either a file with the content written to it, or a whole new context tar"""
         if isinstance(content, six.string_types):
             with a_temp_file() as fle:
-                fle.write(content.encode('utf-8'))
+                fle.write(content.encode("utf-8"))
                 fle.seek(0)
                 yield fle
         elif "context" in content:
-            with ContextBuilder().make_context(content["context"], silent_build=silent_build) as wrapper:
+            with ContextBuilder().make_context(
+                content["context"], silent_build=silent_build
+            ) as wrapper:
                 wrapper.close()
                 yield wrapper.tmpfile
         elif "image" in content:
             from harpoon.ship.runner import Runner
+
             with a_temp_file() as fle:
                 content["conf"].command = "yes"
-                with Runner()._run_container(content["conf"], content["images"], detach=True, delete_anyway=True):
+                with Runner()._run_container(
+                    content["conf"], content["images"], detach=True, delete_anyway=True
+                ):
                     try:
-                        strm, stat = content["docker_api"].get_archive(content["conf"].container_id, content["path"])
+                        strm, stat = content["docker_api"].get_archive(
+                            content["conf"].container_id, content["path"]
+                        )
                     except docker.errors.NotFound:
-                        raise BadOption("Trying to get something from an image that don't exist!", path=content["path"], image=content["conf"].image_name)
+                        raise BadOption(
+                            "Trying to get something from an image that don't exist!",
+                            path=content["path"],
+                            image=content["conf"].image_name,
+                        )
                     else:
                         log.debug(stat)
 
-                        fo = BytesIO(b''.join(strm))
+                        fo = BytesIO(b"".join(strm))
 
                         # In newer docker the archive is a gzipped archive
                         # But in older docker, it's a normal tar
@@ -153,10 +167,10 @@ class ContextBuilder(object):
                                 fo.seek(0)
 
                         if tf.firstmember.isdir():
-                            tf2 = tarfile.TarFile(fileobj=fle, mode='w')
+                            tf2 = tarfile.TarFile(fileobj=fle, mode="w")
                             name = tf.firstmember.name
                             for member in tf.getmembers()[1:]:
-                                member.name = member.name[len(name)+1:]
+                                member.name = member.name[len(name) + 1 :]
                                 if member.issym():
                                     with tempfile.NamedTemporaryFile() as symfle:
                                         os.remove(symfle.name)
@@ -169,7 +183,11 @@ class ContextBuilder(object):
                             fle.write(tf.extractfile(tf.firstmember.name).read())
 
                         tf.close()
-                        log.info("Got '{0}' from {1} for context".format(content["path"], content["conf"].container_id))
+                        log.info(
+                            "Got '{0}' from {1} for context".format(
+                                content["path"], content["conf"].container_id
+                            )
+                        )
 
                 fle.seek(0)
                 yield fle
@@ -185,7 +203,7 @@ class ContextBuilder(object):
 
         for path in files:
             relname = os.path.relpath(path, context.parent_dir)
-            arcname = "./{0}".format(relname.encode('utf-8').decode('ascii', 'ignore'))
+            arcname = "./{0}".format(relname.encode("utf-8").decode("ascii", "ignore"))
             if os.path.exists(path):
                 yield path, arcname
 
@@ -194,12 +212,19 @@ class ContextBuilder(object):
         Find the set of files from our parent_dir that we care about
         """
         first_layer = ["'{0}'".format(thing) for thing in os.listdir(context.parent_dir)]
-        output, status = command_output("find {0} -type l -or -type f {1} -follow -print".format(' '.join(first_layer), context.find_options), cwd=context.parent_dir)
+        output, status = command_output(
+            "find {0} -type l -or -type f {1} -follow -print".format(
+                " ".join(first_layer), context.find_options
+            ),
+            cwd=context.parent_dir,
+        )
         if status != 0:
             if context.ignore_find_errors:
                 log.warning("The find command failed to run, will continue anyway")
             else:
-                raise HarpoonError("Couldn't find the files we care about", output=output, cwd=context.parent_dir)
+                raise HarpoonError(
+                    "Couldn't find the files we care about", output=output, cwd=context.parent_dir
+                )
         all_files = set(self.convert_nonascii(output))
         total_files = set(all_files)
 
@@ -217,7 +242,8 @@ class ContextBuilder(object):
                 for fle in combined:
                     if fle not in valid_files:
                         removed.add(fle)
-            if removed and not silent_build: log.info("Ignoring %s/%s files", len(removed), len(combined))
+            if removed and not silent_build:
+                log.info("Ignoring %s/%s files", len(removed), len(combined))
             combined -= removed
 
         if context.exclude:
@@ -227,7 +253,13 @@ class ContextBuilder(object):
                     if fnmatch.fnmatch(filename, excluder):
                         excluded.add(filename)
                         break
-            if not silent_build: log.info("Filtering %s/%s items\texcluding=%s", len(excluded), len(combined), context.exclude)
+            if not silent_build:
+                log.info(
+                    "Filtering %s/%s items\texcluding=%s",
+                    len(excluded),
+                    len(combined),
+                    context.exclude,
+                )
             combined -= excluded
 
         if context.include:
@@ -237,11 +269,13 @@ class ContextBuilder(object):
                     if fnmatch.fnmatch(filename, includer):
                         extra_included.append(filename)
                         break
-            if not silent_build: log.info("Adding back %s items\tincluding=%s", len(extra_included), context.include)
+            if not silent_build:
+                log.info("Adding back %s items\tincluding=%s", len(extra_included), context.include)
             combined = set(list(combined) + extra_included)
 
         files = sorted(os.path.join(context.parent_dir, filename) for filename in combined)
-        if not silent_build: log.info("Adding %s things from %s to the context", len(files), context.parent_dir)
+        if not silent_build:
+            log.info("Adding %s things from %s to the context", len(files), context.parent_dir)
         return files
 
     def convert_nonascii(self, lst):
@@ -249,29 +283,45 @@ class ContextBuilder(object):
         for item in lst:
             if item.startswith('"') and item.endswith('"'):
                 item = item[1:-1]
-                yield item.encode('utf-8').decode('unicode-escape')
+                yield item.encode("utf-8").decode("unicode-escape")
             else:
-                yield item.encode('utf-8').decode('unicode-escape')
+                yield item.encode("utf-8").decode("unicode-escape")
 
     def find_notignored_git_files(self, context, silent_build):
         """
         Return a list of files that are not ignored by git
         """
+
         def git(args, error_message, cwd=context.parent_dir, **error_kwargs):
             output, status = command_output("git {0}".format(args), cwd=cwd)
             if status != 0:
-                error_kwargs['output'] = output
-                error_kwargs['directory'] = context.parent_dir
+                error_kwargs["output"] = output
+                error_kwargs["directory"] = context.parent_dir
                 raise HarpoonError(error_message, **error_kwargs)
             return output
 
         changed_files = git("diff --name-only", "Failed to determine what files have changed")
-        untracked_files = git("ls-files --others --exclude-standard", "Failed to find untracked files")
+        untracked_files = git(
+            "ls-files --others --exclude-standard", "Failed to find untracked files"
+        )
 
         valid = set()
-        under_source_control = git("ls-files --exclude-standard", "Failed to find all the files under source control")
-        git_submodules = [regexes["whitespace"].split(line.strip())[1] for line in git("submodule status", "Failed to find submodules", cwd=context.git_root)]
-        git_submodules = [os.path.normpath(os.path.relpath(os.path.abspath(p), os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)))) for p in git_submodules]
+        under_source_control = git(
+            "ls-files --exclude-standard", "Failed to find all the files under source control"
+        )
+        git_submodules = [
+            regexes["whitespace"].split(line.strip())[1]
+            for line in git("submodule status", "Failed to find submodules", cwd=context.git_root)
+        ]
+        git_submodules = [
+            os.path.normpath(
+                os.path.relpath(
+                    os.path.abspath(p),
+                    os.path.abspath(os.path.relpath(context.parent_dir, context.git_root)),
+                )
+            )
+            for p in git_submodules
+        ]
 
         valid = under_source_control + untracked_files
 
@@ -292,14 +342,20 @@ class ContextBuilder(object):
                 parent_dir = os.path.abspath(os.path.realpath(context.parent_dir))
                 include_from = os.path.relpath(actual_path, parent_dir)
 
-                to_include = git("ls-files --exclude-standard -- {0}".format(include_from), "Failed to find files under a symlink")
+                to_include = git(
+                    "ls-files --exclude-standard -- {0}".format(include_from),
+                    "Failed to find files under a symlink",
+                )
                 for found in to_include:
                     valid += [os.path.join(filename, os.path.relpath(found, include_from))]
             elif os.path.isdir(location) and filename in git_submodules:
-                to_include = git("ls-files --exclude-standard", "Failed to find files in a submodule", cwd=location)
+                to_include = git(
+                    "ls-files --exclude-standard",
+                    "Failed to find files in a submodule",
+                    cwd=location,
+                )
                 valid = [v for v in valid if v != filename]
                 for found in to_include:
                     valid.append(os.path.join(filename, found))
 
         return set(self.convert_nonascii(valid))
-

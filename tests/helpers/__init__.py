@@ -7,12 +7,12 @@ import unittest
 import os
 
 this_dir = os.path.dirname(__file__)
-mixin_dir = os.path.join(this_dir, 'mixins')
+mixin_dir = os.path.join(this_dir, "mixins")
 harpoon_dir = os.path.abspath(pkg_resources.resource_filename("harpoon", ""))
 
 bases = [unittest.TestCase, DelfickErrorTestMixin]
 for name in os.listdir(mixin_dir):
-    if not name or name.startswith("_") or not name.endswith('.py'):
+    if not name or name.startswith("_") or not name.endswith(".py"):
         continue
 
     # Name convention is <Name>AssertionsMixin
@@ -21,12 +21,14 @@ for name in os.listdir(mixin_dir):
     imported = __import__("mixins.{0}".format(name), globals(), locals(), [mixin], 1)
     bases.append(getattr(imported, mixin))
 
+
 def harpoon_case_teardown(self):
     """Run any registered teardown function"""
     for tearer in self._teardowns:
         tearer()
 
-def harpoon_init(self, methodName='runTest'):
+
+def harpoon_init(self, methodName="runTest"):
     """
     We need to do some trickery with runTest so that it all works.
 
@@ -39,19 +41,22 @@ def harpoon_init(self, methodName='runTest'):
             if hasattr(thing, "_harpoon_case_teardown"):
                 self._teardowns.append(thing)
 
-    if methodName == 'runTest':
-        methodName = 'empty'
+    if methodName == "runTest":
+        methodName = "empty"
     return unittest.TestCase.__init__(self, methodName)
 
+
 # Empty function that does nothing
-empty_func = lambda self : False
+empty_func = lambda self: False
 
-HarpoonCase = type("HarpoonCase", tuple(bases)
-    , { 'empty' : empty_func
-      , '__init__' : harpoon_init
-      , 'tearDown' : harpoon_case_teardown
-      , 'teardown' : harpoon_case_teardown
-      , 'harpoon_dir' : harpoon_dir
-      }
-    )
-
+HarpoonCase = type(
+    "HarpoonCase",
+    tuple(bases),
+    {
+        "empty": empty_func,
+        "__init__": harpoon_init,
+        "tearDown": harpoon_case_teardown,
+        "teardown": harpoon_case_teardown,
+        "harpoon_dir": harpoon_dir,
+    },
+)

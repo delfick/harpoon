@@ -31,8 +31,10 @@ info = {"is_default": True}
 default_actions = []
 available_actions = {}
 
+
 class an_action(object):
     """Records a task in the ``available_actions`` dictionary"""
+
     def __init__(self, needs_image=False):
         self.needs_image = needs_image
 
@@ -43,11 +45,14 @@ class an_action(object):
             default_actions.append(func.__name__)
         return func
 
+
 @an_action(needs_image=True)
 def push(collector, image, **kwargs):
     """Push an image"""
     if not image.image_index:
-        raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
+        raise BadOption(
+            "The chosen image does not have a image_index configuration", wanted=image.name
+        )
     tag = kwargs["artifact"]
     if tag is NotSpecified:
         tag = collector.configuration["harpoon"].tag
@@ -56,6 +61,7 @@ def push(collector, image, **kwargs):
     Builder().make_image(image, collector.configuration["images"], pushing=True)
     Syncer().push(image)
 
+
 @an_action()
 def push_all(collector, **kwargs):
     """Push all the images"""
@@ -63,6 +69,7 @@ def push_all(collector, **kwargs):
     configuration["harpoon"].do_push = True
     configuration["harpoon"].only_pushable = True
     make_all(collector, **kwargs)
+
 
 @an_action()
 def pull_arbitrary(collector, image, **kwargs):
@@ -86,23 +93,26 @@ def pull_arbitrary(collector, image, **kwargs):
             image, tag = image.split(":", 1)
 
         image = {
-              "image_name": image
-            , "tag": tag
-            , "harpoon": collector.configuration["harpoon"]
-            , "commands": ["FROM scratch"]
-            , "image_index": image_index
-            , "assume_role": NotSpecified
-            , "authentication": authentication
-            }
+            "image_name": image,
+            "tag": tag,
+            "harpoon": collector.configuration["harpoon"],
+            "commands": ["FROM scratch"],
+            "image_index": image_index,
+            "assume_role": NotSpecified,
+            "authentication": authentication,
+        }
         meta = Meta(collector.configuration, []).at("images").at("__arbitrary_{0}__".format(index))
         image = HarpoonSpec().image_spec.normalise(meta, image)
         Syncer().pull(image)
+
 
 @an_action(needs_image=True)
 def pull(collector, image, **kwargs):
     """Pull an image"""
     if not image.image_index:
-        raise BadOption("The chosen image does not have a image_index configuration", wanted=image.name)
+        raise BadOption(
+            "The chosen image does not have a image_index configuration", wanted=image.name
+        )
     tag = kwargs["artifact"]
     if tag is NotSpecified:
         collector.configuration["harpoon"].tag
@@ -111,6 +121,7 @@ def pull(collector, image, **kwargs):
         log.info("Pulling tag: %s", tag)
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
 
+
 @an_action(needs_image=True)
 def pull_dependencies(collector, image, **kwargs):
     """Pull an image's dependent images"""
@@ -118,11 +129,13 @@ def pull_dependencies(collector, image, **kwargs):
         kwargs["image"] = dep
         pull_arbitrary(collector, **kwargs)
 
+
 @an_action(needs_image=True)
 def pull_parent(collector, image, **kwargs):
     """DEPRECATED - use pull_dependencies instead"""
     log.warning("DEPRECATED - use pull_dependencies instead")
     pull_dependencies(collector, image, **kwargs)
+
 
 @an_action()
 def pull_all(collector, image, **kwargs):
@@ -133,6 +146,7 @@ def pull_all(collector, image, **kwargs):
         for image_name, image in layer:
             log.info("Pulling %s", image_name)
             pull(collector, image, **kwargs)
+
 
 @an_action()
 def pull_all_external(collector, **kwargs):
@@ -149,11 +163,13 @@ def pull_all_external(collector, **kwargs):
         kwargs["image"] = dep
         pull_arbitrary(collector, **kwargs)
 
+
 @an_action()
 def pull_parents(collector, **kwargs):
     """DEPRECATED - use pull_all_external instead"""
     log.warning("DEPRECATED - use pull_all_external instead")
     pull_all_external(collector, **kwargs)
+
 
 @an_action(needs_image=True)
 def make(collector, image, **kwargs):
@@ -167,6 +183,7 @@ def make(collector, image, **kwargs):
 
     Builder().make_image(image, collector.configuration["images"])
     print("Created image {0}".format(image.image_name))
+
 
 @an_action()
 def make_all(collector, **kwargs):
@@ -191,6 +208,7 @@ def make_all(collector, **kwargs):
             if push and image.image_index:
                 Syncer().push(image)
 
+
 @an_action()
 def make_pushable(collector, **kwargs):
     """Make only the pushable images and their dependencies"""
@@ -199,10 +217,12 @@ def make_pushable(collector, **kwargs):
     configuration["harpoon"].only_pushable = True
     make_all(collector, **kwargs)
 
+
 @an_action(needs_image=True)
 def run(collector, image, **kwargs):
     """Run specified task in this image"""
     image.build_and_run(collector.configuration["images"])
+
 
 @an_action()
 def list_tasks(collector, tasks, **kwargs):
@@ -218,9 +238,10 @@ def list_tasks(collector, tasks, **kwargs):
         sorted_tasks = sorted(list(items), key=lambda item: len(item[0]))
         max_length = max(len(name) for name, _ in sorted_tasks)
         for key, task in sorted_tasks:
-            desc = dedent(task.description or "").strip().split('\n')[0]
-            print("\t{0}{1} :-: {2}".format(" " * (max_length-len(key)), key, desc))
+            desc = dedent(task.description or "").strip().split("\n")[0]
+            print("\t{0}{1} :-: {2}".format(" " * (max_length - len(key)), key, desc))
         print("")
+
 
 @an_action()
 def delete_untagged(collector, **kwargs):
@@ -242,6 +263,7 @@ def delete_untagged(collector, **kwargs):
     if not found:
         log.info("Didn't find any untagged images to delete!")
 
+
 @an_action()
 def show(collector, **kwargs):
     """Show what images we have"""
@@ -249,7 +271,9 @@ def show(collector, **kwargs):
     flat = configuration.get("harpoon.flat", False)
     only_pushable = configuration.get("harpoon.only_pushable", False)
 
-    for index, layer in enumerate(Builder().layered(configuration["images"], only_pushable=only_pushable)):
+    for index, layer in enumerate(
+        Builder().layered(configuration["images"], only_pushable=only_pushable)
+    ):
         if flat:
             for _, image in layer:
                 print(image.image_name)
@@ -259,16 +283,19 @@ def show(collector, **kwargs):
                 print("    {0}".format(image.display_line()))
             print("")
 
+
 @an_action()
 def show_pushable(collector, **kwargs):
     """Show what images we have"""
-    collector.configuration['harpoon'].only_pushable = True
+    collector.configuration["harpoon"].only_pushable = True
     show(collector, **kwargs)
+
 
 @an_action(needs_image=True)
 def print_dockerfile(collector, image, **kwargs):
     """Print a dockerfile for the specified image"""
-    print('\n'.join(image.docker_file.docker_lines))
+    print("\n".join(image.docker_file.docker_lines))
+
 
 @an_action()
 def print_all_dockerfiles(collector, **kwargs):
@@ -279,17 +306,24 @@ def print_all_dockerfiles(collector, **kwargs):
         kwargs["image"] = image
         print_dockerfile(collector, **kwargs)
 
+
 @an_action()
 def read_login(collector, image, **kwargs):
     """Login to a docker registry with read permissions"""
     docker_api = collector.configuration["harpoon"].docker_api
-    collector.configuration["authentication"].login(docker_api, image, is_pushing=False, global_docker=True)
+    collector.configuration["authentication"].login(
+        docker_api, image, is_pushing=False, global_docker=True
+    )
+
 
 @an_action()
 def write_login(collector, image, **kwargs):
     """Login to a docker registry with write permissions"""
     docker_api = collector.configuration["harpoon"].docker_api
-    collector.configuration["authentication"].login(docker_api, image, is_pushing=True, global_docker=True)
+    collector.configuration["authentication"].login(
+        docker_api, image, is_pushing=True, global_docker=True
+    )
+
 
 @an_action(needs_image=True)
 def untag(collector, image, artifact, **kwargs):
@@ -309,6 +343,7 @@ def untag(collector, image, artifact, **kwargs):
     except docker.errors.ImageNotFound:
         log.warning("No image was found to remove")
 
+
 @an_action(needs_image=True)
 def tag(collector, image, artifact, **kwargs):
     """Tag an image!"""
@@ -325,7 +360,9 @@ def tag(collector, image, artifact, **kwargs):
         tag = "{0}:latest".format(tag)
 
     images = image.harpoon.docker_api.images()
-    current_tags = chain.from_iterable(image_conf["RepoTags"] for image_conf in images if image_conf["RepoTags"] is not None)
+    current_tags = chain.from_iterable(
+        image_conf["RepoTags"] for image_conf in images if image_conf["RepoTags"] is not None
+    )
     if tag not in current_tags:
         raise BadOption("Please build or pull the image down to your local cache before tagging it")
 
@@ -341,6 +378,7 @@ def tag(collector, image, artifact, **kwargs):
     image.tag = artifact
     Syncer().push(image)
 
+
 @an_action(needs_image=True)
 def retrieve(collector, image, artifact, **kwargs):
     """Retrieve a file/folder from an image"""
@@ -355,16 +393,17 @@ def retrieve(collector, image, artifact, **kwargs):
         Builder().make_image(image, collector.configuration["images"])
 
     content = {
-          "conf": image
-        , "docker_api": collector.configuration["harpoon"].docker_api
-        , "images": collector.configuration["images"]
-        , "image": image.image_name_with_tag
-        , "path": artifact
-        }
+        "conf": image,
+        "docker_api": collector.configuration["harpoon"].docker_api,
+        "images": collector.configuration["images"],
+        "image": image.image_name_with_tag,
+        "path": artifact,
+    }
 
     # Get us our gold!
     with ContextBuilder().the_context(content) as fle:
         shutil.copyfile(fle.name, os.environ.get("FILENAME", "./retrieved.tar.gz"))
+
 
 # Make it so future use of @an_action doesn't result in more default tasks
 info["is_default"] = False

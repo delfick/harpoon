@@ -32,7 +32,7 @@ def set_blocking(fd, blocking=True):
     old_flag = fcntl.fcntl(fd, fcntl.F_GETFL)
 
     if blocking:
-        new_flag = old_flag & ~ os.O_NONBLOCK
+        new_flag = old_flag & ~os.O_NONBLOCK
     else:
         new_flag = old_flag | os.O_NONBLOCK
 
@@ -52,12 +52,7 @@ def select(read_streams, write_streams, timeout=0):
     exception_streams = []
 
     try:
-        return builtin_select.select(
-            read_streams,
-            write_streams,
-            exception_streams,
-            timeout,
-        )[0:2]
+        return builtin_select.select(read_streams, write_streams, exception_streams, timeout)[0:2]
     except builtin_select.error as e:
         # POSIX signals interrupt select()
         no = e.errno if six.PY3 else e[0]
@@ -78,11 +73,7 @@ class Stream(object):
     """
     Recoverable IO/OS Errors.
     """
-    ERRNO_RECOVERABLE = [
-        errno.EINTR,
-        errno.EDEADLK,
-        errno.EWOULDBLOCK,
-    ]
+    ERRNO_RECOVERABLE = [errno.EINTR, errno.EDEADLK, errno.EWOULDBLOCK]
 
     def __init__(self, fd):
         """
@@ -91,7 +82,7 @@ class Stream(object):
         The `fd` object must have a `fileno()` method.
         """
         self.fd = fd
-        self.buffer = b''
+        self.buffer = b""
         self.close_requested = False
         self.closed = False
 
@@ -103,7 +94,7 @@ class Stream(object):
         return self.fd.fileno()
 
     def set_blocking(self, value):
-        if hasattr(self.fd, 'setblocking'):
+        if hasattr(self.fd, "setblocking"):
             self.fd.setblocking(value)
             return True
         else:
@@ -116,13 +107,12 @@ class Stream(object):
 
         while True:
             try:
-                if hasattr(self.fd, 'recv'):
+                if hasattr(self.fd, "recv"):
                     return self.fd.recv(n)
                 return os.read(self.fd.fileno(), n)
             except EnvironmentError as e:
                 if e.errno not in Stream.ERRNO_RECOVERABLE:
                     raise e
-
 
     def write(self, data):
         """
@@ -148,10 +138,10 @@ class Stream(object):
                 written = 0
 
                 socket = self.fd
-                if hasattr(socket, 'connection'):
+                if hasattr(socket, "connection"):
                     socket = socket.connection
 
-                if hasattr(socket, 'send'):
+                if hasattr(socket, "send"):
                     written = socket.send(self.buffer)
                 else:
                     written = os.write(socket.fileno(), self.buffer)
@@ -180,7 +170,7 @@ class Stream(object):
         # to write.
         if not self.closed and len(self.buffer) == 0:
             self.closed = True
-            if hasattr(self.fd, 'close'):
+            if hasattr(self.fd, "close"):
                 self.fd.close()
             else:
                 os.close(self.fd.fileno())
@@ -262,7 +252,7 @@ class Demuxer(object):
         Delegates to underlying Stream.
         """
 
-        if hasattr(self.stream, 'needs_write'):
+        if hasattr(self.stream, "needs_write"):
             return self.stream.needs_write()
 
         return False
@@ -272,7 +262,7 @@ class Demuxer(object):
         Delegates to underlying Stream.
         """
 
-        if hasattr(self.stream, 'do_write'):
+        if hasattr(self.stream, "do_write"):
             return self.stream.do_write()
 
         return False
@@ -302,15 +292,14 @@ class Demuxer(object):
             if data is None:
                 return 0
             if len(data) == 8:
-                __, actual = struct.unpack('>BxxxL', data)
+                __, actual = struct.unpack(">BxxxL", data)
                 size = min(n, actual)
                 self.remain = actual - size
 
         return size
 
     def __repr__(self):
-        return "{cls}({stream})".format(cls=type(self).__name__,
-                                        stream=self.stream)
+        return "{cls}({stream})".format(cls=type(self).__name__, stream=self.stream)
 
 
 class Pump(object):
@@ -327,11 +316,7 @@ class Pump(object):
     Pumps are selectable based on the 'read' end of the pipe.
     """
 
-    def __init__(self,
-                 from_stream,
-                 to_stream,
-                 wait_for_output=True,
-                 propagate_close=True):
+    def __init__(self, from_stream, to_stream, wait_for_output=True, propagate_close=True):
         """
         Initialize a Pump with a Stream to read from and another to write to.
 
@@ -388,11 +373,11 @@ class Pump(object):
         side does not have pending bytes to send.
         """
 
-        return (not self.wait_for_output or self.eof) and \
-                not (hasattr(self.to_stream, 'needs_write') and self.to_stream.needs_write())
+        return (not self.wait_for_output or self.eof) and not (
+            hasattr(self.to_stream, "needs_write") and self.to_stream.needs_write()
+        )
 
     def __repr__(self):
         return "{cls}(from={from_stream}, to={to_stream})".format(
-            cls=type(self).__name__,
-            from_stream=self.from_stream,
-            to_stream=self.to_stream)
+            cls=type(self).__name__, from_stream=self.from_stream, to_stream=self.to_stream
+        )

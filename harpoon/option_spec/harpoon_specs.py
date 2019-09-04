@@ -5,6 +5,7 @@ options.
 The specifications are responsible for sanitation, validation and normalisation.
 """
 
+# fmt: off
 from input_algorithms.spec_base import (
       create_spec, defaulted, string_choice_spec
     , dictionary_spec, string_spec, valid_string_spec
@@ -15,6 +16,7 @@ from input_algorithms.spec_base import (
     , container_spec, many_format, delayed
     , float_spec, Spec, set_options, NotSpecified
     )
+# fmt: on
 
 from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
@@ -28,38 +30,38 @@ from harpoon import helpers as hp
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
-import time
 import six
 import sys
 
+
 class Harpoon(dictobj):
     fields = {
-          "tag": "Tag used for pulling/pushing a single image"
-        , "flat": "Don't show images as layers when doing ``harpoon show``"
-        , "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline"
-        , "debug": "Whether debug has been specified"
-        , "stdout": "The stdout to use for printing"
-        , "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used"
-        , "addons": "A dictionary of namespace to list of names for addons to register"
-        , "do_push": "Push images after making them (automatically set by the ``push`` tasks"
-        , "artifact": "Extra information for actions"
-        , "no_cleanup": "Don't cleanup the images/containers automatically after finish"
-        , "tty_stdin": "The stdin to use for a tty"
-        , "tty_stdout": "The stdout to use for a tty"
-        , "tty_stderr": "The stderr to use for a tty"
-        , "extra_files": "Extra files to load in as configuration"
-        , "chosen_task": "The task to run"
-        , "interactive": "Run the container with a tty"
-        , "chosen_image": "The image that we want to run"
-        , "silent_build": "Don't print out log information"
-        , "only_pushable": "Ignore images that don't have an ``image_index`` option"
-        , "keep_replaced": "Don't auto remove replaced images"
-        , "ignore_missing": "Don't raise errors if we try to pull an image that doesn't exist"
-        , "docker_context": "The docker context object (set internally)"
-        , "no_intervention": "Don't create intervention images when an image breaks"
-        , "intervene_afterwards": "Create an intervention image even if the image succeeds"
-        , "docker_context_maker": "Function that makes a new docker context object (set internally)"
-        }
+        "tag": "Tag used for pulling/pushing a single image",
+        "flat": "Don't show images as layers when doing ``harpoon show``",
+        "extra": "Sets the ``$@`` variable. Alternatively specify these after a ``--`` on the commandline",
+        "debug": "Whether debug has been specified",
+        "stdout": "The stdout to use for printing",
+        "config": "The location of the configuration to use. If not set the ``HARPOON_CONFIG`` env variable is used",
+        "addons": "A dictionary of namespace to list of names for addons to register",
+        "do_push": "Push images after making them (automatically set by the ``push`` tasks",
+        "artifact": "Extra information for actions",
+        "no_cleanup": "Don't cleanup the images/containers automatically after finish",
+        "tty_stdin": "The stdin to use for a tty",
+        "tty_stdout": "The stdout to use for a tty",
+        "tty_stderr": "The stderr to use for a tty",
+        "extra_files": "Extra files to load in as configuration",
+        "chosen_task": "The task to run",
+        "interactive": "Run the container with a tty",
+        "chosen_image": "The image that we want to run",
+        "silent_build": "Don't print out log information",
+        "only_pushable": "Ignore images that don't have an ``image_index`` option",
+        "keep_replaced": "Don't auto remove replaced images",
+        "ignore_missing": "Don't raise errors if we try to pull an image that doesn't exist",
+        "docker_context": "The docker context object (set internally)",
+        "no_intervention": "Don't create intervention images when an image breaks",
+        "intervene_afterwards": "Create an intervention image even if the image succeeds",
+        "docker_context_maker": "Function that makes a new docker context object (set internally)",
+    }
 
     @hp.memoized_property
     def network_manager(self):
@@ -69,24 +71,32 @@ class Harpoon(dictobj):
     def docker_api(self):
         return self.docker_context.api
 
+
 class other_options(dictobj):
     fields = {
-          "start": "Extra options to pass into docker.start"
-        , "create": "Extra options to pass into docker.create"
-        , "build": "Extra options to pass into docker.build"
-        , "host_config": "extra options to pass into docker.utils.host_config"
-        }
+        "start": "Extra options to pass into docker.start",
+        "create": "Extra options to pass into docker.create",
+        "build": "Extra options to pass into docker.build",
+        "host_config": "extra options to pass into docker.utils.host_config",
+    }
+
 
 class authentication_spec(Spec):
     def normalise_filled(self, meta, value):
         # Make sure the value is a dictionary with a 'use' option
-        set_options(use=required(string_choice_spec(["kms", "plain", "s3_slip"]))).normalise(meta, value)
+        set_options(use=required(string_choice_spec(["kms", "plain", "s3_slip"]))).normalise(
+            meta, value
+        )
 
         use = value["use"]
         formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
 
-        if use == "kms" or use == "plain" :
-            kls = authentication_objs.PlainAuthentication if use == "plain" else authentication_objs.KmsAuthentication
+        if use == "kms" or use == "plain":
+            kls = (
+                authentication_objs.PlainAuthentication
+                if use == "plain"
+                else authentication_objs.KmsAuthentication
+            )
             spec = dict(username=required(formatted_string), password=required(formatted_string))
             if use == "kms":
                 spec.update(role=required(formatted_string), region=required(formatted_string))
@@ -96,6 +106,7 @@ class authentication_spec(Spec):
 
         return create_spec(kls, **spec).normalise(meta, value)
 
+
 class HarpoonSpec(object):
     """Knows about harpoon specific configuration"""
 
@@ -103,20 +114,19 @@ class HarpoonSpec(object):
     def task_name_spec(self):
         """Just needs to be ascii"""
         return valid_string_spec(
-              validators.no_whitespace()
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-            )
+            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
+        )
 
     @memoized_property
     def container_name_spec(self):
         """Just needs to be ascii"""
         return valid_string_spec(
-              validators.no_whitespace()
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-            )
+            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
+        )
 
     def tasks_spec(self, available_actions, default_action="run"):
         """Tasks for a particular image"""
+        # fmt: off
         return dictof(
               self.task_name_spec
             , create_spec(task_objs.Task, validators.deprecated_key("spec", "Use ``action`` and ``options`` instead (note that ``action`` defaults to run)")
@@ -126,10 +136,12 @@ class HarpoonSpec(object):
                 , description = string_spec()
                 )
             )
+        # fmt: on
 
     @memoized_property
     def authentications_spec(self):
         """Spec for a group of authentication options"""
+        # fmt: off
         return container_spec(authentication_objs.Authentication
               , dictof(string_spec(), set_options(
                   reading = optional_spec(authentication_spec())
@@ -137,12 +149,15 @@ class HarpoonSpec(object):
                 )
               )
             )
+        # fmt: on
 
     @memoized_property
     def wait_condition_spec(self):
         """Spec for a wait_condition block"""
         from harpoon.option_spec import image_objs
+
         formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
+        # fmt: off
         return create_spec(image_objs.WaitCondition
             , harpoon = formatted(overridden("{harpoon}"), formatter=MergedOptionStringFormatter)
             , timeout = defaulted(integer_spec(), 300)
@@ -155,11 +170,14 @@ class HarpoonSpec(object):
             , curl_result = optional_spec(dictof(formatted_string, formatted_string))
             , file_exists = optional_spec(listof(formatted_string))
             )
+        # fmt: on
 
     @memoized_property
     def context_spec(self):
         """Spec for specifying context options"""
         from harpoon.option_spec import image_objs
+
+        # fmt: off
         return dict_from_bool_spec(lambda meta, val: {"enabled": val}
             , create_spec(image_objs.Context
                 , validators.deprecated_key("use_git_timestamps", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
@@ -174,19 +192,30 @@ class HarpoonSpec(object):
                 , ignore_find_errors = defaulted(boolean(), False)
                 )
             )
+        # fmt: on
 
     @memoized_property
     def image_spec(self):
         """Spec for each image"""
         from harpoon.option_spec import image_specs as specs
         from harpoon.option_spec import image_objs
+
         class persistence_shell_spec(Spec):
             """Make the persistence shell default to the shell on the image"""
+
             def normalise(self, meta, val):
-                shell = defaulted(string_spec(), "/bin/bash").normalise(meta, meta.everything[["images", meta.key_names()["_key_name_2"]]].get("shell", NotSpecified))
-                shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), shell).normalise(meta, val)
+                shell = defaulted(string_spec(), "/bin/bash").normalise(
+                    meta,
+                    meta.everything[["images", meta.key_names()["_key_name_2"]]].get(
+                        "shell", NotSpecified
+                    ),
+                )
+                shell = defaulted(
+                    formatted(string_spec(), formatter=MergedOptionStringFormatter), shell
+                ).normalise(meta, val)
                 return shell
 
+        # fmt: off
         return create_spec(image_objs.Image
             , validators.deprecated_key("persistence", "The persistence feature has been removed")
             , validators.deprecated_key("squash_after", "The squash feature has been removed")
@@ -288,13 +317,17 @@ class HarpoonSpec(object):
             , privileged = defaulted(boolean(), False)
             , restart_policy = defaulted(string_spec(), None)
             )
+        # fmt: on
 
     @memoized_property
     def harpoon_spec(self):
         """Spec for harpoon options"""
-        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=six.string_types)
+        formatted_string = formatted(
+            string_spec(), MergedOptionStringFormatter, expected_type=six.string_types
+        )
         formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
 
+        # fmt: off
         return create_spec(Harpoon
             , config = optional_spec(file_spec())
 
@@ -326,4 +359,4 @@ class HarpoonSpec(object):
             , tty_stdout = defaulted(any_spec(), lambda: sys.stdout)
             , tty_stderr = defaulted(any_spec(), lambda: sys.stderr)
             )
-
+        # fmt: on

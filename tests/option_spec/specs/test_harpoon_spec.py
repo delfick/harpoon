@@ -20,7 +20,9 @@ describe HarpoonCase, "HarpoonSpec":
     it "can get a fake Image":
         with self.a_temp_dir() as directory:
             harpoon = mock.Mock(name="harpoon")
-            everything = MergedOptions.using({"config_root": directory, "_key_name_1": "blah", "harpoon": harpoon})
+            everything = MergedOptions.using(
+                {"config_root": directory, "_key_name_1": "blah", "harpoon": harpoon}
+            )
             meta = Meta(everything, [])
             fake = HarpoonSpec().image_spec.fake_filled(meta, with_non_defaulted=True)
             self.assertEqual(fake.context.parent_dir, directory)
@@ -29,9 +31,19 @@ describe HarpoonCase, "HarpoonSpec":
         as_dict = fake.as_dict()
         self.assertEqual(type(as_dict["context"]), dict)
         self.assertEqual(
-              sorted(as_dict["context"].keys())
-            , sorted(["enabled", "use_gitignore", "exclude", "include", "parent_dir", "find_options", "ignore_find_errors"])
-            )
+            sorted(as_dict["context"].keys()),
+            sorted(
+                [
+                    "enabled",
+                    "use_gitignore",
+                    "exclude",
+                    "include",
+                    "parent_dir",
+                    "find_options",
+                    "ignore_find_errors",
+                ]
+            ),
+        )
 
     describe "name_spec":
         # Shared tests for image_name_spec and task_name_spec
@@ -45,17 +57,33 @@ describe HarpoonCase, "HarpoonSpec":
             regex = self.spec.validators[1].regexes[0][0]
             for value in (" adsf", "d  d", "\t", " ", "d "):
                 errors = [
-                      BadSpecValue("Expected no whitespace", meta=self.meta, val=value)
-                    , BadSpecValue("Expected value to match regex, it didn't", meta=self.meta, val=value, spec=regex)
-                    ]
-                with self.fuzzyAssertRaisesError(BadSpecValue, "Failed to validate", _errors=errors):
+                    BadSpecValue("Expected no whitespace", meta=self.meta, val=value),
+                    BadSpecValue(
+                        "Expected value to match regex, it didn't",
+                        meta=self.meta,
+                        val=value,
+                        spec=regex,
+                    ),
+                ]
+                with self.fuzzyAssertRaisesError(
+                    BadSpecValue, "Failed to validate", _errors=errors
+                ):
                     self.spec.normalise(self.meta, value)
 
         it "can only have alphanumeric, dashes and underscores and start with a letter":
             regex = self.spec.validators[1].regexes[0][0]
             for value in ("^dasdf", "kasd$", "*k", "[", "}", "<", "0", "0d"):
-                errors = [BadSpecValue("Expected value to match regex, it didn't", meta=self.meta, val=value, spec=regex)]
-                with self.fuzzyAssertRaisesError(BadSpecValue, "Failed to validate", _errors=errors):
+                errors = [
+                    BadSpecValue(
+                        "Expected value to match regex, it didn't",
+                        meta=self.meta,
+                        val=value,
+                        spec=regex,
+                    )
+                ]
+                with self.fuzzyAssertRaisesError(
+                    BadSpecValue, "Failed to validate", _errors=errors
+                ):
                     self.spec.normalise(self.meta, value)
 
         it "allows values that are with alphanumeric, dashes and underscores":
@@ -63,6 +91,7 @@ describe HarpoonCase, "HarpoonSpec":
                 self.assertEqual(self.spec.normalise(self.meta, value), value)
 
         describe "task_name_spec":
+
             @property
             def spec(self):
                 return HarpoonSpec().task_name_spec
@@ -79,4 +108,3 @@ describe HarpoonCase, "HarpoonSpec":
             self.assertEqual(task.options, {})
             self.assertEqual(task.overrides, {})
             self.assertEqual(task.description, "Run specified task in this image")
-

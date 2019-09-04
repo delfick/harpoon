@@ -13,6 +13,7 @@ import os
 
 log = logging.getLogger("harpoon.option_spec.authentication_objs")
 
+
 class Authentication(dictobj):
     fields = ["registries"]
 
@@ -22,9 +23,9 @@ class Authentication(dictobj):
         username = None
         if registry in self.registries:
             if is_pushing:
-                authenticator = self.registries[registry]['writing']
+                authenticator = self.registries[registry]["writing"]
             else:
-                authenticator = self.registries[registry]['reading']
+                authenticator = self.registries[registry]["reading"]
 
             if authenticator is not NotSpecified:
                 username, password = authenticator.creds
@@ -40,7 +41,9 @@ class Authentication(dictobj):
                     out = out.decode()
 
                 if "-e, --email" in out:
-                    cmd = "docker login -u {0} -p {1} -e emailnotneeded@goawaydocker.com {2}".format(username, password, registry)
+                    cmd = "docker login -u {0} -p {1} -e emailnotneeded@goawaydocker.com {2}".format(
+                        username, password, registry
+                    )
                 else:
                     cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)
                 os.system(cmd)
@@ -48,12 +51,14 @@ class Authentication(dictobj):
             else:
                 docker_api.login(username, password, registry=registry, reauth=True)
 
+
 class PlainAuthentication(dictobj):
     fields = ["username", "password"]
 
     @property
     def creds(self):
         return self.username, self.password
+
 
 class KmsAuthentication(dictobj):
     fields = ["username", "password", "role", "region"]
@@ -63,6 +68,7 @@ class KmsAuthentication(dictobj):
         session = assume_role(self.role)
         password = decrypt_kms(session, self.password, self.region)
         return self.username, password
+
 
 class S3SlipAuthentication(dictobj):
     fields = ["location", "role"]
@@ -81,5 +87,5 @@ class S3SlipAuthentication(dictobj):
 
         session = assume_role(self.role)
         slip = get_s3_slip(session, self.location)
-        self._store = (time.time(), slip.decode('utf-8').split(":", 1))
+        self._store = (time.time(), slip.decode("utf-8").split(":", 1))
         return self._store[1]

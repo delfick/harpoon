@@ -11,6 +11,7 @@ from harpoon.errors import BadOption
 from input_algorithms.dictobj import dictobj
 from option_merge import MergedOptions
 
+
 class Task(dictobj):
     """
     Used to add extra options associated with the task and to start the action
@@ -20,13 +21,14 @@ class Task(dictobj):
 
     Will also ask the image to complain about any missing environment variables.
     """
+
     fields = {
-          ("action", "run"): "The action to run with this image"
-        , ("options", None): "The options to merge with the image options"
-        , ("overrides", None): "The options to merge with the root configuration"
-        , ("description", ""): "The description of the task"
-        , ("label", "Project"): "The namespace when listing tasks"
-        }
+        ("action", "run"): "The action to run with this image",
+        ("options", None): "The options to merge with the image options",
+        ("overrides", None): "The options to merge with the root configuration",
+        ("description", ""): "The description of the task",
+        ("label", "Project"): "The namespace when listing tasks",
+    }
 
     def setup(self, *args, **kwargs):
         super(Task, self).setup(*args, **kwargs)
@@ -68,6 +70,7 @@ class Task(dictobj):
             image.find_missing_env()
 
         from harpoon.collector import Collector
+
         new_collector = Collector()
         new_collector.configuration = configuration
         new_collector.configuration_file = collector.configuration_file
@@ -87,4 +90,3 @@ class Task(dictobj):
 
         if image not in images:
             raise BadOption("No such image", wanted=image, available=available)
-

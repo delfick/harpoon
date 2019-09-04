@@ -105,13 +105,15 @@ describe HarpoonCase, "Link spec":
     before_each:
 
         class container_kls(dictobj):
-            fields = ['container_name']
+            fields = ["container_name"]
 
         self.meta = mock.Mock(name="meta", spec=Meta)
         self.container_alias = self.unique_val()
         self.container = container_kls("somewhere.com/{0}".format(self.container_alias))
         self.converted_container_name = "somewhere.com-{0}".format(self.container_alias)
-        self.meta.everything = MergedOptions.using({"container": self.container}, dont_prefix=[dictobj])
+        self.meta.everything = MergedOptions.using(
+            {"container": self.container}, dont_prefix=[dictobj]
+        )
 
     def do_check(self, value, container, expected_alias):
         made = specs.link_spec().normalise(self.meta, value)
@@ -120,15 +122,33 @@ describe HarpoonCase, "Link spec":
         self.assertEqual(made.link_name, expected_alias)
 
     it "takes in as a list of 1 or two items":
-        self.do_check(["{container}"], container=self.container, expected_alias=self.converted_container_name)
-        self.do_check(["{container}", self.container_alias], container=self.container, expected_alias=self.container_alias)
+        self.do_check(
+            ["{container}"], container=self.container, expected_alias=self.converted_container_name
+        )
+        self.do_check(
+            ["{container}", self.container_alias],
+            container=self.container,
+            expected_alias=self.container_alias,
+        )
 
     it "takes in as a colon seperated list":
-        self.do_check("{{container}}:{0}".format(self.container_alias), container=self.container, expected_alias=self.container_alias)
+        self.do_check(
+            "{{container}}:{0}".format(self.container_alias),
+            container=self.container,
+            expected_alias=self.container_alias,
+        )
 
     it "doesn't need a container":
-        self.do_check("{0}:{1}".format(self.container.container_name, self.container_alias), container=None, expected_alias=self.container_alias)
-        self.do_check([self.container.container_name, self.container_alias], container=None, expected_alias=self.container_alias)
+        self.do_check(
+            "{0}:{1}".format(self.container.container_name, self.container_alias),
+            container=None,
+            expected_alias=self.container_alias,
+        )
+        self.do_check(
+            [self.container.container_name, self.container_alias],
+            container=None,
+            expected_alias=self.container_alias,
+        )
 
 describe HarpoonCase, "Port spec":
     before_each:
@@ -138,7 +158,9 @@ describe HarpoonCase, "Port spec":
         self.container_port = 70
         self.container_port_val = lambda transport: objs.ContainerPort(70, transport)
 
-    def do_check(self, value, has_ip, has_host_port, has_container_port, expected_transport=NotSpecified):
+    def do_check(
+        self, value, has_ip, has_host_port, has_container_port, expected_transport=NotSpecified
+    ):
         made = specs.port_spec().normalise(self.meta, value)
 
         if has_ip:
@@ -157,30 +179,88 @@ describe HarpoonCase, "Port spec":
             self.assertEqual(made.container_port, NotSpecified)
 
     it "takes as a list of 1 to 3 items":
-        self.do_check([self.container_port], has_ip=False, has_host_port=False, has_container_port=True)
-        self.do_check(["{0}/tcp".format(self.container_port)], has_ip=False, has_host_port=False, has_container_port=True, expected_transport="tcp")
+        self.do_check(
+            [self.container_port], has_ip=False, has_host_port=False, has_container_port=True
+        )
+        self.do_check(
+            ["{0}/tcp".format(self.container_port)],
+            has_ip=False,
+            has_host_port=False,
+            has_container_port=True,
+            expected_transport="tcp",
+        )
 
-        self.do_check([self.host_port, self.container_port], has_ip=False, has_host_port=True, has_container_port=True)
-        self.do_check([self.ip, self.host_port, self.container_port], has_ip=True, has_host_port=True, has_container_port=True)
+        self.do_check(
+            [self.host_port, self.container_port],
+            has_ip=False,
+            has_host_port=True,
+            has_container_port=True,
+        )
+        self.do_check(
+            [self.ip, self.host_port, self.container_port],
+            has_ip=True,
+            has_host_port=True,
+            has_container_port=True,
+        )
 
     it "takes as a colon seperated list of 1 to 3 items":
-        self.do_check("{0}".format(self.container_port), has_ip=False, has_host_port=False, has_container_port=True)
-        self.do_check("{0}/tcp".format(self.container_port), has_ip=False, has_host_port=False, has_container_port=True, expected_transport="tcp")
+        self.do_check(
+            "{0}".format(self.container_port),
+            has_ip=False,
+            has_host_port=False,
+            has_container_port=True,
+        )
+        self.do_check(
+            "{0}/tcp".format(self.container_port),
+            has_ip=False,
+            has_host_port=False,
+            has_container_port=True,
+            expected_transport="tcp",
+        )
 
-        self.do_check("{0}:{1}".format(self.host_port, self.container_port), has_ip=False, has_host_port=True, has_container_port=True)
+        self.do_check(
+            "{0}:{1}".format(self.host_port, self.container_port),
+            has_ip=False,
+            has_host_port=True,
+            has_container_port=True,
+        )
 
-        self.do_check("{0}:{1}:{2}".format(self.ip, self.host_port, self.container_port), has_ip=True, has_host_port=True, has_container_port=True)
-        self.do_check("{0}::{1}".format(self.ip, self.container_port), has_ip=True, has_host_port=False, has_container_port=True)
-        self.do_check("{0}::{1}/tcp".format(self.ip, self.container_port), has_ip=True, has_host_port=False, has_container_port=True, expected_transport="tcp")
+        self.do_check(
+            "{0}:{1}:{2}".format(self.ip, self.host_port, self.container_port),
+            has_ip=True,
+            has_host_port=True,
+            has_container_port=True,
+        )
+        self.do_check(
+            "{0}::{1}".format(self.ip, self.container_port),
+            has_ip=True,
+            has_host_port=False,
+            has_container_port=True,
+        )
+        self.do_check(
+            "{0}::{1}/tcp".format(self.ip, self.container_port),
+            has_ip=True,
+            has_host_port=False,
+            has_container_port=True,
+            expected_transport="tcp",
+        )
 
 describe HarpoonCase, "Container Port Spec":
     before_each:
         self.meta = mock.Mock(name="meta", spec=Meta)
 
     it "defaults transport to NotSpecified":
-        self.assertEqual(specs.container_port_spec().normalise(self.meta, "80"), objs.ContainerPort(80, NotSpecified))
+        self.assertEqual(
+            specs.container_port_spec().normalise(self.meta, "80"),
+            objs.ContainerPort(80, NotSpecified),
+        )
 
     it "takes in transport as a string or as a list":
-        self.assertEqual(specs.container_port_spec().normalise(self.meta, "80/tcp"), objs.ContainerPort(80, "tcp"))
-        self.assertEqual(specs.container_port_spec().normalise(self.meta, ["80", "tcp"]), objs.ContainerPort(80, "tcp"))
-
+        self.assertEqual(
+            specs.container_port_spec().normalise(self.meta, "80/tcp"),
+            objs.ContainerPort(80, "tcp"),
+        )
+        self.assertEqual(
+            specs.container_port_spec().normalise(self.meta, ["80", "tcp"]),
+            objs.ContainerPort(80, "tcp"),
+        )

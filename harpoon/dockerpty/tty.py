@@ -36,10 +36,10 @@ def size(fd):
         return None
 
     try:
-        dims = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, 'hhhh'))
+        dims = struct.unpack("hh", fcntl.ioctl(fd, termios.TIOCGWINSZ, "hhhh"))
     except:
         try:
-            dims = (os.environ['LINES'], os.environ['COLUMNS'])
+            dims = (os.environ["LINES"], os.environ["COLUMNS"])
         except:
             return None
 
@@ -71,7 +71,6 @@ class Terminal(object):
         self.raw = raw
         self.original_attributes = None
 
-
     def __enter__(self):
         """
         Invoked when a `with` block is first entered.
@@ -80,7 +79,6 @@ class Terminal(object):
         self.start()
         return self
 
-
     def __exit__(self, *_):
         """
         Invoked when a `with` block is finished.
@@ -88,14 +86,12 @@ class Terminal(object):
 
         self.stop()
 
-
     def israw(self):
         """
         Returns True if the TTY should operate in raw mode.
         """
 
         return self.raw
-
 
     def start(self):
         """
@@ -108,7 +104,6 @@ class Terminal(object):
             self.original_attributes = termios.tcgetattr(self.fd)
             tty.setraw(self.fd)
 
-
     def stop(self):
         """
         Restores the terminal attributes back to before setting raw mode.
@@ -117,14 +112,7 @@ class Terminal(object):
         """
 
         if self.original_attributes is not None:
-            termios.tcsetattr(
-                self.fd,
-                termios.TCSADRAIN,
-                self.original_attributes,
-            )
+            termios.tcsetattr(self.fd, termios.TCSADRAIN, self.original_attributes)
 
     def __repr__(self):
-        return "{cls}({fd}, raw={raw})".format(
-            cls=type(self).__name__,
-            fd=self.fd,
-            raw=self.raw)
+        return "{cls}({fd}, raw={raw})".format(cls=type(self).__name__, fd=self.fd, raw=self.raw)

@@ -9,6 +9,7 @@ import six
 
 log = logging.getLogger("harpoon.ship.builders.normal")
 
+
 class NormalBuilder(BuilderBase):
     def __init__(self, image_name=None):
         self.image_name = image_name
@@ -22,7 +23,11 @@ class NormalBuilder(BuilderBase):
         self.log_context_size(context, conf)
 
         # Login into the correct registry
-        current_tags = list(chain.from_iterable(image["RepoTags"] for image in conf.harpoon.docker_api.images() if image["RepoTags"]))
+        current_tags = list(
+            chain.from_iterable(
+                image["RepoTags"] for image in conf.harpoon.docker_api.images() if image["RepoTags"]
+            )
+        )
 
         for dep in conf.commands.dependent_images:
             if isinstance(dep, six.string_types):
@@ -34,17 +39,18 @@ class NormalBuilder(BuilderBase):
 
         cache_from = list(conf.cache_from_names)
         if cache_from:
-            log.info("Using cache from the following images\timages={0}".format(", ".join(cache_from)))
+            log.info(
+                "Using cache from the following images\timages={0}".format(", ".join(cache_from))
+            )
 
         lines = conf.harpoon.docker_api.build(
-              tag = image_name
-            , fileobj = context.tmpfile
-            , custom_context = True
-            , cache_from = list(conf.cache_from_names)
-
-            , rm = True
-            , pull = False
-            )
+            tag=image_name,
+            fileobj=context.tmpfile,
+            custom_context=True,
+            cache_from=list(conf.cache_from_names),
+            rm=True,
+            pull=False,
+        )
 
         for found in lines:
             for line in found.decode().split("\n"):
@@ -61,4 +67,3 @@ class NormalBuilder(BuilderBase):
                     conf.harpoon.stdout.flush()
 
         return stream.cached
-

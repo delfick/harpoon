@@ -45,7 +45,10 @@ describe HarpoonCase, "Context object":
             abs_parent_dir = mock.Mock(name="abs_parent_dir")
             with mock.patch("os.path.abspath") as fake_abspath:
                 fake_abspath.return_value = abs_parent_dir
-                self.assertIs(objs.Context(enabled=self.enabled, parent_dir=parent_dir).parent_dir, abs_parent_dir)
+                self.assertIs(
+                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).parent_dir,
+                    abs_parent_dir,
+                )
                 fake_abspath.assert_called_once_with(parent_dir)
 
     describe "git_root":
@@ -53,16 +56,21 @@ describe HarpoonCase, "Context object":
             with self.a_temp_dir() as directory:
                 parent_dir = os.path.join(directory, "blah", ".git", "meh", "stuff")
                 os.makedirs(parent_dir)
-                self.assertEqual(objs.Context(enabled=self.enabled, parent_dir=parent_dir).git_root, os.path.abspath(os.path.join(directory, "blah")))
+                self.assertEqual(
+                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).git_root,
+                    os.path.abspath(os.path.join(directory, "blah")),
+                )
 
         it "complains if it can't find a .git folder":
             with self.a_temp_dir() as directory:
                 nxt = directory
-                while nxt != '/' and not os.path.exists(os.path.join(nxt, '.git')):
+                while nxt != "/" and not os.path.exists(os.path.join(nxt, ".git")):
                     nxt = os.path.dirname(nxt)
-                assert not os.path.exists(os.path.join(nxt, '.git'))
+                assert not os.path.exists(os.path.join(nxt, ".git"))
 
-                with self.fuzzyAssertRaisesError(HarpoonError, "Couldn't find a .git folder", start_at=directory):
+                with self.fuzzyAssertRaisesError(
+                    HarpoonError, "Couldn't find a .git folder", start_at=directory
+                ):
                     objs.Context(enabled=self.enabled, parent_dir=directory).git_root
 
 describe HarpoonCase, "Link object":
@@ -76,8 +84,8 @@ describe HarpoonCase, "Link object":
 describe HarpoonCase, "Volume object":
     describe "share_with_names":
         it "returns container_name of non string containers":
-            cn1 = mock.Mock(name='cn1')
-            cn2 = mock.Mock(name='cn2')
+            cn1 = mock.Mock(name="cn1")
+            cn2 = mock.Mock(name="cn2")
 
             c1 = mock.Mock(name="c1", spec=objs.Image, container_name=cn1)
             c2 = mock.Mock(name="c2", spec=objs.Image, container_name=cn2)
@@ -120,7 +128,7 @@ describe HarpoonCase, "Volume object":
             m2 = mock.Mock(name="m2", spec=objs.Mount, pair=(key2, val2))
 
             volumes = objs.Volumes(mount=[m1, m2], share_with=[])
-            self.assertEqual(volumes.binds, {key1:val1, key2:val2})
+            self.assertEqual(volumes.binds, {key1: val1, key2: val2})
 
 describe HarpoonCase, "Mount object":
     before_each:
@@ -130,11 +138,15 @@ describe HarpoonCase, "Mount object":
     describe "pair":
         it "returns with ro set to False if permissions are rw":
             mount = objs.Mount(self.local_path, self.container_path, "rw")
-            self.assertEqual(mount.pair, (self.local_path, {'bind': self.container_path, 'ro': False}))
+            self.assertEqual(
+                mount.pair, (self.local_path, {"bind": self.container_path, "ro": False})
+            )
 
         it "returns with ro set to True if permissions are not rw":
             mount = objs.Mount(self.local_path, self.container_path, "ro")
-            self.assertEqual(mount.pair, (self.local_path, {'bind': self.container_path, 'ro': True}))
+            self.assertEqual(
+                mount.pair, (self.local_path, {"bind": self.container_path, "ro": True})
+            )
 
 describe HarpoonCase, "Environment":
     before_each:
@@ -192,7 +204,9 @@ describe HarpoonCase, "Port object":
         self.ip = self.unique_val()
         self.host_port = self.unique_val()
         self.container_port_str = self.unique_val()
-        self.container_port = mock.Mock(name="container_port", spec=objs.ContainerPort, port_str=self.container_port_str)
+        self.container_port = mock.Mock(
+            name="container_port", spec=objs.ContainerPort, port_str=self.container_port_str
+        )
 
     describe "pair":
         it "returns just container_port and host_port if no ip":
@@ -215,7 +229,7 @@ describe HarpoonCase, "ContainerPort object":
     describe "Port pair":
         it "defaults transport to tcp":
             container_port = objs.ContainerPort(self.port)
-            self.assertEqual(container_port.port_pair, (self.port, 'tcp'))
+            self.assertEqual(container_port.port_pair, (self.port, "tcp"))
 
         it "returns port and transport as a tuple":
             container_port = objs.ContainerPort(self.port, self.transport)
@@ -229,5 +243,4 @@ describe HarpoonCase, "ContainerPort object":
 
         it "returns port and transport as slash joined string":
             container_port = objs.ContainerPort(self.port, self.transport)
-            self.assertEqual(container_port.port_str, self.port + '/' + self.transport)
-
+            self.assertEqual(container_port.port_str, self.port + "/" + self.transport)

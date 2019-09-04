@@ -1,4 +1,4 @@
-#coding: spec
+# coding: spec
 
 from tests.option_spec.specs.test_command_specs import CommandCase
 
@@ -29,19 +29,30 @@ describe CommandCase, "Complex ADD spec":
 
     it "complains if dest does not accompany content":
         command = {"content": "blah"}
-        with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("dest"))]):
+        with self.fuzzyAssertRaisesError(
+            BadSpecValue,
+            _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("dest"))],
+        ):
             self.spec.normalise(self.meta, command)
 
     it "complains if dest does not accompany context":
         command = {"context": {"parent_dir": "."}}
-        with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("dest"))]):
+        with self.fuzzyAssertRaisesError(
+            BadSpecValue,
+            _errors=[BadSpecValue("Expected a value but got none", meta=self.meta.at("dest"))],
+        ):
             self.spec.normalise(self.meta, command)
 
     it "complains if get is not a string or list":
-        for get in (0, 1, None, True, False, {}, {1:2}, type("adf", (object, ), {})(), lambda: 1):
+        for get in (0, 1, None, True, False, {}, {1: 2}, type("adf", (object,), {})(), lambda: 1):
             command = {"get": get}
-            actual_error = BadSpecValue("Expected a string", got=type(get), meta=self.meta.at("get").indexed_at(0))
-            with self.fuzzyAssertRaisesError(BadSpecValue, _errors=[BadSpecValue(meta=self.meta.at("get"), _errors=[actual_error])]):
+            actual_error = BadSpecValue(
+                "Expected a string", got=type(get), meta=self.meta.at("get").indexed_at(0)
+            )
+            with self.fuzzyAssertRaisesError(
+                BadSpecValue,
+                _errors=[BadSpecValue(meta=self.meta.at("get"), _errors=[actual_error])],
+            ):
                 self.spec.normalise(self.meta, command)
 
     describe "With get":
@@ -51,7 +62,10 @@ describe CommandCase, "Complex ADD spec":
 
         it "takes a prefix to add to all the files":
             command = {"get": ["one", "two", "three"], "prefix": "/project"}
-            self.assertDockerLines(command, ["ADD one /project/one", "ADD two /project/two", "ADD three /project/three"])
+            self.assertDockerLines(
+                command,
+                ["ADD one /project/one", "ADD two /project/two", "ADD three /project/three"],
+            )
 
     describe "with context":
         it "adds a context.tar to the container":
@@ -61,13 +75,17 @@ describe CommandCase, "Complex ADD spec":
             dest = "/somewhere/nice and fun"
             command = {"context": {"parent_dir": parent_dir}, "dest": dest}
 
-            with mock.patch("harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5):
+            with mock.patch(
+                "harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5
+            ):
                 result = self.spec.normalise(self.meta, command)
 
             self.assertEqual(len(result), 1)
             result = result[0]
             self.assertEqual(result.action, "ADD")
-            self.assertEqual(result.extra_context[1], "{0}--somewhere-nice--and--fun.tar".format(md5))
+            self.assertEqual(
+                result.extra_context[1], "{0}--somewhere-nice--and--fun.tar".format(md5)
+            )
 
             ctxt = result.extra_context[0]["context"]
             self.assertEqual(type(ctxt), Context)
@@ -83,8 +101,10 @@ describe CommandCase, "Complex ADD spec":
             self.assertEqual(len(result), 1)
             result = result[0]
             self.assertEqual(result.action, "ADD")
-            md5 = hashlib.md5(json.dumps({"content": content}).encode('utf-8')).hexdigest()
-            self.assertEqual(result.extra_context, (content, "{0}--somewhere-nice--and--fun".format(md5)))
+            md5 = hashlib.md5(json.dumps({"content": content}).encode("utf-8")).hexdigest()
+            self.assertEqual(
+                result.extra_context, (content, "{0}--somewhere-nice--and--fun".format(md5))
+            )
 
         it "sets command as adding in context dest to actual dest":
             dest = "/somewhere/nice and fun"
@@ -104,7 +124,9 @@ describe CommandCase, "Complex ADD spec":
             images = mock.Mock(name="images")
             self.meta.everything["images"] = images
 
-            with mock.patch("harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5):
+            with mock.patch(
+                "harpoon.option_spec.command_specs.CommandContent.make_hash", lambda *args: md5
+            ):
                 result = self.spec.normalise(self.meta, command)
 
             self.assertEqual(len(result), 1)
@@ -135,6 +157,7 @@ describe CommandCase, "CommandContent":
 
     it "has a context_name functionality":
         md5 = self.unique_val()
+
         class Subclass(cs.CommandContent):
             fields = ["dest"]
 
@@ -146,12 +169,18 @@ describe CommandCase, "CommandContent":
         self.assertEqual(sc.context_name(meta), "{0}-somewhere-nice".format(md5))
 
     it "makes a hash with a json dump sorting keys":
+
         class Subclass(cs.CommandContent):
             def for_json(self):
                 return {"one": 1, "two": 2}
 
         sc = Subclass()
-        self.assertEqual(sc.make_hash(), hashlib.md5(json.dumps({"content": {"one": 1, "two": 2}}, sort_keys=True).encode('utf-8')).hexdigest())
+        self.assertEqual(
+            sc.make_hash(),
+            hashlib.md5(
+                json.dumps({"content": {"one": 1, "two": 2}}, sort_keys=True).encode("utf-8")
+            ).hexdigest(),
+        )
 
 describe CommandCase, "CommandContextAdd":
     describe "for_json":
@@ -167,11 +196,16 @@ describe CommandCase, "CommandContextAdd":
             ctxt = mock.Mock(name="context")
             context_name = self.unique_val()
 
-            with mock.patch("harpoon.option_spec.command_specs.CommandContent.context_name", lambda *args: context_name):
+            with mock.patch(
+                "harpoon.option_spec.command_specs.CommandContent.context_name",
+                lambda *args: context_name,
+            ):
                 obj = cs.CommandContextAdd(dest="/somwehere", context=ctxt)
                 commands = list(obj.commands(meta))
                 self.assertEqual(len(commands), 1)
-                self.assertEqual(commands[0].instruction, ("ADD", "{0}.tar /somwehere".format(context_name)))
+                self.assertEqual(
+                    commands[0].instruction, ("ADD", "{0}.tar /somwehere".format(context_name))
+                )
                 self.assertEqual(commands[0].extra_context[1], "{0}.tar".format(context_name))
                 self.assertEqual(commands[0].extra_context[0], {"context": ctxt})
 
@@ -192,11 +226,16 @@ describe CommandCase, "CommandContentAdd":
             context_name = self.unique_val()
             content.resolve.return_value = resolved
 
-            with mock.patch("harpoon.option_spec.command_specs.CommandContent.context_name", lambda *args: context_name):
+            with mock.patch(
+                "harpoon.option_spec.command_specs.CommandContent.context_name",
+                lambda *args: context_name,
+            ):
                 obj = cs.CommandContentAdd(dest="/somwehere", content=content)
                 commands = list(obj.commands(meta))
                 self.assertEqual(len(commands), 1)
-                self.assertEqual(commands[0].instruction, ("ADD", "{0} /somwehere".format(context_name)))
+                self.assertEqual(
+                    commands[0].instruction, ("ADD", "{0} /somwehere".format(context_name))
+                )
                 self.assertEqual(commands[0].extra_context[1], "{0}".format(context_name))
                 self.assertEqual(commands[0].extra_context[0], resolved)
 
@@ -208,11 +247,23 @@ describe CommandCase, "CommandContentAddDict":
         self.images = mock.Mock(name="images")
 
     it "resolves to itself":
-        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_api=self.docker_api)
+        obj = cs.CommandContentAddDict(
+            image=self.image,
+            conf=self.conf,
+            path=self.path,
+            images=self.images,
+            docker_api=self.docker_api,
+        )
         self.assertIs(obj.resolve(), obj)
 
     it "just uses image_name and path in for_json":
-        obj = cs.CommandContentAddDict(image=self.image, conf=self.conf, path=self.path, images=self.images, docker_api=self.docker_api)
+        obj = cs.CommandContentAddDict(
+            image=self.image,
+            conf=self.conf,
+            path=self.path,
+            images=self.images,
+            docker_api=self.docker_api,
+        )
         image_name = self.unique_val()
         self.conf.image_name = image_name
         self.assertEqual(obj.for_json(), {"image": image_name, "path": self.path})
@@ -220,9 +271,9 @@ describe CommandCase, "CommandContentAddDict":
 describe CommandCase, "CommandAddExtra":
     it "yields commands for each value in get":
         meta = mock.Mock(name="meta")
-        v1, r1 = mock.Mock(name='v1'), mock.Mock(name='r1')
-        v2, r2 = mock.Mock(name='v2'), mock.Mock(name='r2')
-        v3, r3 = mock.Mock(name='v3'), mock.Mock(name='r3')
+        v1, r1 = mock.Mock(name="v1"), mock.Mock(name="r1")
+        v2, r2 = mock.Mock(name="v2"), mock.Mock(name="r2")
+        v3, r3 = mock.Mock(name="v3"), mock.Mock(name="r3")
         transform = {v1: r1, v2: r2, v3: r3}
 
         command_for = mock.Mock(name="command_for")
@@ -241,4 +292,3 @@ describe CommandCase, "CommandAddExtra":
     it "yields command with prefix if prefix is specified":
         obj = cs.CommandAddExtra(get=[], prefix="/stuff")
         self.assertEqual(obj.command_for("blah"), "blah /stuff/blah")
-

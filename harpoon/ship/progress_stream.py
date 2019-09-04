@@ -3,8 +3,14 @@ import json
 
 log = logging.getLogger("harpoon.ship.progress_stream")
 
-class Failure(Exception): pass
-class Unknown(Exception): pass
+
+class Failure(Exception):
+    pass
+
+
+class Unknown(Exception):
+    pass
+
 
 class ProgressStream(object):
     def __init__(self, silent_cached=False):
@@ -18,7 +24,7 @@ class ProgressStream(object):
         log.debug(line)
         line_detail = None
         try:
-            line_detail = json.loads(line.decode('utf-8'))
+            line_detail = json.loads(line.decode("utf-8"))
         except (ValueError, TypeError) as error:
             log.warning("line from docker wasn't json\tgot=%s\terror=%s", line, error)
             return
@@ -45,4 +51,3 @@ class ProgressStream(object):
         for line in self.buf:
             yield line
         self.buf = []
-

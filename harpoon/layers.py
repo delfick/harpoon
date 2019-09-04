@@ -1,5 +1,6 @@
 from harpoon.errors import ImageDepCycle
 
+
 class Layers(object):
     """
     Used to order the creation of many images.
@@ -18,6 +19,7 @@ class Layers(object):
 
     Cyclic dependencies will be complained about.
     """
+
     def __init__(self, images, all_images=None):
         self.images = images
         self.all_images = all_images
@@ -78,4 +80,3 @@ class Layers(object):
         if len(layered) == layer:
             layered.append([])
         layered[layer].append(name)
-

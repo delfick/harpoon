@@ -2,9 +2,15 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 import six
 
+
 class Command(dictobj):
     """Holds a single command"""
-    fields = ['instruction', ('extra_context', lambda: NotSpecified), ('extra', lambda: NotSpecified)]
+
+    fields = [
+        "instruction",
+        ("extra_context", lambda: NotSpecified),
+        ("extra", lambda: NotSpecified),
+    ]
 
     def __repr__(self):
         return "<Command({0})>".format(self.instruction)
@@ -63,9 +69,11 @@ class Command(dictobj):
         else:
             return "{0} {1}".format(self.action, self.command)
 
+
 class Commands(dictobj):
     """This holds the list of commands that make up the docker file for this image"""
-    fields = ['orig_commands']
+
+    fields = ["orig_commands"]
 
     @property
     def commands(self):
@@ -112,7 +120,7 @@ class Commands(dictobj):
     @property
     def docker_lines(self):
         """Return the commands as a newline seperated list of strings"""
-        return '\n'.join(self.docker_lines_list)
+        return "\n".join(self.docker_lines_list)
 
     @property
     def docker_lines_list(self):
@@ -124,4 +132,3 @@ class Commands(dictobj):
         for command in self.commands:
             if command.extra_context is not NotSpecified:
                 yield command.extra_context
-

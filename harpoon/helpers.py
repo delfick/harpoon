@@ -12,6 +12,7 @@ if six.PY3:
 
 log = logging.getLogger("harpoon.helpers")
 
+
 @contextmanager
 def a_temp_file():
     """Yield the name of a temporary file and ensure it's removed after use"""
@@ -23,6 +24,7 @@ def a_temp_file():
     finally:
         if filename and os.path.exists(filename):
             os.remove(filename)
+
 
 def until(timeout=10, step=0.5, action=None, silent=False):
     """Yield until timeout"""
@@ -41,8 +43,10 @@ def until(timeout=10, step=0.5, action=None, silent=False):
             time.sleep(step)
             yield
 
+
 class memoized_property(object):
     """Decorator to make a descriptor that memoizes it's value"""
+
     def __init__(self, func):
         self.func = func
         self.name = func.__name__
@@ -63,9 +67,12 @@ class memoized_property(object):
         if hasattr(instance, self.cache_name):
             delattr(instance, self.cache_name)
 
+
 def write_to(output, txt):
     """Write some text to some output"""
-    if (isinstance(txt, six.binary_type) or six.PY3 and isinstance(output, StringIO)) or isinstance(output, TextIOWrapper):
+    if (isinstance(txt, six.binary_type) or six.PY3 and isinstance(output, StringIO)) or isinstance(
+        output, TextIOWrapper
+    ):
         output.write(txt)
     else:
         output.write(txt.encode("utf-8", "replace"))

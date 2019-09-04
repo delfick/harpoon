@@ -38,7 +38,6 @@ class WINCHHandler(object):
         self.pty = pty
         self.original_handler = None
 
-
     def __enter__(self):
         """
         Invoked on entering a `with` block.
@@ -47,14 +46,12 @@ class WINCHHandler(object):
         self.start()
         return self
 
-
     def __exit__(self, *_):
         """
         Invoked on exiting a `with` block.
         """
 
         self.stop()
-
 
     def start(self):
         """
@@ -69,7 +66,6 @@ class WINCHHandler(object):
                 self.pty.resize()
 
         self.original_handler = signal.signal(signal.SIGWINCH, handle)
-
 
     def stop(self):
         """
@@ -108,7 +104,6 @@ class PseudoTerminal(object):
     without adverse effects.
     """
 
-
     def __init__(self, client, container, interactive=True, stdout=None, stderr=None, stdin=None):
         """
         Initialize the PTY using the docker.Client instance and container dict.
@@ -121,7 +116,6 @@ class PseudoTerminal(object):
         self.stdout = stdout or sys.stdout
         self.stderr = stderr or sys.stderr
         self.stdin = stdin or sys.stdin
-
 
     def start(self, **kwargs):
         """
@@ -143,7 +137,7 @@ class PseudoTerminal(object):
         if pty_stderr:
             pumps.append(io.Pump(pty_stderr, io.Stream(self.stderr), propagate_close=False))
 
-        if not self.container_info()['State']['Running']:
+        if not self.container_info()["State"]["Running"]:
             self.client.start(self.container, **kwargs)
 
         flags = [p.set_blocking(False) for p in pumps]
@@ -156,7 +150,6 @@ class PseudoTerminal(object):
                 for (pump, flag) in zip(pumps, flags):
                     io.set_blocking(pump, flag)
 
-
     def israw(self):
         """
         Returns True if the PTY should operate in raw mode.
@@ -166,10 +159,9 @@ class PseudoTerminal(object):
 
         if self.raw is None:
             info = self.container_info()
-            self.raw = self.stdout.isatty() and info['Config']['Tty']
+            self.raw = self.stdout.isatty() and info["Config"]["Tty"]
 
         return self.raw
-
 
     def sockets(self):
         """
@@ -182,22 +174,18 @@ class PseudoTerminal(object):
         info = self.container_info()
 
         def attach_socket(key):
-            if info['Config']['Attach{0}'.format(key.capitalize())]:
-                socket = self.client.attach_socket(
-                    self.container,
-                    {key: 1, 'stream': 1, 'logs': 1},
-                )
+            if info["Config"]["Attach{0}".format(key.capitalize())]:
+                socket = self.client.attach_socket(self.container, {key: 1, "stream": 1, "logs": 1})
                 stream = io.Stream(socket)
 
-                if info['Config']['Tty']:
+                if info["Config"]["Tty"]:
                     return stream
                 else:
                     return io.Demuxer(stream)
             else:
                 return None
 
-        return map(attach_socket, ('stdin', 'stdout', 'stderr'))
-
+        return map(attach_socket, ("stdin", "stdout", "stderr"))
 
     def resize(self, size=None):
         """
@@ -216,9 +204,8 @@ class PseudoTerminal(object):
             rows, cols = size
             try:
                 self.client.resize(self.container, height=rows, width=cols)
-            except IOError: # Container already exited
+            except IOError:  # Container already exited
                 pass
-
 
     def container_info(self):
         """
@@ -226,7 +213,6 @@ class PseudoTerminal(object):
         """
 
         return self.client.inspect_container(self.container)
-
 
     def _hijack_tty(self, pumps):
         with tty.Terminal(self.stdin, raw=self.israw()):
@@ -247,5 +233,5 @@ class PseudoTerminal(object):
                         break
 
                 except SSLError as e:
-                    if 'The operation did not complete' not in e.strerror:
+                    if "The operation did not complete" not in e.strerror:
                         raise e

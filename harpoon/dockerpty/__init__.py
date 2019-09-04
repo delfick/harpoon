@@ -24,4 +24,6 @@ def start(client, container, interactive=True, stdout=None, stderr=None, stdin=N
     This is just a wrapper for PseudoTerminal(client, container).start()
     """
 
-    PseudoTerminal(client, container, interactive=interactive, stdout=stdout, stderr=stderr, stdin=stdin).start(**kwargs)
+    PseudoTerminal(
+        client, container, interactive=interactive, stdout=stdout, stderr=stderr, stdin=stdin
+    ).start(**kwargs)

@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import os
 
+
 class EnvironmentAssertionsMixin:
     @contextmanager
     def modified_env(self, **env):
@@ -16,4 +17,3 @@ class EnvironmentAssertionsMixin:
                         os.environ[key] = originals[key]
                     elif key in os.environ:
                         del os.environ[key]
-

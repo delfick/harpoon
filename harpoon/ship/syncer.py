@@ -21,6 +21,7 @@ log = logging.getLogger("harpoon.ship.syncer")
 ###   PROGRESS STREAM
 ########################
 
+
 class SyncProgressStream(ProgressStream):
     def setup(self):
         self.last_id = None
@@ -28,20 +29,20 @@ class SyncProgressStream(ProgressStream):
 
     def interpret_line(self, line_detail):
         if "aux" in line_detail:
-            self.add_line('\n' + str(line_detail["aux"]) + '\n')
+            self.add_line("\n" + str(line_detail["aux"]) + "\n")
             return
 
         if "status" not in line_detail:
-            self.add_line(str(line_detail) + '\n')
+            self.add_line(str(line_detail) + "\n")
             return
 
         status = line_detail["status"]
         if "progress" in line_detail or "progressDetail" in line_detail:
-            if 'id' in line_detail:
+            if "id" in line_detail:
                 next_id = line_detail["id"]
 
             progress_detail = ""
-            if line_detail.get('progress'):
+            if line_detail.get("progress"):
                 progress_detail = ": {0}".format(line_detail["progress"])
 
             line = "{0} - {1}{2}".format(status, next_id, progress_detail)
@@ -58,9 +59,11 @@ class SyncProgressStream(ProgressStream):
         self.add_line(line)
         self.last_status = status
 
+
 ########################
 ###   SYNCER
 ########################
+
 
 class Syncer(object):
     """Knows how to push and pull images"""
@@ -77,10 +80,16 @@ class Syncer(object):
     def push_or_pull(self, conf, action=None, ignore_missing=False):
         """Push or pull this image"""
         if action not in ("push", "pull"):
-            raise ProgrammerError("Should have called push_or_pull with action to either push or pull, got {0}".format(action))
+            raise ProgrammerError(
+                "Should have called push_or_pull with action to either push or pull, got {0}".format(
+                    action
+                )
+            )
 
         if not conf.image_index:
-            raise BadImage("Can't {0} without an image_index configuration".format(action), image=conf.name)
+            raise BadImage(
+                "Can't {0} without an image_index configuration".format(action), image=conf.name
+            )
 
         if conf.image_name == "scratch":
             log.warning("Not pulling/pushing scratch, this is a reserved image!")
@@ -94,14 +103,12 @@ class Syncer(object):
 
             # Login before pulling or pushing
             # Have this in the for loop incase it fails and the push/pull also fails as a result
-            conf.login(conf.image_name, is_pushing=action=='push')
+            conf.login(conf.image_name, is_pushing=action == "push")
 
             try:
                 for line in getattr(conf.harpoon.docker_api, action)(
-                        conf.image_name
-                        , tag = None if conf.tag is NotSpecified else conf.tag
-                        , stream = True
-                        ):
+                    conf.image_name, tag=None if conf.tag is NotSpecified else conf.tag, stream=True
+                ):
 
                     for line in line.split(six.binary_type("\r\n", "utf-8")):
                         if not line:
@@ -111,10 +118,21 @@ class Syncer(object):
                             sync_stream.feed(line)
                         except Failure as error:
                             if ignore_missing and action == "pull":
-                                log.error("Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s", action, conf.name, conf.image_name, error)
+                                log.error(
+                                    "Failed to %s an image\timage=%s\timage_name=%s\tmsg=%s",
+                                    action,
+                                    conf.name,
+                                    conf.image_name,
+                                    error,
+                                )
                                 break
                             else:
-                                raise FailedImage("Failed to {0} an image".format(action), image=conf.name, image_name=conf.image_name, msg=error)
+                                raise FailedImage(
+                                    "Failed to {0} an image".format(action),
+                                    image=conf.name,
+                                    image_name=conf.image_name,
+                                    msg=error,
+                                )
                         except Unknown as error:
                             log.warning("Unknown line\tline=%s", error)
 
@@ -122,7 +140,7 @@ class Syncer(object):
                             if six.PY3:
                                 conf.harpoon.stdout.write(part)
                             else:
-                                conf.harpoon.stdout.write(part.encode('utf-8', 'replace'))
+                                conf.harpoon.stdout.write(part.encode("utf-8", "replace"))
                         conf.harpoon.stdout.flush()
 
                 # And stop the loop!

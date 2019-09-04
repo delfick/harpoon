@@ -7,6 +7,7 @@ import uuid
 
 info = {}
 
+
 class DockersAssertionsMixin:
     @property
     def docker_client(self):
@@ -49,4 +50,3 @@ class DockersAssertionsMixin:
                 self.docker_api.remove_image(ident_tag)
             except docker.errors.APIError as error:
                 print("Failed to delete the image", error)
-

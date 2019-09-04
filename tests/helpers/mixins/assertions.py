@@ -6,8 +6,10 @@ import json
 import six
 import re
 
+
 class NotSpecified(object):
     """Tell the difference between empty and None"""
+
 
 class AssertionsAssertionsMixin:
     def assertSortedEqual(self, one, two):
@@ -28,27 +30,35 @@ class AssertionsAssertionsMixin:
     def assertReMatchLines(self, expected, output, remove=None):
         """Assert that all the lines match each other in order"""
         expected = dedent(expected).strip()
-        expected_lines = expected.split('\n')
-        expected = expected.encode('utf-8')
+        expected_lines = expected.split("\n")
+        expected = expected.encode("utf-8")
 
         output = dedent(output).strip()
-        output_lines = output.split('\n')
+        output_lines = output.split("\n")
         if remove:
             output_lines = [line for line in output_lines if not any(r.match(line) for r in remove)]
-        output = output.encode('utf-8')
+        output = output.encode("utf-8")
 
         if len(expected_lines) != len(output_lines):
-            assert False, "Different number of lines! Expected ===>\n{0}\n\nTo match ===>\n{1}".format(expected, output)
+            assert (
+                False
+            ), "Different number of lines! Expected ===>\n{0}\n\nTo match ===>\n{1}".format(
+                expected, output
+            )
 
-        ansi_escape = re.compile(r'\x1b[^m]*m')
+        ansi_escape = re.compile(r"\x1b[^m]*m")
         for a, b in zip(expected_lines, output_lines):
             if not isinstance(a, six.binary_type):
-                a = a.encode('utf-8')
+                a = a.encode("utf-8")
             if not isinstance(b, six.binary_type):
-                b = re.sub(ansi_escape, '', b).encode('utf-8')
+                b = re.sub(ansi_escape, "", b).encode("utf-8")
             else:
-                b = re.sub(ansi_escape, '', b.decode('utf-8')).encode('utf-8')
-            assert re.match(a, b), "Didn't match! Expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(expected, output, a, b)
+                b = re.sub(ansi_escape, "", b.decode("utf-8")).encode("utf-8")
+            assert re.match(
+                a, b
+            ), "Didn't match! Expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(
+                expected, output, a, b
+            )
 
     @contextmanager
     def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):
@@ -80,7 +90,8 @@ class AssertionsAssertionsMixin:
                 print("Expected: {0}: {1}: {2}".format(expected_kls, expected_msg_regex, values))
                 raise
         else:
-            assert False, "Expected an exception to be raised\n\texpected_kls: {0}\n\texpected_msg_regex: {1}\n\thave_atleast: {2}".format(
+            assert (
+                False
+            ), "Expected an exception to be raised\n\texpected_kls: {0}\n\texpected_msg_regex: {1}\n\thave_atleast: {2}".format(
                 expected_kls, expected_msg_regex, values
             )
-

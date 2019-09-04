@@ -26,6 +26,7 @@ log = logging.getLogger("harpoon.ship.builder")
 ###   PROGRESS STREAM
 ########################
 
+
 class BuildProgressStream(ProgressStream):
     def setup(self):
         self.last_line = ""
@@ -57,17 +58,17 @@ class BuildProgressStream(ProgressStream):
             self.last_created_image = stripped.split(" ", 1)[1]
 
         if line.startswith("Step "):
-            action = line[line.find(":") + 1:].strip()
-            self.current_action = action[:action.find(" ")].strip()
+            action = line[line.find(":") + 1 :].strip()
+            self.current_action = action[: action.find(" ")].strip()
             if self.current_action == "FROM" and self.last_created_image:
                 self.intermediate_images.append(self.last_created_image)
 
             self.last_created_image = None
 
         if line.strip().startswith("---> Running in"):
-            self.current_container = line[len("---> Running in "):].strip()
+            self.current_container = line[len("---> Running in ") :].strip()
         elif line.strip().startswith("Successfully built"):
-            self.current_container = line[len("Successfully built"):].strip()
+            self.current_container = line[len("Successfully built") :].strip()
             self.last_created_image = None
 
         if self.last_line.startswith("Step ") and line.strip().startswith("---> "):
@@ -94,14 +95,26 @@ class BuildProgressStream(ProgressStream):
             self.cached = False
         self.add_line(line)
 
+
 ########################
 ###   BUILDER
 ########################
 
+
 class Builder(BuilderBase):
     """Build an image from Image configuration"""
 
-    def make_image(self, conf, images, chain=None, parent_chain=None, made=None, ignore_deps=False, ignore_parent=False, pushing=False):
+    def make_image(
+        self,
+        conf,
+        images,
+        chain=None,
+        parent_chain=None,
+        made=None,
+        ignore_deps=False,
+        ignore_parent=False,
+        pushing=False,
+    ):
         """Make us an image"""
         made = {} if made is None else made
         chain = [] if chain is None else chain
@@ -121,12 +134,20 @@ class Builder(BuilderBase):
 
         if not ignore_deps:
             for dependency, image in conf.dependency_images():
-                self.make_image(images[dependency], images, chain=chain + [conf.name], made=made, pushing=pushing)
+                self.make_image(
+                    images[dependency],
+                    images,
+                    chain=chain + [conf.name],
+                    made=made,
+                    pushing=pushing,
+                )
 
         if not ignore_parent:
             for dep in conf.commands.dependent_images:
                 if not isinstance(dep, six.string_types):
-                    self.make_image(dep, images, chain, parent_chain + [conf.name], made=made, pushing=pushing)
+                    self.make_image(
+                        dep, images, chain, parent_chain + [conf.name], made=made, pushing=pushing
+                    )
 
         # Should have all our dependencies now
         log.info("Making image for '%s' (%s)", conf.name, conf.image_name)
@@ -141,7 +162,7 @@ class Builder(BuilderBase):
                 stream = BuildProgressStream(conf.harpoon.silent_build)
                 with self.remove_replaced_images(conf) as info:
                     cached = NormalBuilder().build(conf, context, stream)
-                    info['cached'] = cached
+                    info["cached"] = cached
             except (KeyboardInterrupt, Exception) as error:
                 exc_info = sys.exc_info()
                 if stream.current_container:
@@ -158,14 +179,20 @@ class Builder(BuilderBase):
                         try:
                             conf.harpoon.docker_api.remove_image(image)
                         except Exception as error:
-                            log.error("Failed to remove intermediate image\timage=%s\terror=%s", image, error)
+                            log.error(
+                                "Failed to remove intermediate image\timage=%s\terror=%s",
+                                image,
+                                error,
+                            )
 
         return cached
 
     def layered(self, images, only_pushable=False):
         """Yield layers of images"""
         if only_pushable:
-            operate_on = dict((image, instance) for image, instance in images.items() if instance.image_index)
+            operate_on = dict(
+                (image, instance) for image, instance in images.items() if instance.image_index
+            )
         else:
             operate_on = images
 
@@ -178,4 +205,3 @@ class Builder(BuilderBase):
                     buf.append((image_name, image))
             if buf:
                 yield buf
-

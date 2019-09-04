@@ -17,7 +17,9 @@ describe HarpoonCase, "App":
             with self.a_temp_file() as config_location:
                 argv = ["list_tasks", "blah", "--harpoon-config", config_location]
                 app = App()
-                args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
+                args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
+                    argv, app.cli_categories
+                )
                 self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
                 self.assertEqual(args_obj.harpoon_chosen_image, "blah")
                 self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
@@ -28,14 +30,18 @@ describe HarpoonCase, "App":
                 with self.modified_env(HARPOON_CONFIG=config_location):
                     argv = ["list_tasks", "blah"]
                     app = App()
-                    args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
+                    args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
+                        argv, app.cli_categories
+                    )
                     self.assertEqual(args_obj.harpoon_config().name, config_location)
                     self.assertEqual(args_dict["harpoon"]["config"]().name, config_location)
 
         it "defaults image to NotSpecified and tasks to list_tasks":
             with self.a_temp_file() as config_location:
                 app = App()
-                args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(["--harpoon-config", config_location], app.cli_categories)
+                args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
+                    ["--harpoon-config", config_location], app.cli_categories
+                )
                 self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
                 self.assertEqual(args_obj.harpoon_chosen_image, NotSpecified)
                 self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
@@ -49,14 +55,23 @@ describe HarpoonCase, "App":
                 try:
                     fake_stderr = StringIO()
                     sys.stderr, old_stderr = fake_stderr, sys.stderr
-                    app.make_cli_parser().interpret_args(["--harpoon-config", config_location], app.cli_categories)
+                    app.make_cli_parser().interpret_args(
+                        ["--harpoon-config", config_location], app.cli_categories
+                    )
                 except SystemExit as error:
                     self.assertEqual(error.code, 2)
                     fake_stderr.seek(0)
-                    self.assertEqual(fake_stderr.read().split('\n')[-2], "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(config_location))
+                    self.assertEqual(
+                        fake_stderr.read().split("\n")[-2],
+                        "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(
+                            config_location
+                        ),
+                    )
                 except IOError as error:
                     assert six.PY2
-                    self.assertEqual(str(error), "[Errno 2] No such file or directory: './harpoon.yml'")
+                    self.assertEqual(
+                        str(error), "[Errno 2] No such file or directory: './harpoon.yml'"
+                    )
                 finally:
                     if old_stderr is not None:
                         sys.stderr = old_stderr
@@ -68,7 +83,9 @@ describe HarpoonCase, "App":
             with self.a_temp_file() as config_location:
                 with self.modified_env(HARPOON_CONFIG=config_location):
                     app = App()
-                    args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(argv, app.cli_categories)
+                    args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
+                        argv, app.cli_categories
+                    )
 
                     collector = mock.Mock(name="collector")
                     collector.configuration = configuration
@@ -76,7 +93,9 @@ describe HarpoonCase, "App":
                     docker_context = mock.Mock(name="docker_context")
                     logging_handler = mock.Mock(name="logging_handler")
                     setup_logging_theme = mock.Mock(name="setup_logging_theme")
-                    docker_context_maker = mock.Mock(name="docker_context_maker", return_value=docker_context)
+                    docker_context_maker = mock.Mock(
+                        name="docker_context_maker", return_value=docker_context
+                    )
 
                     with mock.patch("harpoon.executor.Collector", FakeCollector):
                         with mock.patch("harpoon.executor.docker_context", docker_context_maker):
@@ -99,7 +118,7 @@ describe HarpoonCase, "App":
                 called.append(2)
 
             def prepare(filename, args_dict):
-                configuration["harpoon"] = mock.Mock(name='harpoon')
+                configuration["harpoon"] = mock.Mock(name="harpoon")
                 for key, val in args_dict["harpoon"].items():
                     setattr(configuration["harpoon"], key, val)
                 configuration["task_runner"] = task_runner
@@ -108,7 +127,14 @@ describe HarpoonCase, "App":
             argv = [default_task]
             configuration = {"term_colors": "light"}
 
-            with self.setup_and_execute_app(argv, configuration) as (collector, docker_context_Maker, docker_context, app, setup_logging_theme, args_dict):
+            with self.setup_and_execute_app(argv, configuration) as (
+                collector,
+                docker_context_Maker,
+                docker_context,
+                app,
+                setup_logging_theme,
+                args_dict,
+            ):
                 setup_logging_theme.side_effect = setup_logging_theme_func
                 collector.prepare.side_effect = prepare
 
@@ -133,7 +159,7 @@ describe HarpoonCase, "App":
                 called.append(2)
 
             def prepare(filename, args_dict):
-                configuration["harpoon"] = mock.Mock(name='harpoon')
+                configuration["harpoon"] = mock.Mock(name="harpoon")
                 for key, val in args_dict["harpoon"].items():
                     setattr(configuration["harpoon"], key, val)
                 configuration["args_dict"] = args_dict
@@ -143,7 +169,14 @@ describe HarpoonCase, "App":
             argv = [default_task, "--", "one", "two", "--three"]
             configuration = {}
 
-            with self.setup_and_execute_app(argv, configuration) as (collector, docker_context_maker, docker_context, app, setup_logging_theme, args_dict):
+            with self.setup_and_execute_app(argv, configuration) as (
+                collector,
+                docker_context_maker,
+                docker_context,
+                app,
+                setup_logging_theme,
+                args_dict,
+            ):
                 self.assertEqual(args_dict["bash"], None)
                 self.assertEqual(args_dict["command"], None)
                 assert "docker_context_maker" not in args_dict
@@ -158,4 +191,3 @@ describe HarpoonCase, "App":
             self.assertEqual(args_dict["ran"], True)
             self.assertIs(args_dict["harpoon"]["docker_context_maker"], docker_context_maker)
             self.assertIs(args_dict["harpoon"]["docker_context"], docker_context)
-

@@ -17,21 +17,19 @@ import os
 describe HarpoonCase, "Executing harpoon":
     it "executes the given task":
         content = str(uuid.uuid1())
-        config = { "images":
-            { "blah":
-              { "commands":
-                [ [ "FROM", os.environ["BASE_IMAGE"] ]
-                , [ "ADD", {"content": content, "dest": "/tmp/blah"} ]
-                , "CMD cat /tmp/blah"
-                ]
-              , "tasks":
-                { "stuff": { "description": "Run the task" }
+        config = {
+            "images": {
+                "blah": {
+                    "commands": [
+                        ["FROM", os.environ["BASE_IMAGE"]],
+                        ["ADD", {"content": content, "dest": "/tmp/blah"}],
+                        "CMD cat /tmp/blah",
+                    ],
+                    "tasks": {"stuff": {"description": "Run the task"}},
+                    "context": False,
                 }
-              , "context": False
-              }
             }
-          }
-
+        }
 
         old_handlers = list(logging.getLogger("").handlers)
         try:
@@ -48,4 +46,3 @@ describe HarpoonCase, "Executing harpoon":
                     self.assertEqual(open(fake_stdout.name).readlines()[-1].strip(), content)
         finally:
             logging.getLogger("").handlers = list(old_handlers)
-

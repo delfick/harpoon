@@ -4,6 +4,7 @@ import uuid
 
 log = logging.getLogger("harpoon.ship.network")
 
+
 class NetworkManager(object):
     def __init__(self, docker_api):
         self.networks = {}
@@ -19,9 +20,9 @@ class NetworkManager(object):
         for link in conf.links:
             dep_container_name, link_name = link.pair
             inside.add(dep_container_name)
-            conf.harpoon.docker_api.connect_container_to_network(dep_container_name, network
-                , aliases = [link_name]
-                )
+            conf.harpoon.docker_api.connect_container_to_network(
+                dep_container_name, network, aliases=[link_name]
+            )
 
         conf.harpoon.docker_api.connect_container_to_network(container_name, network)
         inside.add(container_name)
