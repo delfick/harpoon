@@ -10,7 +10,7 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_project==0.5.1"
+      [ "delfick_project==0.5.2"
 
       , "docker==3.5.0"
 
@@ -23,6 +23,7 @@ setup(
     , extras_require =
       { "tests":
         [ "noseOfYeti==1.9.1"
+        , "psutil==5.6.3"
         , "pytest"
         , "tox"
         ]

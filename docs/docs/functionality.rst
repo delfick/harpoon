@@ -979,3 +979,8 @@ get the slip and extract the username and password from it.
 S3 slips are nice in that they can be rotated and the client doesn't need to know
 that it's been rotated (so long as it gets the new creds each time it interacts
 with the registry)
+
+Container Manager
+-----------------
+
+See :ref:`container_manager`.

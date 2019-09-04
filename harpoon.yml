@@ -1,0 +1,12 @@
+---
+
+images:
+   server:
+      context: false
+
+      commands:
+         - FROM python:3
+         - - ADD
+           - dest: /example_file
+             content: "hello there"
+         - CMD python -m http.server 4545

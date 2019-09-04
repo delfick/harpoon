@@ -132,12 +132,12 @@ class ContextBuilder(object):
                 wrapper.close()
                 yield wrapper.tmpfile
         elif "image" in content:
-            from harpoon.ship.runner import Runner
+            from harpoon.ship.runner import Runner, ContainerRunner
 
             with a_temp_file() as fle:
                 content["conf"].command = "yes"
-                with Runner()._run_container(
-                    content["conf"], content["images"], detach=True, delete_anyway=True
+                with ContainerRunner(
+                    Runner(), content["conf"], content["images"], detach=True, delete_anyway=True
                 ):
                     try:
                         strm, stat = content["docker_api"].get_archive(

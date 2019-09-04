@@ -109,7 +109,7 @@ describe CommandCase, "convert_dict_command_spec":
         normalise.assert_called_once_with(meta.at("COPY"), val)
 
     it "complains if the key isn't ADD or COPY", spec, meta:
-        error = "Commands specified as \[COMMAND, \{options\}\] may only have one option \(either ADD or COPY\)"
+        error = r"Commands specified as \[COMMAND, \{options\}\] may only have one option \(either ADD or COPY\)"
         with assertRaises(BadSpecValue, error, got="blah", meta=meta):
             spec.normalise(meta, {"blah": {"content": "blah", "dest": "somewhere"}})
 

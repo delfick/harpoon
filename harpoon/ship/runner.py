@@ -29,6 +29,61 @@ import os
 log = logging.getLogger("harpoon.ship.runner")
 
 
+class ContainerRunner:
+    def __init__(
+        self,
+        runner,
+        conf,
+        images,
+        detach=False,
+        started=None,
+        dependency=False,
+        tag=None,
+        delete_anyway=False,
+    ):
+
+        self.runner = runner
+        self.conf = conf
+        self.images = images
+
+        self.detach = detach
+        self.started = started
+        self.dependency = dependency
+        self.tag = tag
+        self.delete_anyway = delete_anyway
+
+    def start(self):
+        if self.conf.container_id:
+            return
+
+        self.runner.run_deps(self.conf, self.images)
+        tty = not self.detach and (self.dependency or self.conf.harpoon.interactive)
+        container_id = self.runner.create_container(self.conf, self.detach, tty)
+
+        self.conf.container_id = container_id
+
+        try:
+            self.runner.wait_for_deps(self.conf, self.images)
+        except KeyboardInterrupt:
+            raise UserQuit()
+
+        self.runner.start_container(
+            self.conf, tty=tty, detach=self.detach, is_dependency=self.dependency
+        )
+
+    def finish(self, force=False):
+        if force or self.delete_anyway or (not self.detach and not self.dependency):
+            self.runner.stop_deps(self.conf, self.images)
+            self.runner.stop_container(self.conf, tag=self.tag)
+            self.runner.delete_deps(self.conf, self.images)
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc, tb):
+        self.finish()
+
+
 class Runner(object):
     """Knows how to run containers given Image objects"""
 
@@ -38,43 +93,8 @@ class Runner(object):
 
     def run_container(self, conf, images, **kwargs):
         """Run this image and all dependency images"""
-        with self._run_container(conf, images, **kwargs):
+        with ContainerRunner(self, conf, images, **kwargs):
             pass
-
-    @contextmanager
-    def _run_container(
-        self,
-        conf,
-        images,
-        detach=False,
-        started=None,
-        dependency=False,
-        tag=None,
-        delete_anyway=False,
-    ):
-        if conf.container_id:
-            yield
-            return
-
-        try:
-            self.run_deps(conf, images)
-            tty = not detach and (dependency or conf.harpoon.interactive)
-            container_id = self.create_container(conf, detach, tty)
-
-            conf.container_id = container_id
-
-            try:
-                self.wait_for_deps(conf, images)
-            except KeyboardInterrupt:
-                raise UserQuit()
-
-            self.start_container(conf, tty=tty, detach=detach, is_dependency=dependency)
-            yield
-        finally:
-            if delete_anyway or (not detach and not dependency):
-                self.stop_deps(conf, images)
-                self.stop_container(conf, tag=tag)
-                self.delete_deps(conf, images)
 
     ########################
     ###   DEPS

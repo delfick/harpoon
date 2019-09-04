@@ -101,12 +101,12 @@ class HarpoonSpec(object):
     @memoized_property
     def task_name_spec(self):
         """Just needs to be ascii"""
-        return sb.valid_string_spec(va.no_whitespace(), va.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
+        return sb.valid_string_spec(va.no_whitespace(), va.regexed(r"^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
 
     @memoized_property
     def container_name_spec(self):
         """Just needs to be ascii"""
-        return sb.valid_string_spec(va.no_whitespace(), va.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
+        return sb.valid_string_spec(va.no_whitespace(), va.regexed(r"^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
 
     def tasks_spec(self, available_actions, default_action="run"):
         """Tasks for a particular image"""

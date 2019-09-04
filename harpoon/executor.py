@@ -7,10 +7,9 @@ from harpoon.errors import BadDockerConnection
 from harpoon.collector import Collector
 from harpoon import VERSION
 
+from delfick_project.app import App, OptionalFileType
 from docker.errors import APIError, DockerException
 from delfick_project.norms import sb
-from delfick_project.app import App
-import argparse
 import logging
 import docker
 import os
@@ -78,7 +77,7 @@ class App(App):
         parser.add_argument(
             "--harpoon-config",
             help="The config file specifying what harpoon should care about",
-            type=argparse.FileType("r"),
+            type=OptionalFileType("r"),
             **defaults["--harpoon-config"]
         )
 

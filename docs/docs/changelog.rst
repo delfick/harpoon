@@ -3,6 +3,9 @@ Changelog
 
 0.16.0 - TBD
    * Converted tests to pytest
+   * Implemented a container_manager web server functionality, see
+     :ref:`container_manager`.
+   * Made harpoon.yml optional
 
 0.15.1 - 2 October 2019
    * No-op update of delfick_project

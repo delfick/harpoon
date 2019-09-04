@@ -2,6 +2,7 @@
 
 export BASE_TAG=buildroot-2014.02
 export BASE_IMAGE=busybox:$BASE_TAG
+export DOCKER_MACHINE_NAME=harpoon-tests
 
 exclusions=""
 if [[ -z $TOX ]]; then
@@ -9,23 +10,23 @@ if [[ -z $TOX ]]; then
 fi
 
 if [[ -z $CI_SERVER ]]; then
-    if docker-machine ls | grep harpoon-tests; then
-        if [[ $(docker-machine status harpoon-tests) != "Running" ]]; then
-            if ! docker-machine start harpoon-tests; then
-                echo "Couldn't start harpoon-tests"
+    if docker-machine ls | grep $DOCKER_MACHINE_NAME; then
+        if [[ $(docker-machine status $DOCKER_MACHINE_NAME) != "Running" ]]; then
+            if ! docker-machine start $DOCKER_MACHINE_NAME; then
+                echo "Couldn't start $DOCKER_MACHINE_NAME"
                 exit 1
             fi
         fi
-        captured=$(docker-machine env harpoon-tests --shell sh)
+        captured=$(docker-machine env $DOCKER_MACHINE_NAME --shell sh)
         if [[ $? != 0 ]]; then
             echo -e $captured
-            echo "Failed to do harpoon-tests environment"
+            echo "Failed to do $DOCKER_MACHINE_NAME environment"
             exit 1
         else
             eval $captured
         fi
     else
-        echo "Use docker-machine to create an environment called 'harpoon-tests'"
+        echo "Use docker-machine to create an environment called '$DOCKER_MACHINE_NAME'"
         exit 1
     fi
 fi
@@ -41,7 +42,9 @@ if [[ $(docker inspect $BASE_IMAGE | grep Id | cut -d'"' -f4) != "sha256:9875fb0
 fi
 
 # We also need the python:3 image
-docker pull python:3
+if [[ -z $DONT_PULL_PYTHON ]]; then
+    docker pull python:3
+fi
 
 export DESTRUCTIVE_DOCKER_TESTS=true
 exec pytest -q -m "integration" $@

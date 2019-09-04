@@ -5,6 +5,7 @@ Each task is specified with the ``a_task`` decorator and indicates whether it's
 necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
+from harpoon.container_manager import make_server, Manager, wait_for_server
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.errors import BadOption, HarpoonError
 from harpoon.ship.context import ContextBuilder
@@ -14,13 +15,20 @@ from harpoon.ship.syncer import Syncer
 from docker.errors import APIError as DockerAPIError
 from delfick_project.norms import sb, Meta
 from urllib.parse import urlparse
+from functools import partial
 from textwrap import dedent
 from itertools import chain
 import docker.errors
 import itertools
+import threading
+import requests
 import logging
+import signal
+import socket
 import shutil
+import errno
 import os
+import re
 
 log = logging.getLogger("harpoon.actions")
 
@@ -400,6 +408,93 @@ def retrieve(collector, image, artifact, **kwargs):
     # Get us our gold!
     with ContextBuilder().the_context(content) as fle:
         shutil.copyfile(fle.name, os.environ.get("FILENAME", "./retrieved.tar.gz"))
+
+
+@an_action()
+def container_manager(collector, image, **kwargs):
+    """
+    Start a web server that you can request containers from.
+
+    Usage is like::
+
+        harpoon container_manager pathtofile
+
+    Or::
+
+        harpoon container_manager pathtofile:port
+
+    Or::
+
+        harpoon container_manager :port
+
+    If pathtofile is specified then we will fork the process, start the web
+    server in the forked process, write the port of the web server and pid on
+    separate lines to the file specified by pathtofile and quit
+
+    If port is not specified, then we will bind to an available port, otherwise
+    we bind the web server to the specified port.
+
+    If no argument is specified, it's the same as saying::
+
+        harpoon container_manager :4545
+    """
+    if image in (None, "", sb.NotSpecified):
+        image = ":4545"
+
+    m = re.match(r"([^:]+)?(?::(\d+))?", image)
+
+    if not m:
+        raise HarpoonError("First argument to container_manager was invalid")
+
+    groups = m.groups()
+    filename = groups[0]
+
+    port = int(groups[1] or 0)
+    if not port:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("0.0.0.0", 0))
+            port = s.getsockname()[1]
+
+    if filename:
+        pid = os.fork()
+        if pid != 0:
+            with open(filename, "w") as fle:
+                fle.write(str(port))
+                fle.write("\n")
+                fle.write(str(pid))
+                fle.write("\n")
+
+            wait_for_server(port)
+            return
+
+    image_puller = partial(pull_arbitrary, collector)
+    manager = Manager(
+        collector.configuration["harpoon"],
+        collector.configuration["images"],
+        image_puller=image_puller,
+    )
+
+    def shutdown(signum, frame):
+        if not manager.shutting_down:
+            url = "http://127.0.0.1:{0}/shutdown".format(port)
+            thread = threading.Thread(target=requests.get, args=(url,))
+            thread.daemon = True
+            thread.start()
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    # Start our server
+    try:
+        server = make_server(manager, ("0.0.0.0", port))
+        log.info("Serving container manager on 0.0.0.0:{0}".format(port))
+        server.serve_forever()
+    except OSError as error:
+        if error.errno == errno.EADDRINUSE:
+            raise HarpoonError(
+                "Container manager couldn't start because port was already in use", wanted=port
+            )
+        raise
 
 
 # Make it so future use of @an_action doesn't result in more default tasks
