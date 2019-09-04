@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.14.3 - 4 September 2019
+     * Reformatted the code with black
+     * Fixed some lint warnings
+
 0.14.2 - 4 August 2019
      * Update delfick_app dependency
 
