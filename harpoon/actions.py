@@ -6,10 +6,10 @@ necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.errors import BadOption, HarpoonError
 from harpoon.ship.context import ContextBuilder
 from harpoon.ship.builder import Builder
 from harpoon.ship.syncer import Syncer
-from harpoon.errors import BadOption
 
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
@@ -22,7 +22,6 @@ import docker.errors
 import itertools
 import logging
 import shutil
-import six
 import os
 
 log = logging.getLogger("harpoon.actions")

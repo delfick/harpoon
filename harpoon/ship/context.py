@@ -26,7 +26,7 @@ import six
 import os
 import re
 
-regexes = {"whitespace": re.compile("\s+")}
+regexes = {"whitespace": re.compile(r"\s+")}
 
 log = logging.getLogger("harpoon.ship.context")
 
@@ -300,7 +300,6 @@ class ContextBuilder(object):
                 raise HarpoonError(error_message, **error_kwargs)
             return output
 
-        changed_files = git("diff --name-only", "Failed to determine what files have changed")
         untracked_files = git(
             "ls-files --others --exclude-standard", "Failed to find untracked files"
         )

@@ -201,7 +201,7 @@ class Runner(object):
                             available = sorted(
                                 [
                                     i
-                                    for i in available
+                                    for i in images
                                     if "/{0}".format(image.container_name) in i["Names"]
                                 ],
                                 key=lambda i: i["Created"],
@@ -653,7 +653,7 @@ class Runner(object):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 s.bind((port.ip if port.ip is not NotSpecified else "127.0.0.1", port.host_port))
-            except socket.error as error:
+            except socket.error:
                 bound.append(port.host_port)
             finally:
                 s.close()

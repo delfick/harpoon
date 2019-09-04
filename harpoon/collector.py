@@ -22,7 +22,6 @@ from option_merge.collector import Collector
 from option_merge import MergedOptions
 from option_merge import Converter
 
-from delfick_app import command_output
 from ruamel.yaml import YAML
 import ruamel.yaml
 import logging

@@ -5,7 +5,6 @@ from input_algorithms.dictobj import dictobj
 
 from six.moves.urllib.parse import urlparse
 import subprocess
-import urllib3
 import logging
 import time
 import six

@@ -428,7 +428,10 @@ class Context(dictobj):
 
     fields = {
         "enabled": "Whether building a context is enabled or not",
-        "parent_dir": "The parent directory to get the context from (this is an absolute path, use ``{config_root}`` to make it relative to the configuration)",
+        "parent_dir": """
+            The parent directory to get the context from
+            (this is an absolute path, use ``{config_root}`` to make it relative to the configuration)
+        """,
         ("include", None): "Globs of what to include in the context",
         ("exclude", None): "Globs of what to exclude from the context",
         (

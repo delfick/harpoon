@@ -11,11 +11,9 @@ from harpoon.ship.builders.base import BuilderBase
 
 from harpoon.errors import NoSuchImage, BadCommand, UserQuit
 from harpoon.ship.progress_stream import ProgressStream
-from harpoon.option_spec import command_objs
 from harpoon.ship.runner import Runner
 from harpoon.layers import Layers
 
-from input_algorithms.spec_base import NotSpecified
 import logging
 import six
 import sys

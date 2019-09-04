@@ -173,10 +173,6 @@ class complex_ADD_from_image_spec(sb.Spec):
 
 class complex_COPY_spec(sb.Spec):
     def normalise(self, meta, val):
-        from harpoon.option_spec.harpoon_specs import HarpoonSpec
-
-        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
-
         if "from" not in val:
             raise BadSpecValue(
                 "Specifying [COPY, {options}] must contain 'from' in the options", meta=meta

@@ -9,11 +9,8 @@ from harpoon.errors import BadImage, ProgrammerError, FailedImage
 from harpoon.ship.builder import Builder
 
 from input_algorithms.spec_base import NotSpecified
-from contextlib import contextmanager
 import logging
-import json
 import six
-import sys
 
 log = logging.getLogger("harpoon.ship.syncer")
 

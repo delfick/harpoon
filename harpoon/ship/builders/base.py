@@ -23,7 +23,6 @@ class BuilderBase(object):
         tag = "latest" if conf.tag is NotSpecified else conf.tag
         image_name = "{0}:{1}".format(conf.image_name, tag)
 
-        current_ids = None
         if not conf.harpoon.keep_replaced:
             try:
                 current_id = conf.harpoon.docker_api.inspect_image(image_name)["Id"]
