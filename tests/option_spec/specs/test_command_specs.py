@@ -7,9 +7,8 @@ from harpoon.errors import BadSpecValue, BadOption
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import sb, Meta
 import hashlib
 import mock
 import json

@@ -6,10 +6,8 @@ from harpoon.ship.runner import Runner
 
 from tests.helpers import HarpoonCase
 
-from option_merge.converter import Converter
-from input_algorithms import spec_base as sb
-from option_merge import MergedOptions
-from input_algorithms.meta import Meta
+from delfick_project.option_merge import Converter, MergedOptions
+from delfick_project.norms import sb, Meta
 from contextlib import contextmanager
 import logging
 import socket

@@ -8,8 +8,8 @@ to.
 
 from harpoon.errors import BadOption
 
-from input_algorithms.dictobj import dictobj
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import dictobj
 
 
 class Task(dictobj):

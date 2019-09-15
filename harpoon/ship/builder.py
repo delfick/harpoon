@@ -6,14 +6,13 @@ Building an image requires building all dependent images, creating the necessary
 context, and actually building the current image.
 """
 
-from harpoon.ship.builders.normal import NormalBuilder
-from harpoon.ship.builders.base import BuilderBase
-
 from harpoon.errors import NoSuchImage, BadCommand, UserQuit
 from harpoon.ship.progress_stream import ProgressStream
+from harpoon.ship.builders.normal import NormalBuilder
+from harpoon.ship.builders.base import BuilderBase
 from harpoon.ship.runner import Runner
-from harpoon.layers import Layers
 
+from delfick_project.layerz import Layers
 import logging
 import sys
 
@@ -194,7 +193,7 @@ class Builder(BuilderBase):
         else:
             operate_on = images
 
-        layers = Layers(operate_on, all_images=images)
+        layers = Layers(operate_on, all_deps=images)
         layers.add_all_to_layers()
         for layer in layers.layered:
             buf = []

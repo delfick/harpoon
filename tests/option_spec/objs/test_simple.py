@@ -6,7 +6,7 @@ from harpoon.errors import HarpoonError
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp, noy_sup_tearDown
-from input_algorithms.spec_base import NotSpecified
+from delfick_project.norms import sb
 import mock
 import os
 
@@ -17,16 +17,16 @@ describe HarpoonCase, "Context object":
         self.enabled = mock.Mock(name="enabled")
         self.parent_dir = self.unique_val()
 
-    it "defaults _use_gitignore and to NotSpecified an include and exclude to None":
+    it "defaults _use_gitignore and to sb.NotSpecified an include and exclude to None":
         ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
         self.assertIs(ctxt.enabled, self.enabled)
         self.assertEqual(ctxt.parent_dir, os.path.abspath(self.parent_dir))
         self.assertIs(ctxt.include, None)
         self.assertIs(ctxt.exclude, None)
-        self.assertIs(ctxt._use_gitignore, NotSpecified)
+        self.assertIs(ctxt._use_gitignore, sb.NotSpecified)
 
     describe "use_gitignore":
-        it "returns False if _use_gitignore is NotSpecified":
+        it "returns False if _use_gitignore is sb.NotSpecified":
             ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
             self.assertIs(ctxt.use_gitignore, False)
 
@@ -210,7 +210,7 @@ describe HarpoonCase, "Port object":
 
     describe "pair":
         it "returns just container_port and host_port if no ip":
-            port = objs.Port(NotSpecified, self.host_port, self.container_port)
+            port = objs.Port(sb.NotSpecified, self.host_port, self.container_port)
             self.assertEqual(port.pair, (self.container_port_str, self.host_port))
 
         it "returns container_port with pair of ip and host_port if ip is specified":
@@ -222,9 +222,9 @@ describe HarpoonCase, "ContainerPort object":
         self.port = self.unique_val()
         self.transport = self.unique_val()
 
-    it "defaults transport to NotSpecified":
+    it "defaults transport to sb.NotSpecified":
         container_port = objs.ContainerPort(self.port)
-        self.assertEqual(container_port.transport, NotSpecified)
+        self.assertEqual(container_port.transport, sb.NotSpecified)
 
     describe "Port pair":
         it "defaults transport to tcp":

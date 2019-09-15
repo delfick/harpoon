@@ -1,5 +1,6 @@
-from input_algorithms.errors import BadSpec, BadSpecValue
-from delfick_error import DelfickError, ProgrammerError
+from delfick_project.errors import DelfickError, ProgrammerError
+from delfick_project.norms.errors import BadSpec, BadSpecValue
+from delfick_project.option_merge import BadOptionFormat
 
 
 class HarpoonError(DelfickError):
@@ -9,15 +10,12 @@ class HarpoonError(DelfickError):
 # Explicitly make these errors in this context
 BadSpec = BadSpec
 BadSpecValue = BadSpecValue
+BadOptionFormat = BadOptionFormat
 ProgrammerError = ProgrammerError
 
 
 class BadConfiguration(HarpoonError):
     desc = "Bad configuration"
-
-
-class BadOptionFormat(HarpoonError):
-    desc = "Bad option format"
 
 
 class BadTask(HarpoonError):

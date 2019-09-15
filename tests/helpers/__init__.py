@@ -1,7 +1,7 @@
 """
     Create a base class that includes all the mixins in the mixins folder
 """
-from delfick_error import DelfickErrorTestMixin
+from delfick_project.errors import DelfickErrorTestMixin
 import pkg_resources
 import unittest
 import os

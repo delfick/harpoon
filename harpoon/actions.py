@@ -12,9 +12,7 @@ from harpoon.ship.builder import Builder
 from harpoon.ship.syncer import Syncer
 
 from docker.errors import APIError as DockerAPIError
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 from urllib.parse import urlparse
 from textwrap import dedent
 from itertools import chain
@@ -53,9 +51,9 @@ def push(collector, image, **kwargs):
             "The chosen image does not have a image_index configuration", wanted=image.name
         )
     tag = kwargs["artifact"]
-    if tag is NotSpecified:
+    if tag is sb.NotSpecified:
         tag = collector.configuration["harpoon"].tag
-    if tag is not NotSpecified:
+    if tag is not sb.NotSpecified:
         image.tag = tag
     Builder().make_image(image, collector.configuration["images"], pushing=True)
     Syncer().push(image)
@@ -85,7 +83,7 @@ def pull_arbitrary(collector, image, **kwargs):
     else:
         image_indexes = [(image, image_index_of(image))]
 
-    authentication = collector.configuration.get("authentication", NotSpecified)
+    authentication = collector.configuration.get("authentication", sb.NotSpecified)
     for index, (image, image_index) in enumerate(image_indexes):
         tag = sb.NotSpecified
         if ":" in image:
@@ -97,7 +95,7 @@ def pull_arbitrary(collector, image, **kwargs):
             "harpoon": collector.configuration["harpoon"],
             "commands": ["FROM scratch"],
             "image_index": image_index,
-            "assume_role": NotSpecified,
+            "assume_role": sb.NotSpecified,
             "authentication": authentication,
         }
         meta = Meta(collector.configuration, []).at("images").at("__arbitrary_{0}__".format(index))
@@ -113,9 +111,9 @@ def pull(collector, image, **kwargs):
             "The chosen image does not have a image_index configuration", wanted=image.name
         )
     tag = kwargs["artifact"]
-    if tag is NotSpecified:
+    if tag is sb.NotSpecified:
         collector.configuration["harpoon"].tag
-    if tag is not NotSpecified:
+    if tag is not sb.NotSpecified:
         image.tag = tag
         log.info("Pulling tag: %s", tag)
     Syncer().pull(image, ignore_missing=image.harpoon.ignore_missing)
@@ -173,11 +171,11 @@ def pull_parents(collector, **kwargs):
 @an_action(needs_image=True)
 def make(collector, image, **kwargs):
     """Just create an image"""
-    tag = kwargs.get("artifact", NotSpecified)
-    if tag is NotSpecified:
+    tag = kwargs.get("artifact", sb.NotSpecified)
+    if tag is sb.NotSpecified:
         tag = collector.configuration["harpoon"].tag
 
-    if tag is not NotSpecified:
+    if tag is not sb.NotSpecified:
         image.tag = tag
 
     Builder().make_image(image, collector.configuration["images"])
@@ -193,14 +191,14 @@ def make_all(collector, **kwargs):
     if push:
         only_pushable = True
 
-    tag = kwargs.get("artifact", NotSpecified)
-    if tag is NotSpecified:
+    tag = kwargs.get("artifact", sb.NotSpecified)
+    if tag is sb.NotSpecified:
         tag = configuration["harpoon"].tag
 
     images = configuration["images"]
     for layer in Builder().layered(images, only_pushable=only_pushable):
         for _, image in layer:
-            if tag is not NotSpecified:
+            if tag is not sb.NotSpecified:
                 image.tag = tag
             Builder().make_image(image, images, ignore_deps=True, ignore_parent=True)
             print("Created image {0}".format(image.image_name))
@@ -327,10 +325,10 @@ def write_login(collector, image, **kwargs):
 @an_action(needs_image=True)
 def untag(collector, image, artifact, **kwargs):
     """Tag an image!"""
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         artifact = collector.configuration["harpoon"].tag
 
-    if artifact is NotSpecified:
+    if artifact is sb.NotSpecified:
         raise BadOption("Please specify a tag using the artifact or tag options")
 
     image.tag = artifact
@@ -346,14 +344,14 @@ def untag(collector, image, artifact, **kwargs):
 @an_action(needs_image=True)
 def tag(collector, image, artifact, **kwargs):
     """Tag an image!"""
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption("Please specify a tag using the artifact option")
 
-    if image.image_index in (None, "", NotSpecified):
+    if image.image_index in (None, "", sb.NotSpecified):
         raise BadOption("Please specify an image with an image_index option")
 
     tag = image.image_name
-    if collector.configuration["harpoon"].tag is not NotSpecified:
+    if collector.configuration["harpoon"].tag is not sb.NotSpecified:
         tag = "{0}:{1}".format(tag, collector.configuration["harpoon"].tag)
     else:
         tag = "{0}:latest".format(tag)
@@ -381,10 +379,10 @@ def tag(collector, image, artifact, **kwargs):
 @an_action(needs_image=True)
 def retrieve(collector, image, artifact, **kwargs):
     """Retrieve a file/folder from an image"""
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption("Please specify what to retrieve using the artifact option")
 
-    if collector.configuration["harpoon"].tag is not NotSpecified:
+    if collector.configuration["harpoon"].tag is not sb.NotSpecified:
         image.tag = collector.configuration["harpoon"].tag
 
     # make sure the image is built

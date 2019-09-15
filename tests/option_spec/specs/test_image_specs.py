@@ -5,10 +5,8 @@ from harpoon.option_spec import image_specs as specs, image_objs as objs
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import sb, dictobj, Meta
 import mock
 
 describe HarpoonCase, "Mount spec":
@@ -159,24 +157,24 @@ describe HarpoonCase, "Port spec":
         self.container_port_val = lambda transport: objs.ContainerPort(70, transport)
 
     def do_check(
-        self, value, has_ip, has_host_port, has_container_port, expected_transport=NotSpecified
+        self, value, has_ip, has_host_port, has_container_port, expected_transport=sb.NotSpecified
     ):
         made = specs.port_spec().normalise(self.meta, value)
 
         if has_ip:
             self.assertEqual(made.ip, self.ip)
         else:
-            self.assertEqual(made.ip, NotSpecified)
+            self.assertEqual(made.ip, sb.NotSpecified)
 
         if has_host_port:
             self.assertEqual(made.host_port, self.host_port)
         else:
-            self.assertEqual(made.host_port, NotSpecified)
+            self.assertEqual(made.host_port, sb.NotSpecified)
 
         if has_container_port:
             self.assertEqual(made.container_port, self.container_port_val(expected_transport))
         else:
-            self.assertEqual(made.container_port, NotSpecified)
+            self.assertEqual(made.container_port, sb.NotSpecified)
 
     it "takes as a list of 1 to 3 items":
         self.do_check(
@@ -249,10 +247,10 @@ describe HarpoonCase, "Container Port Spec":
     before_each:
         self.meta = mock.Mock(name="meta", spec=Meta)
 
-    it "defaults transport to NotSpecified":
+    it "defaults transport to sb.NotSpecified":
         self.assertEqual(
             specs.container_port_spec().normalise(self.meta, "80"),
-            objs.ContainerPort(80, NotSpecified),
+            objs.ContainerPort(80, sb.NotSpecified),
         )
 
     it "takes in transport as a string or as a list":

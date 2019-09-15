@@ -5,19 +5,6 @@ options.
 The specifications are responsible for sanitation, validation and normalisation.
 """
 
-# fmt: off
-from input_algorithms.spec_base import (
-      create_spec, defaulted, string_choice_spec
-    , dictionary_spec, string_spec, valid_string_spec
-    , listof, optional_spec, or_spec, any_spec
-    , directory_spec, filename_spec, file_spec
-    , boolean, required, formatted, overridden
-    , integer_spec, dictof, dict_from_bool_spec
-    , container_spec, many_format, delayed
-    , float_spec, Spec, set_options, NotSpecified
-    )
-# fmt: on
-
 from harpoon.option_spec.command_specs import command_spec
 from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.option_spec.command_objs import Commands
@@ -27,9 +14,7 @@ from harpoon.helpers import memoized_property
 from harpoon.option_spec import task_objs
 from harpoon import helpers as hp
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import validators
-
+from delfick_project.norms import sb, dictobj, va
 import sys
 
 
@@ -80,15 +65,15 @@ class other_options(dictobj):
     }
 
 
-class authentication_spec(Spec):
+class authentication_spec(sb.Spec):
     def normalise_filled(self, meta, value):
         # Make sure the value is a dictionary with a 'use' option
-        set_options(use=required(string_choice_spec(["kms", "plain", "s3_slip"]))).normalise(
-            meta, value
-        )
+        sb.set_options(
+            use=sb.required(sb.string_choice_spec(["kms", "plain", "s3_slip"]))
+        ).normalise(meta, value)
 
         use = value["use"]
-        formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
 
         if use == "kms" or use == "plain":
             kls = (
@@ -96,14 +81,18 @@ class authentication_spec(Spec):
                 if use == "plain"
                 else authentication_objs.KmsAuthentication
             )
-            spec = dict(username=required(formatted_string), password=required(formatted_string))
+            spec = dict(
+                username=sb.required(formatted_string), password=sb.required(formatted_string)
+            )
             if use == "kms":
-                spec.update(role=required(formatted_string), region=required(formatted_string))
+                spec.update(
+                    role=sb.required(formatted_string), region=sb.required(formatted_string)
+                )
         elif use == "s3_slip":
             kls = authentication_objs.S3SlipAuthentication
-            spec = dict(role=required(formatted_string), location=required(formatted_string))
+            spec = dict(role=sb.required(formatted_string), location=sb.required(formatted_string))
 
-        return create_spec(kls, **spec).normalise(meta, value)
+        return sb.create_spec(kls, **spec).normalise(meta, value)
 
 
 class HarpoonSpec(object):
@@ -112,27 +101,23 @@ class HarpoonSpec(object):
     @memoized_property
     def task_name_spec(self):
         """Just needs to be ascii"""
-        return valid_string_spec(
-            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-        )
+        return sb.valid_string_spec(va.no_whitespace(), va.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
 
     @memoized_property
     def container_name_spec(self):
         """Just needs to be ascii"""
-        return valid_string_spec(
-            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-        )
+        return sb.valid_string_spec(va.no_whitespace(), va.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
 
     def tasks_spec(self, available_actions, default_action="run"):
         """Tasks for a particular image"""
         # fmt: off
-        return dictof(
+        return sb.dictof(
               self.task_name_spec
-            , create_spec(task_objs.Task, validators.deprecated_key("spec", "Use ``action`` and ``options`` instead (note that ``action`` defaults to run)")
-                , action = defaulted(string_choice_spec(available_actions, "No such task"), default_action)
-                , options = dictionary_spec()
-                , overrides = dictionary_spec()
-                , description = string_spec()
+            , sb.create_spec(task_objs.Task, va.deprecated_key("spec", "Use ``action`` and ``options`` instead (note that ``action`` defaults to run)")
+                , action = sb.defaulted(sb.string_choice_spec(available_actions, "No such task"), default_action)
+                , options = sb.dictionary_spec()
+                , overrides = sb.dictionary_spec()
+                , description = sb.string_spec()
                 )
             )
         # fmt: on
@@ -141,10 +126,10 @@ class HarpoonSpec(object):
     def authentications_spec(self):
         """Spec for a group of authentication options"""
         # fmt: off
-        return container_spec(authentication_objs.Authentication
-              , dictof(string_spec(), set_options(
-                  reading = optional_spec(authentication_spec())
-                , writing = optional_spec(authentication_spec())
+        return sb.container_spec(authentication_objs.Authentication
+              , sb.dictof(sb.string_spec(), sb.set_options(
+                  reading = sb.optional_spec(authentication_spec())
+                , writing = sb.optional_spec(authentication_spec())
                 )
               )
             )
@@ -155,19 +140,19 @@ class HarpoonSpec(object):
         """Spec for a wait_condition block"""
         from harpoon.option_spec import image_objs
 
-        formatted_string = formatted(string_spec(), formatter=MergedOptionStringFormatter)
+        formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
         # fmt: off
-        return create_spec(image_objs.WaitCondition
-            , harpoon = formatted(overridden("{harpoon}"), formatter=MergedOptionStringFormatter)
-            , timeout = defaulted(integer_spec(), 300)
-            , wait_between_attempts = defaulted(float_spec(), 5)
+        return sb.create_spec(image_objs.WaitCondition
+            , harpoon = sb.formatted(sb.overridden("{harpoon}"), formatter=MergedOptionStringFormatter)
+            , timeout = sb.defaulted(sb.integer_spec(), 300)
+            , wait_between_attempts = sb.defaulted(sb.float_spec(), 5)
 
-            , greps = optional_spec(dictof(formatted_string, formatted_string))
-            , command = optional_spec(listof(formatted_string))
-            , port_open = optional_spec(listof(integer_spec()))
-            , file_value = optional_spec(dictof(formatted_string, formatted_string))
-            , curl_result = optional_spec(dictof(formatted_string, formatted_string))
-            , file_exists = optional_spec(listof(formatted_string))
+            , greps = sb.optional_spec(sb.dictof(formatted_string, formatted_string))
+            , command = sb.optional_spec(sb.listof(formatted_string))
+            , port_open = sb.optional_spec(sb.listof(sb.integer_spec()))
+            , file_value = sb.optional_spec(sb.dictof(formatted_string, formatted_string))
+            , curl_result = sb.optional_spec(sb.dictof(formatted_string, formatted_string))
+            , file_exists = sb.optional_spec(sb.listof(formatted_string))
             )
         # fmt: on
 
@@ -177,18 +162,18 @@ class HarpoonSpec(object):
         from harpoon.option_spec import image_objs
 
         # fmt: off
-        return dict_from_bool_spec(lambda meta, val: {"enabled": val}
-            , create_spec(image_objs.Context
-                , validators.deprecated_key("use_git_timestamps", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
+        return sb.dict_from_bool_spec(lambda meta, val: {"enabled": val}
+            , sb.create_spec(image_objs.Context
+                , va.deprecated_key("use_git_timestamps", "Since docker 1.8, timestamps no longer invalidate the docker layer cache")
 
-                , include = listof(string_spec())
-                , exclude = listof(string_spec())
-                , enabled = defaulted(boolean(), True)
-                , find_options = string_spec()
+                , include = sb.listof(sb.string_spec())
+                , exclude = sb.listof(sb.string_spec())
+                , enabled = sb.defaulted(sb.boolean(), True)
+                , find_options = sb.string_spec()
 
-                , parent_dir = directory_spec(formatted(defaulted(string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
-                , use_gitignore = defaulted(boolean(), False)
-                , ignore_find_errors = defaulted(boolean(), False)
+                , parent_dir = sb.directory_spec(sb.formatted(sb.defaulted(sb.string_spec(), "{config_root}"), formatter=MergedOptionStringFormatter))
+                , use_gitignore = sb.defaulted(sb.boolean(), False)
+                , ignore_find_errors = sb.defaulted(sb.boolean(), False)
                 )
             )
         # fmt: on
@@ -199,161 +184,165 @@ class HarpoonSpec(object):
         from harpoon.option_spec import image_specs as specs
         from harpoon.option_spec import image_objs
 
-        class persistence_shell_spec(Spec):
+        class persistence_shell_spec(sb.Spec):
             """Make the persistence shell default to the shell on the image"""
 
             def normalise(self, meta, val):
-                shell = defaulted(string_spec(), "/bin/bash").normalise(
+                shell = sb.defaulted(sb.string_spec(), "/bin/bash").normalise(
                     meta,
                     meta.everything[["images", meta.key_names()["_key_name_2"]]].get(
-                        "shell", NotSpecified
+                        "shell", sb.NotSpecified
                     ),
                 )
-                shell = defaulted(
-                    formatted(string_spec(), formatter=MergedOptionStringFormatter), shell
+                shell = sb.defaulted(
+                    sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter), shell
                 ).normalise(meta, val)
                 return shell
 
         # fmt: off
-        return create_spec(image_objs.Image
-            , validators.deprecated_key("persistence", "The persistence feature has been removed")
-            , validators.deprecated_key("squash_after", "The squash feature has been removed")
-            , validators.deprecated_key("squash_before_push", "The squash feature has been removed")
+        return sb.create_spec(image_objs.Image
+            , va.deprecated_key("persistence", "The persistence feature has been removed")
+            , va.deprecated_key("squash_after", "The squash feature has been removed")
+            , va.deprecated_key("squash_before_push", "The squash feature has been removed")
 
             # Changed how volumes_from works
-            , validators.deprecated_key("volumes_from", "Use ``volumes.share_with``")
+            , va.deprecated_key("volumes_from", "Use ``volumes.share_with``")
 
             # Deprecated link
-            , validators.deprecated_key("link", "Use ``links``")
+            , va.deprecated_key("link", "Use ``links``")
 
             # Harpoon options
-            , harpoon = any_spec()
+            , harpoon = sb.any_spec()
 
             # default the name to the key of the image
-            , tag = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-            , name = formatted(defaulted(string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
-            , key_name = formatted(overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
-            , image_name = optional_spec(string_spec())
-            , image_index = formatted(defaulted(string_spec(), ""), formatter=MergedOptionStringFormatter)
-            , container_name = optional_spec(string_spec())
-            , image_name_prefix = defaulted(string_spec(), "")
+            , tag = sb.optional_spec(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
+            , name = sb.formatted(sb.defaulted(sb.string_spec(), "{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , key_name = sb.formatted(sb.overridden("{_key_name_1}"), formatter=MergedOptionStringFormatter)
+            , image_name = sb.optional_spec(sb.string_spec())
+            , image_index = sb.formatted(sb.defaulted(sb.string_spec(), ""), formatter=MergedOptionStringFormatter)
+            , container_name = sb.optional_spec(sb.string_spec())
+            , image_name_prefix = sb.defaulted(sb.string_spec(), "")
 
-            , no_tty_option = defaulted(formatted(boolean(), formatter=MergedOptionStringFormatter), False)
+            , no_tty_option = sb.defaulted(sb.formatted(sb.boolean(), formatter=MergedOptionStringFormatter), False)
 
-            , user = defaulted(string_spec(), None)
-            , configuration = any_spec()
+            , user = sb.defaulted(sb.string_spec(), None)
+            , configuration = sb.any_spec()
 
-            , vars = dictionary_spec()
-            , assume_role = optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter))
-            , deleteable_image = defaulted(boolean(), False)
+            , vars = sb.dictionary_spec()
+            , assume_role = sb.optional_spec(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))
+            , deleteable_image = sb.defaulted(sb.boolean(), False)
 
             , authentication = self.authentications_spec
 
             # The spec itself
-            , shell = defaulted(formatted(string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
-            , bash = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
-            , command = delayed(optional_spec(formatted(string_spec(), formatter=MergedOptionStringFormatter)))
-            , commands = required(container_spec(Commands, listof(command_spec())))
-            , cache_from = delayed(or_spec(boolean(), listof(formatted(string_spec(), formatter=MergedOptionStringFormatter))))
-            , cleanup_intermediate_images = defaulted(boolean(), True)
+            , shell = sb.defaulted(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter), "/bin/bash")
+            , bash = sb.delayed(sb.optional_spec(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)))
+            , command = sb.delayed(sb.optional_spec(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)))
+            , commands = sb.required(sb.container_spec(Commands, sb.listof(command_spec())))
+            , cache_from = sb.delayed(sb.or_spec(sb.boolean(), sb.listof(sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter))))
+            , cleanup_intermediate_images = sb.defaulted(sb.boolean(), True)
 
-            , links = listof(specs.link_spec(), expect=image_objs.Link)
+            , links = sb.listof(specs.link_spec(), expect=image_objs.Link)
 
             , context = self.context_spec
-            , wait_condition = optional_spec(self.wait_condition_spec)
+            , wait_condition = sb.optional_spec(self.wait_condition_spec)
 
-            , lxc_conf = defaulted(filename_spec(), None)
+            , lxc_conf = sb.defaulted(sb.filename_spec(), None)
 
-            , volumes = create_spec(image_objs.Volumes
-                , mount = listof(specs.mount_spec(), expect=image_objs.Mount)
-                , share_with = listof(formatted(string_spec(), MergedOptionStringFormatter, expected_type=image_objs.Image))
+            , volumes = sb.create_spec(image_objs.Volumes
+                , mount = sb.listof(specs.mount_spec(), expect=image_objs.Mount)
+                , share_with = sb.listof(sb.formatted(sb.string_spec(), MergedOptionStringFormatter, expected_type=image_objs.Image))
                 )
 
-            , dependency_options = dictof(specs.image_name_spec()
-                , create_spec(image_objs.DependencyOptions
-                  , attached = defaulted(boolean(), False)
-                  , wait_condition = optional_spec(self.wait_condition_spec)
+            , dependency_options = sb.dictof(specs.image_name_spec()
+                , sb.create_spec(image_objs.DependencyOptions
+                  , attached = sb.defaulted(sb.boolean(), False)
+                  , wait_condition = sb.optional_spec(self.wait_condition_spec)
                   )
                 )
 
-            , env = listof(specs.env_spec(), expect=image_objs.Environment)
-            , ports = listof(specs.port_spec(), expect=image_objs.Port)
-            , ulimits = defaulted(listof(dictionary_spec()), None)
-            , log_config = defaulted(listof(dictionary_spec()), None)
-            , security_opt = defaulted(listof(string_spec()), None)
-            , read_only_rootfs = defaulted(boolean(), False)
+            , env = sb.listof(specs.env_spec(), expect=image_objs.Environment)
+            , ports = sb.listof(specs.port_spec(), expect=image_objs.Port)
+            , ulimits = sb.defaulted(sb.listof(sb.dictionary_spec()), None)
+            , log_config = sb.defaulted(sb.listof(sb.dictionary_spec()), None)
+            , security_opt = sb.defaulted(sb.listof(sb.string_spec()), None)
+            , read_only_rootfs = sb.defaulted(sb.boolean(), False)
 
-            , other_options = create_spec(other_options
-                , start = dictionary_spec()
-                , build = dictionary_spec()
-                , create = dictionary_spec()
-                , host_config = dictionary_spec()
+            , other_options = sb.create_spec(other_options
+                , start = sb.dictionary_spec()
+                , build = sb.dictionary_spec()
+                , create = sb.dictionary_spec()
+                , host_config = sb.dictionary_spec()
                 )
 
-            , network = create_spec(image_objs.Network
-                , dns = defaulted(listof(string_spec()), None)
-                , mode = defaulted(string_spec(), None)
-                , hostname = defaulted(string_spec(), None)
-                , domainname = defaulted(string_spec(), None)
-                , disabled = defaulted(boolean(), False)
-                , dns_search = defaulted(listof(string_spec()), None)
-                , extra_hosts = listof(string_spec())
-                , network_mode = defaulted(string_spec(), None)
-                , publish_all_ports = defaulted(boolean(), False)
+            , network = sb.create_spec(image_objs.Network
+                , dns = sb.defaulted(sb.listof(sb.string_spec()), None)
+                , mode = sb.defaulted(sb.string_spec(), None)
+                , hostname = sb.defaulted(sb.string_spec(), None)
+                , domainname = sb.defaulted(sb.string_spec(), None)
+                , disabled = sb.defaulted(sb.boolean(), False)
+                , dns_search = sb.defaulted(sb.listof(sb.string_spec()), None)
+                , extra_hosts = sb.listof(sb.string_spec())
+                , network_mode = sb.defaulted(sb.string_spec(), None)
+                , publish_all_ports = sb.defaulted(sb.boolean(), False)
                 )
 
-            , cpu = create_spec(image_objs.Cpu
-                , cap_add = defaulted(listof(string_spec()), None)
-                , cpuset_cpus = defaulted(string_spec(), None)
-                , cpuset_mems = defaulted(string_spec(), None)
-                , cap_drop = defaulted(listof(string_spec()), None)
-                , mem_limit = defaulted(integer_spec(), 0)
-                , cpu_shares = defaulted(integer_spec(), None)
-                , memswap_limit = defaulted(integer_spec(), 0)
+            , cpu = sb.create_spec(image_objs.Cpu
+                , cap_add = sb.defaulted(sb.listof(sb.string_spec()), None)
+                , cpuset_cpus = sb.defaulted(sb.string_spec(), None)
+                , cpuset_mems = sb.defaulted(sb.string_spec(), None)
+                , cap_drop = sb.defaulted(sb.listof(sb.string_spec()), None)
+                , mem_limit = sb.defaulted(sb.integer_spec(), 0)
+                , cpu_shares = sb.defaulted(sb.integer_spec(), None)
+                , memswap_limit = sb.defaulted(sb.integer_spec(), 0)
                 )
 
-            , devices = defaulted(listof(dictionary_spec()), None)
-            , privileged = defaulted(boolean(), False)
-            , restart_policy = defaulted(string_spec(), None)
+            , devices = sb.defaulted(sb.listof(sb.dictionary_spec()), None)
+            , privileged = sb.defaulted(sb.boolean(), False)
+            , restart_policy = sb.defaulted(sb.string_spec(), None)
             )
         # fmt: on
 
     @memoized_property
     def harpoon_spec(self):
         """Spec for harpoon options"""
-        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=str)
-        formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
+        formatted_string = sb.formatted(
+            sb.string_spec(), MergedOptionStringFormatter, expected_type=str
+        )
+        formatted_boolean = sb.formatted(
+            sb.boolean(), MergedOptionStringFormatter, expected_type=bool
+        )
 
         # fmt: off
-        return create_spec(Harpoon
-            , config = optional_spec(file_spec())
+        return sb.create_spec(Harpoon
+            , config = sb.optional_spec(sb.file_spec())
 
-            , tag = optional_spec(string_spec())
-            , extra = defaulted(formatted_string, "")
-            , debug = defaulted(boolean(), False)
-            , addons = dictof(string_spec(), listof(string_spec()))
-            , artifact = optional_spec(formatted_string)
-            , extra_files = listof(string_spec())
-            , chosen_task = defaulted(formatted_string, "list_tasks")
-            , chosen_image = defaulted(formatted_string, "")
+            , tag = sb.optional_spec(sb.string_spec())
+            , extra = sb.defaulted(formatted_string, "")
+            , debug = sb.defaulted(sb.boolean(), False)
+            , addons = sb.dictof(sb.string_spec(), sb.listof(sb.string_spec()))
+            , artifact = sb.optional_spec(formatted_string)
+            , extra_files = sb.listof(sb.string_spec())
+            , chosen_task = sb.defaulted(formatted_string, "list_tasks")
+            , chosen_image = sb.defaulted(formatted_string, "")
 
-            , flat = defaulted(formatted_boolean, False)
-            , no_cleanup = defaulted(formatted_boolean, False)
-            , interactive = defaulted(formatted_boolean, True)
-            , silent_build = defaulted(formatted_boolean, False)
-            , keep_replaced = defaulted(formatted_boolean, False)
-            , ignore_missing = defaulted(formatted_boolean, False)
-            , no_intervention = defaulted(formatted_boolean, False)
-            , intervene_afterwards = defaulted(formatted_boolean, False)
+            , flat = sb.defaulted(formatted_boolean, False)
+            , no_cleanup = sb.defaulted(formatted_boolean, False)
+            , interactive = sb.defaulted(formatted_boolean, True)
+            , silent_build = sb.defaulted(formatted_boolean, False)
+            , keep_replaced = sb.defaulted(formatted_boolean, False)
+            , ignore_missing = sb.defaulted(formatted_boolean, False)
+            , no_intervention = sb.defaulted(formatted_boolean, False)
+            , intervene_afterwards = sb.defaulted(formatted_boolean, False)
 
-            , do_push = defaulted(formatted_boolean, False)
-            , only_pushable = defaulted(formatted_boolean, False)
-            , docker_context = any_spec()
-            , docker_context_maker = any_spec()
+            , do_push = sb.defaulted(formatted_boolean, False)
+            , only_pushable = sb.defaulted(formatted_boolean, False)
+            , docker_context = sb.any_spec()
+            , docker_context_maker = sb.any_spec()
 
-            , stdout = defaulted(any_spec(), sys.stdout)
-            , tty_stdin = defaulted(any_spec(), None)
-            , tty_stdout = defaulted(any_spec(), lambda: sys.stdout)
-            , tty_stderr = defaulted(any_spec(), lambda: sys.stderr)
+            , stdout = sb.defaulted(sb.any_spec(), sys.stdout)
+            , tty_stdin = sb.defaulted(sb.any_spec(), None)
+            , tty_stdout = sb.defaulted(sb.any_spec(), lambda: sys.stdout)
+            , tty_stderr = sb.defaulted(sb.any_spec(), lambda: sys.stderr)
             )
         # fmt: on

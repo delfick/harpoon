@@ -6,7 +6,7 @@ from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.errors import BadImage, ProgrammerError, FailedImage
 from harpoon.ship.builder import Builder
 
-from input_algorithms.spec_base import NotSpecified
+from delfick_project.norms import sb
 import logging
 
 log = logging.getLogger("harpoon.ship.syncer")
@@ -101,7 +101,9 @@ class Syncer(object):
 
             try:
                 for line in getattr(conf.harpoon.docker_api, action)(
-                    conf.image_name, tag=None if conf.tag is NotSpecified else conf.tag, stream=True
+                    conf.image_name,
+                    tag=None if conf.tag is sb.NotSpecified else conf.tag,
+                    stream=True,
                 ):
 
                     for line in line.split(b"\r\n"):

@@ -1,5 +1,5 @@
-from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
+from delfick_project.norms import sb
 import docker.errors
 import humanize
 import logging
@@ -20,7 +20,7 @@ class BuilderBase(object):
 
     @contextmanager
     def remove_replaced_images(self, conf):
-        tag = "latest" if conf.tag is NotSpecified else conf.tag
+        tag = "latest" if conf.tag is sb.NotSpecified else conf.tag
         image_name = "{0}:{1}".format(conf.image_name, tag)
 
         if not conf.harpoon.keep_replaced:

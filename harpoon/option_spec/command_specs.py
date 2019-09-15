@@ -6,12 +6,7 @@ from harpoon.formatter import MergedOptionStringFormatter
 from harpoon.errors import BadOption, ProgrammerError
 from harpoon.option_spec.command_objs import Command
 
-from input_algorithms.many_item_spec import many_item_formatted_spec
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.errors import BadSpecValue
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms import validators
+from delfick_project.norms import sb, BadSpecValue, dictobj, va, Validator
 
 import hashlib
 import json
@@ -105,7 +100,7 @@ class CommandAddExtra(dictobj):
 
     def command_for(self, val):
         dest = val
-        if self.prefix is not NotSpecified:
+        if self.prefix is not sb.NotSpecified:
             dest = "{0}/{1}".format(self.prefix, val)
         return "{0} {1}".format(val, dest)
 
@@ -201,7 +196,7 @@ class complex_ADD_spec(sb.Spec):
 
         formatted_string = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
         val = sb.apply_validators(
-            meta, val, [validators.either_keys(["context"], ["content"], ["get"], ["formatted"])]
+            meta, val, [va.either_keys(["context"], ["content"], ["get"], ["formatted"])]
         )
 
         if "get" in val:
@@ -214,7 +209,7 @@ class complex_ADD_spec(sb.Spec):
         if "context" in val:
             val = sb.create_spec(
                 CommandContextAdd,
-                validators.deprecated_key(
+                va.deprecated_key(
                     "mtime",
                     "Since docker 1.8, timestamps no longer invalidate the docker layer cache",
                 ),
@@ -225,7 +220,7 @@ class complex_ADD_spec(sb.Spec):
         if "formatted" in val:
             val = sb.create_spec(
                 CommandContentAdd,
-                validators.deprecated_key(
+                va.deprecated_key(
                     "mtime",
                     "Since docker 1.8, timestamps no longer invalidate the docker layer cache",
                 ),
@@ -237,7 +232,7 @@ class complex_ADD_spec(sb.Spec):
         if "content" in val:
             val = sb.create_spec(
                 CommandContentAdd,
-                validators.deprecated_key(
+                va.deprecated_key(
                     "mtime",
                     "Since docker 1.8, timestamps no longer invalidate the docker layer cache",
                 ),
@@ -251,7 +246,7 @@ class complex_ADD_spec(sb.Spec):
         return list(val.commands(meta))
 
 
-class array_command_spec(many_item_formatted_spec):
+class array_command_spec(sb.many_item_formatted_spec):
     value_name = "Command"
     specs = [
         # First item is just a string
@@ -334,7 +329,7 @@ class convert_dict_command_spec(sb.Spec):
         return result
 
 
-class has_a_space(validators.Validator):
+class has_a_space(Validator):
     def validate(self, meta, val):
         if " " not in val:
             raise BadOption(

@@ -16,8 +16,7 @@ from harpoon import helpers as hp
 from harpoon.helpers import until
 
 from docker.errors import APIError as DockerAPIError
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
 import docker.errors
@@ -140,12 +139,12 @@ class Runner(object):
         wait_conditions = {}
         for dependency in dependencies:
             if (
-                conf.dependency_options is not NotSpecified
+                conf.dependency_options is not sb.NotSpecified
                 and dependency in conf.dependency_options
-                and conf.dependency_options[dependency].wait_condition is not NotSpecified
+                and conf.dependency_options[dependency].wait_condition is not sb.NotSpecified
             ):
                 wait_conditions[dependency] = conf.dependency_options[dependency].wait_condition
-            elif images[dependency].wait_condition is not NotSpecified:
+            elif images[dependency].wait_condition is not sb.NotSpecified:
                 wait_conditions[dependency] = images[dependency].wait_condition
 
         if not wait_conditions:
@@ -298,7 +297,7 @@ class Runner(object):
 
         name = conf.name
         image_name = conf.image_name
-        if conf.tag is not NotSpecified:
+        if conf.tag is not sb.NotSpecified:
             image_name = conf.image_name_with_tag
         container_name = conf.container_name
 
@@ -581,7 +580,7 @@ class Runner(object):
             new_id = conf.harpoon.docker_api.commit(container_id)["Id"]
             conf["committed"] = new_id
             if tag is not True:
-                the_tag = "latest" if conf.tag is NotSpecified else conf.tag
+                the_tag = "latest" if conf.tag is sb.NotSpecified else conf.tag
                 conf.harpoon.docker_api.tag(new_id, repository=tag, tag=the_tag, force=True)
 
         mounts = []
@@ -650,7 +649,7 @@ class Runner(object):
         for port in ports:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                s.bind((port.ip if port.ip is not NotSpecified else "127.0.0.1", port.host_port))
+                s.bind((port.ip if port.ip is not sb.NotSpecified else "127.0.0.1", port.host_port))
             except socket.error:
                 bound.append(port.host_port)
             finally:
@@ -737,7 +736,7 @@ class Runner(object):
             image_hash = conf.harpoon.docker_api.commit(commit)["Id"]
 
             new_conf = conf.clone()
-            new_conf.bash = NotSpecified
+            new_conf.bash = sb.NotSpecified
             new_conf.command = command
             new_conf.image_name = image_hash
             new_conf.container_id = None

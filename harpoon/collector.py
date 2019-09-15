@@ -12,16 +12,9 @@ from harpoon.option_spec.task_objs import Task
 from harpoon.actions import available_actions
 from harpoon.task_finder import TaskFinder
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
-
-from option_merge_addons import Result, Addon, Register, AddonGetter
-from option_merge.collector import Collector
-from option_merge import MergedOptions
-from option_merge import Converter
-
+from delfick_project.option_merge import Collector, MergedOptions, Converter
+from delfick_project.addons import Result, Addon, Register, AddonGetter
+from delfick_project.norms import sb, dictobj, Meta
 from ruamel.yaml import YAML
 import ruamel.yaml
 import logging
@@ -99,7 +92,7 @@ class Collector(Collector):
                 "$@": harpoon.get("extra", ""),
                 "bash": args_dict["bash"] or sb.NotSpecified,
                 "harpoon": harpoon,
-                "assume_role": args_dict["assume_role"] or NotSpecified,
+                "assume_role": args_dict["assume_role"] or sb.NotSpecified,
                 "command": args_dict["command"] or sb.NotSpecified,
                 "collector": self,
             },
@@ -108,7 +101,7 @@ class Collector(Collector):
 
     def find_harpoon_options(self, configuration, args_dict):
         """Return us all the harpoon options"""
-        d = lambda r: {} if r in (None, "", NotSpecified) else r
+        d = lambda r: {} if r in (None, "", sb.NotSpecified) else r
         return MergedOptions.using(
             dict(d(configuration.get("harpoon")).items()), dict(d(args_dict.get("harpoon")).items())
         ).as_dict()
@@ -271,13 +264,11 @@ class Collector(Collector):
 
         self.register_converters(
             {
-                (0, ("content",)): sb.dictof(sb.string_spec(), sb.string_spec()),
-                (0, ("harpoon",)): harpoon_spec.harpoon_spec,
-                (0, ("authentication",)): harpoon_spec.authentications_spec,
+                "content": sb.dictof(sb.string_spec(), sb.string_spec()),
+                "harpoon": harpoon_spec.harpoon_spec,
+                "authentication": harpoon_spec.authentications_spec,
             },
-            Meta,
-            configuration,
-            sb.NotSpecified,
+            configuration=configuration,
         )
 
         # Some other code works better when harpoon no existy

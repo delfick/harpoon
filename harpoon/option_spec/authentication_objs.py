@@ -1,7 +1,6 @@
 from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import sb, dictobj
 
 from urllib.parse import urlparse
 import subprocess
@@ -25,7 +24,7 @@ class Authentication(dictobj):
             else:
                 authenticator = self.registries[registry]["reading"]
 
-            if authenticator is not NotSpecified:
+            if authenticator is not sb.NotSpecified:
                 username, password = authenticator.creds
 
         if username is not None:

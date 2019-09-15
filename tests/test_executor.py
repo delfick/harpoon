@@ -2,9 +2,9 @@
 
 from harpoon.executor import App
 
-from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 from tests.helpers import HarpoonCase
+from delfick_project.norms import sb
 from io import StringIO
 import mock
 import sys
@@ -32,19 +32,19 @@ describe HarpoonCase, "App":
                     args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
                         argv, app.cli_categories
                     )
-                    self.assertEqual(args_obj.harpoon_config().name, config_location)
-                    self.assertEqual(args_dict["harpoon"]["config"]().name, config_location)
+                    self.assertEqual(args_obj.harpoon_config.name, config_location)
+                    self.assertEqual(args_dict["harpoon"]["config"].name, config_location)
 
-        it "defaults image to NotSpecified and tasks to list_tasks":
+        it "defaults image to sb.NotSpecified and tasks to list_tasks":
             with self.a_temp_file() as config_location:
                 app = App()
                 args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
                     ["--harpoon-config", config_location], app.cli_categories
                 )
                 self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
-                self.assertEqual(args_obj.harpoon_chosen_image, NotSpecified)
+                self.assertEqual(args_obj.harpoon_chosen_image, sb.NotSpecified)
                 self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
-                self.assertEqual(args_dict["harpoon"]["chosen_image"], NotSpecified)
+                self.assertEqual(args_dict["harpoon"]["chosen_image"], sb.NotSpecified)
 
         it "complains if no config exists":
             with self.a_temp_file() as config_location:

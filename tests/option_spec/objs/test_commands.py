@@ -8,7 +8,7 @@ from harpoon.errors import HarpoonError
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.meta import Meta
+from delfick_project.norms import Meta
 import mock
 import os
 

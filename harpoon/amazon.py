@@ -1,8 +1,8 @@
 from harpoon.errors import BadAmazon, FoundNoBoto
 from harpoon import VERSION
 
-from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
+from delfick_project.norms import sb
 from urllib.parse import urlparse
 import logging
 import base64
@@ -85,9 +85,9 @@ def assume_role(arn):
 def assumed_role(arn):
     session = assume_role(arn)
 
-    old_aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", NotSpecified)
-    old_aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", NotSpecified)
-    old_aws_security_token = os.environ.get("AWS_SECURITY_TOKEN", NotSpecified)
+    old_aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", sb.NotSpecified)
+    old_aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", sb.NotSpecified)
+    old_aws_security_token = os.environ.get("AWS_SECURITY_TOKEN", sb.NotSpecified)
 
     try:
         creds = session._session.get_credentials()
@@ -101,7 +101,7 @@ def assumed_role(arn):
             ("AWS_SECRET_ACCESS_KEY", old_aws_secret_access_key),
             ("AWS_SECURITY_TOKEN", old_aws_security_token),
         ):
-            if val is not NotSpecified:
+            if val is not sb.NotSpecified:
                 os.environ[key] = val
 
 

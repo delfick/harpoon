@@ -8,8 +8,7 @@ from harpoon.option_spec import command_specs as cs
 from harpoon.option_spec import command_objs as co
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 import hashlib
 import json
 import mock
@@ -279,14 +278,14 @@ describe CommandCase, "CommandAddExtra":
         command_for = mock.Mock(name="command_for")
         command_for.side_effect = lambda v: transform[v]
 
-        obj = cs.CommandAddExtra(get=[v1, v2, v3], prefix=NotSpecified)
+        obj = cs.CommandAddExtra(get=[v1, v2, v3], prefix=sb.NotSpecified)
         c = lambda r: co.Command(("ADD", r))
 
         with mock.patch.object(obj, "command_for", command_for):
             self.assertEqual(list(obj.commands(meta)), [c(r1), c(r2), c(r3)])
 
     it "yields command without prefix if no prefix is specified":
-        obj = cs.CommandAddExtra(get=[], prefix=NotSpecified)
+        obj = cs.CommandAddExtra(get=[], prefix=sb.NotSpecified)
         self.assertEqual(obj.command_for("blah"), "blah blah")
 
     it "yields command with prefix if prefix is specified":

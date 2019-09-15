@@ -6,10 +6,8 @@ from harpoon.collector import Collector
 
 from tests.helpers import HarpoonCase
 
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from delfick_app import command_output
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import sb, dictobj
 from textwrap import dedent
 from getpass import getpass
 import mock

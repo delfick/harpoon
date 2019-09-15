@@ -7,8 +7,8 @@ from harpoon.option_spec.task_objs import Task
 from tests.helpers import HarpoonCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.meta import Meta
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import Meta
 import mock
 
 describe HarpoonCase, "HarpoonSpec":

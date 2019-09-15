@@ -1,8 +1,6 @@
-from harpoon.errors import HarpoonError
-
-from delfick_app import command_output
 from contextlib import contextmanager
 from textwrap import dedent
+import subprocess
 import shutil
 import os
 
@@ -26,32 +24,27 @@ class Repo_exampleAssertionsMixin:
     def cloned_repo_example(self, shallow=False):
         with self.a_temp_dir() as directory:
             shutil.rmtree(directory)
-            output, status = command_output(
-                "git clone",
-                os.path.join(this_dir, "..", "repo_example", "example.bundle"),
-                directory,
-            )
-            if status != 0:
-                raise HarpoonError("Failed to run git clone", output="\n".join(output))
+            bundle = os.path.join(this_dir, "..", "repo_example", "example.bundle")
+            kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "check": True}
+            subprocess.run(["git", "clone", bundle, directory], **kwargs)
 
             # For shallow clones, have to clone twice, seems --depth with bundles don't work
             if shallow:
                 with self.a_temp_dir() as directory2:
                     shutil.rmtree(directory2)
-                    output, status = command_output(
-                        "git clone --depth 1", "file://{0}".format(directory), directory2
-                    )
-                    if status != 0:
-                        raise HarpoonError("Failed to run git clone", output="\n".join(output))
+                    d = "file://{0}".format(directory)
+                    subprocess.run(["git", "clone", "--depth", "1", d, directory2], **kwargs)
                     yield directory2
             else:
                 yield directory
 
-    def assertExampleRepoStatus(self, root_folder, expected):
-        output, status = command_output("git status -s", cwd=root_folder)
-        if status != 0:
-            raise HarpoonError("Failed to run git status", output="\n".join(output))
-        self.assertEqual(
-            "\n".join(sorted(output)).strip(),
-            dedent("\n".join(sorted(expected.split("\n")))).strip(),
-        )
+    def assertExampleRepoStatus(self, root_folder, expected, sort_output=False):
+        output = subprocess.check_output(["git", "status", "-s"], cwd=root_folder)
+        lines = output.decode().strip().split("\n")
+        expected = dedent(expected).strip().split("\n")
+
+        if sort_output:
+            lines = sorted(lines)
+            expected = sorted(expected)
+
+        self.assertEqual("\n".join(lines), "\n".join(expected))

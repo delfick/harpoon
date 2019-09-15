@@ -7,7 +7,7 @@ from harpoon.ship.runner import Runner
 
 from tests.helpers import HarpoonCase
 
-from input_algorithms.meta import Meta
+from delfick_project.norms import Meta
 import codecs
 import uuid
 import os

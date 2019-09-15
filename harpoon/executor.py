@@ -7,9 +7,10 @@ from harpoon.errors import BadDockerConnection
 from harpoon.collector import Collector
 from harpoon import VERSION
 
-from input_algorithms.spec_base import NotSpecified
 from docker.errors import APIError, DockerException
-from delfick_app import App, DelayedFileType
+from delfick_project.norms import sb
+from delfick_project.app import App
+import argparse
 import logging
 import docker
 import os
@@ -45,18 +46,16 @@ class App(App):
     cli_environment_defaults = {"HARPOON_CONFIG": ("--harpoon-config", "./harpoon.yml")}
     cli_positional_replacements = [
         ("--task", "list_tasks"),
-        ("--image", NotSpecified),
-        ("--artifact", NotSpecified),
+        ("--image", sb.NotSpecified),
+        ("--artifact", sb.NotSpecified),
     ]
 
     def execute(self, args_obj, args_dict, extra_args, logging_handler, no_docker=False):
-        args_dict["harpoon"]["config"] = (
-            args_dict["harpoon"]["config"](optional=True) or NotSpecified
-        )
+        args_dict["harpoon"]["config"] = args_dict["harpoon"]["config"] or sb.NotSpecified
         args_dict["harpoon"]["extra"] = extra_args
 
         config_name = None
-        if args_dict["harpoon"]["config"] is not NotSpecified:
+        if args_dict["harpoon"]["config"] is not sb.NotSpecified:
             config_name = args_dict["harpoon"]["config"].name
 
         if not no_docker:
@@ -79,7 +78,7 @@ class App(App):
         parser.add_argument(
             "--harpoon-config",
             help="The config file specifying what harpoon should care about",
-            type=DelayedFileType("r"),
+            type=argparse.FileType("r"),
             **defaults["--harpoon-config"]
         )
 
@@ -129,7 +128,7 @@ class App(App):
             "--tag",
             help="Tag used for pulling or pushing a single image",
             dest="harpoon_tag",
-            default=NotSpecified,
+            default=sb.NotSpecified,
         )
 
         parser.add_argument(

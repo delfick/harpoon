@@ -13,8 +13,7 @@ from harpoon.errors import BadOption
 from harpoon import helpers as hp
 
 from docker.errors import APIError as DockerAPIError
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import sb, dictobj
 from contextlib import contextmanager
 import logging
 import shlex
@@ -76,7 +75,7 @@ class Image(dictobj):
 
     def post_setup(self):
         for key in ("bash", "command"):
-            if getattr(self, key, NotSpecified) is not NotSpecified:
+            if getattr(self, key, sb.NotSpecified) is not sb.NotSpecified:
                 setattr(self, key, getattr(self, key)())
 
     @property
@@ -90,7 +89,7 @@ class Image(dictobj):
 
     @property
     def from_name(self):
-        if getattr(self, "_from_name", NotSpecified) is NotSpecified:
+        if getattr(self, "_from_name", sb.NotSpecified) is sb.NotSpecified:
             return self.image_name
         else:
             return self._from_name
@@ -107,7 +106,7 @@ class Image(dictobj):
 
         Also, if $EXTRA_IMAGE_NAME is defined, that is appended
         """
-        if getattr(self, "_image_name", NotSpecified) is NotSpecified:
+        if getattr(self, "_image_name", sb.NotSpecified) is sb.NotSpecified:
             self._image_name = self.prefixed_image_name
 
             if self.image_index:
@@ -126,12 +125,12 @@ class Image(dictobj):
         if image_name.startswith("sha256:"):
             return image_name
 
-        tag = "latest" if self.tag is NotSpecified else self.tag
+        tag = "latest" if self.tag is sb.NotSpecified else self.tag
         return "{0}:{1}".format(image_name, tag)
 
     @property
     def prefixed_image_name(self):
-        if self.image_name_prefix not in (NotSpecified, "", None):
+        if self.image_name_prefix not in (sb.NotSpecified, "", None):
             return "{0}-{1}".format(self.image_name_prefix, self.name)
         else:
             return self.name
@@ -147,7 +146,7 @@ class Image(dictobj):
 
         We also remove the url portion of the ``image_name`` before using it.
         """
-        if getattr(self, "_container_name", NotSpecified) is NotSpecified:
+        if getattr(self, "_container_name", sb.NotSpecified) is sb.NotSpecified:
             self.container_name = "{0}-{1}".format(
                 self.image_name.replace("/", "--").replace(":", "---"), str(uuid.uuid1()).lower()
             )
@@ -192,15 +191,15 @@ class Image(dictobj):
         if the ``command`` is set, then we just return that.
         """
         bash = self.bash
-        if bash not in (None, "", NotSpecified) and callable(bash):
+        if bash not in (None, "", sb.NotSpecified) and callable(bash):
             bash = bash()
-        if bash not in (None, "", NotSpecified):
+        if bash not in (None, "", sb.NotSpecified):
             return "{0} -c {1}".format(self.resolved_shell, shlex.quote(bash))
 
         command = self.command
-        if command not in (None, "", NotSpecified) and callable(command):
+        if command not in (None, "", sb.NotSpecified) and callable(command):
             command = command()
-        if command not in (None, "", NotSpecified):
+        if command not in (None, "", sb.NotSpecified):
             return command
 
         return None
@@ -223,7 +222,7 @@ class Image(dictobj):
         """Yield the image names to do --cache-from from"""
         cache_from = self.cache_from()
 
-        if not cache_from or cache_from is NotSpecified:
+        if not cache_from or cache_from is sb.NotSpecified:
             return
 
         if cache_from is True:
@@ -309,13 +308,17 @@ class Image(dictobj):
 
     @property
     def docker_file(self):
-        if getattr(self, "_docker_file", NotSpecified) is NotSpecified:
+        if getattr(self, "_docker_file", sb.NotSpecified) is sb.NotSpecified:
             self._docker_file = DockerFile(self.commands.docker_lines_list)
         return self._docker_file
 
     @docker_file.setter
     def docker_file(self, val):
         self._docker_file = val
+
+    @docker_file.deleter
+    def docker_file(self):
+        del self._docker_file
 
     def add_docker_file_to_tarfile(self, docker_file, tar):
         """Add a Dockerfile to a tarfile"""
@@ -339,14 +342,14 @@ class Image(dictobj):
             yield ctxt
 
     def login(self, image_name, is_pushing):
-        if self.authentication is not NotSpecified:
+        if self.authentication is not sb.NotSpecified:
             return self.authentication.login(
                 self.harpoon.docker_api, image_name, is_pushing=is_pushing
             )
 
     @contextmanager
     def assumed_role(self):
-        if self.assume_role is NotSpecified:
+        if self.assume_role is sb.NotSpecified:
             yield
         else:
             with assumed_role(self.assume_role):
@@ -394,30 +397,30 @@ class WaitCondition(dictobj):
             yield WaitCondition.KeepWaiting
             return
 
-        if self.greps is not NotSpecified:
+        if self.greps is not sb.NotSpecified:
             for name, val in self.greps.items():
                 yield 'grep "{0}" "{1}"'.format(val, name)
 
-        if self.file_value is not NotSpecified:
+        if self.file_value is not sb.NotSpecified:
             for name, val in self.file_value.items():
                 command = "diff <(echo {0}) <(cat {1})".format(val, name)
                 if not self.harpoon.debug:
                     command = "{0} > /dev/null".format(command)
                 yield command
 
-        if self.port_open is not NotSpecified:
+        if self.port_open is not sb.NotSpecified:
             for port in self.port_open:
                 yield "nc -z 127.0.0.1 {0}".format(port)
 
-        if self.curl_result is not NotSpecified:
+        if self.curl_result is not sb.NotSpecified:
             for url, content in self.curl_result.items():
                 yield 'diff <(curl "{0}") <(echo {1})'.format(url, content)
 
-        if self.file_exists is not NotSpecified:
+        if self.file_exists is not sb.NotSpecified:
             for path in self.file_exists:
                 yield "cat {0} > /dev/null".format(path)
 
-        if self.command not in (None, "", NotSpecified):
+        if self.command not in (None, "", sb.NotSpecified):
             for command in self.command:
                 yield command
 
@@ -439,7 +442,7 @@ class Context(dictobj):
         ): "Extra options for the find command that's used to find the present files in the repo",
         (
             "use_gitignore",
-            lambda: NotSpecified,
+            lambda: sb.NotSpecified,
         ): "Whether we should pay attention to git ignore logic",
         ("ignore_find_errors", False): "A hack to ignore weird find errors",
     }
@@ -454,7 +457,7 @@ class Context(dictobj):
 
     @property
     def use_gitignore(self):
-        return False if self._use_gitignore is NotSpecified else self._use_gitignore
+        return False if self._use_gitignore is sb.NotSpecified else self._use_gitignore
 
     @use_gitignore.setter
     def use_gitignore(self, val):
@@ -554,8 +557,8 @@ class Port(dictobj):
     @property
     def pair(self):
         """return (container_port, (ip, host_port)) or (container_port, host_port)"""
-        if self.ip is NotSpecified:
-            if self.ip is NotSpecified:
+        if self.ip is sb.NotSpecified:
+            if self.ip is sb.NotSpecified:
                 second = self.host_port
             else:
                 second = (self.ip,)
@@ -567,12 +570,12 @@ class Port(dictobj):
 class ContainerPort(dictobj):
     """The port and transport specification for a port in a running container"""
 
-    fields = ["port", ("transport", lambda: NotSpecified)]
+    fields = ["port", ("transport", lambda: sb.NotSpecified)]
 
     @property
     def port_pair(self):
         """The port and it's transport as a pair"""
-        if self.transport is NotSpecified:
+        if self.transport is sb.NotSpecified:
             return (self.port, "tcp")
         else:
             return (self.port, self.transport)
@@ -580,7 +583,7 @@ class ContainerPort(dictobj):
     @property
     def port_str(self):
         """The port and it's transport as a single string"""
-        if self.transport is NotSpecified:
+        if self.transport is sb.NotSpecified:
             return str(self.port)
         else:
             return "{0}/{1}".format(self.port, self.transport)

@@ -1,5 +1,4 @@
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import sb, dictobj
 
 
 class Command(dictobj):
@@ -7,8 +6,8 @@ class Command(dictobj):
 
     fields = [
         "instruction",
-        ("extra_context", lambda: NotSpecified),
-        ("extra", lambda: NotSpecified),
+        ("extra_context", lambda: sb.NotSpecified),
+        ("extra", lambda: sb.NotSpecified),
     ]
 
     def __repr__(self):
@@ -23,14 +22,14 @@ class Command(dictobj):
         if self.action == "FROM":
             return self.command
         elif self.action == "ADD":
-            if self.extra_context is not NotSpecified:
+            if self.extra_context is not sb.NotSpecified:
                 options, _ = self.extra_context
                 if hasattr(options, "image"):
                     return options.image
         elif self.action == "COPY":
-            if self.extra_context is not NotSpecified:
+            if self.extra_context is not sb.NotSpecified:
                 options, _ = self.extra_context
-                if getattr(options, "image", NotSpecified) is not NotSpecified:
+                if getattr(options, "image", sb.NotSpecified) is not sb.NotSpecified:
                     return options.image
 
     @property
@@ -63,7 +62,7 @@ class Command(dictobj):
             return self.instruction
 
         if self.action == "FROM" and not isinstance(self.command, str):
-            extra = "" if self.extra is NotSpecified else " {0}".format(self.extra)
+            extra = "" if self.extra is sb.NotSpecified else " {0}".format(self.extra)
             return "{0} {1}{2}".format(self.action, self.command.from_name, extra)
         else:
             return "{0} {1}".format(self.action, self.command)
@@ -129,5 +128,5 @@ class Commands(dictobj):
     @property
     def extra_context(self):
         for command in self.commands:
-            if command.extra_context is not NotSpecified:
+            if command.extra_context is not sb.NotSpecified:
                 yield command.extra_context

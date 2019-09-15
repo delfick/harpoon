@@ -1,8 +1,5 @@
-from harpoon.errors import HarpoonError
-
-from delfick_app import command_output
 from contextlib import contextmanager
-from textwrap import dedent
+import subprocess
 import shutil
 import os
 
@@ -16,26 +13,18 @@ class Submodule_exampleAssertionsMixin:
             shutil.rmtree(directory)
             os.makedirs(directory)
 
-            output, status = command_output(
-                "git clone",
-                os.path.join(this_dir, "..", "submodule_example", "two.bundle"),
-                os.path.join(directory, "two"),
-            )
-            if status != 0:
-                raise HarpoonError("Failed to run git clone", output="\n".join(output))
+            two_bundle = os.path.join(this_dir, "..", "submodule_example", "two.bundle")
+            two_dir = os.path.join(directory, "two")
 
-            output, status = command_output(
-                "git clone",
-                os.path.join(this_dir, "..", "submodule_example", "one.bundle"),
-                os.path.join(directory, "one"),
-            )
-            if status != 0:
-                raise HarpoonError("Failed to run git clone", output="\n".join(output))
+            one_bundle = os.path.join(this_dir, "..", "submodule_example", "one.bundle")
+            one_dir = os.path.join(directory, "one")
 
-            output, status = command_output(
-                "bash -c 'cd {0}/one && git submodule add {0}/two vendor/two'".format(directory)
-            )
-            if status != 0:
-                raise HarpoonError("Failed to run git submodule add", output="\n".join(output))
+            kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "check": True}
 
-            yield os.path.join(directory, "one")
+            subprocess.run(["git", "clone", two_bundle, two_dir], **kwargs)
+            subprocess.run(["git", "clone", one_bundle, one_dir], **kwargs)
+            subprocess.run(
+                ["git", "submodule", "add", two_dir, "vendor/two"], cwd=one_dir, **kwargs
+            )
+
+            yield one_dir
