@@ -14,8 +14,8 @@ from harpoon.ship.syncer import Syncer
 from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
-from six.moves.urllib.parse import urlparse
 from input_algorithms.meta import Meta
+from urllib.parse import urlparse
 from textwrap import dedent
 from itertools import chain
 import docker.errors

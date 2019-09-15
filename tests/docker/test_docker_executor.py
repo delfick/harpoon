@@ -1,17 +1,14 @@
 # coding: spec
 
-from __future__ import print_function
-
 from harpoon.executor import main
 
 from tests.helpers import HarpoonCase
-from six import StringIO
+from io import StringIO
 import logging
 import nose
 import uuid
 import json
 import sys
-import six
 import os
 
 describe HarpoonCase, "Executing harpoon":

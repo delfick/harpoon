@@ -5,9 +5,8 @@ from harpoon.executor import App
 from input_algorithms.spec_base import NotSpecified
 from contextlib import contextmanager
 from tests.helpers import HarpoonCase
-from six import StringIO
+from io import StringIO
 import mock
-import six
 import sys
 import os
 
@@ -66,11 +65,6 @@ describe HarpoonCase, "App":
                         "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(
                             config_location
                         ),
-                    )
-                except IOError as error:
-                    assert six.PY2
-                    self.assertEqual(
-                        str(error), "[Errno 2] No such file or directory: './harpoon.yml'"
                     )
                 finally:
                     if old_stderr is not None:

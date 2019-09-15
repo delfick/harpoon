@@ -14,7 +14,6 @@ import shutil
 import time
 import nose
 import mock
-import six
 import os
 
 describe HarpoonCase, "Context Wrapper":

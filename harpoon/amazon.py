@@ -2,8 +2,8 @@ from harpoon.errors import BadAmazon, FoundNoBoto
 from harpoon import VERSION
 
 from input_algorithms.spec_base import NotSpecified
-from six.moves.urllib.parse import urlparse
 from contextlib import contextmanager
+from urllib.parse import urlparse
 import logging
 import base64
 import os

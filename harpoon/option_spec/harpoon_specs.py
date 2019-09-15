@@ -30,7 +30,6 @@ from harpoon import helpers as hp
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
-import six
 import sys
 
 
@@ -322,9 +321,7 @@ class HarpoonSpec(object):
     @memoized_property
     def harpoon_spec(self):
         """Spec for harpoon options"""
-        formatted_string = formatted(
-            string_spec(), MergedOptionStringFormatter, expected_type=six.string_types
-        )
+        formatted_string = formatted(string_spec(), MergedOptionStringFormatter, expected_type=str)
         formatted_boolean = formatted(boolean(), MergedOptionStringFormatter, expected_type=bool)
 
         # fmt: off

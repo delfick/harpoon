@@ -16,7 +16,6 @@ import socket
 import codecs
 import nose
 import mock
-import six
 import os
 import re
 
@@ -181,7 +180,7 @@ describe HarpoonCase, "Building docker images":
         with open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = [line.strip() for line in output.split("\n") if "lxc-start" not in line]
 
@@ -204,7 +203,7 @@ describe HarpoonCase, "Building docker images":
             fake_sys_stdout = self.make_temp_file()
             fake_sys_stderr = self.make_temp_file()
             with mock.patch("harpoon.ship.builder.Runner.commit_and_run", fake_commit_and_run):
-                with mock.patch("harpoon.ship.runner.input", lambda *args: "y\n"):
+                with mock.patch.dict(__builtins__, input=lambda *args: "y\n"):
                     with self.a_built_image(
                         {"context": False, "commands": commands},
                         {
@@ -228,7 +227,7 @@ describe HarpoonCase, "Building docker images":
         with open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = "\n".join([line for line in output.split("\n") if "lxc-start" not in line])
 
@@ -269,7 +268,7 @@ describe HarpoonCase, "Building docker images":
             fake_sys_stdout = self.make_temp_file()
             fake_sys_stderr = self.make_temp_file()
             with mock.patch("harpoon.ship.builder.Runner.commit_and_run", fake_commit_and_run):
-                with mock.patch("harpoon.ship.runner.input", lambda *args: "y\n"):
+                with mock.patch.dict(__builtins__, input=lambda *args: "y\n"):
                     with self.a_built_image(
                         {"context": False, "commands": commands},
                         {
@@ -287,7 +286,7 @@ describe HarpoonCase, "Building docker images":
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = "\n".join([line for line in output.split("\n") if "lxc-start" not in line])
 
@@ -333,7 +332,7 @@ describe HarpoonCase, "Building docker images":
             fake_sys_stdout = self.make_temp_file()
             fake_sys_stderr = self.make_temp_file()
             with mock.patch("harpoon.ship.builder.Runner.commit_and_run", fake_commit_and_run):
-                with mock.patch("harpoon.ship.runner.input", lambda *args: "y\n"):
+                with mock.patch.dict(__builtins__, input=lambda *args: "y\n"):
                     with self.a_built_image(
                         {"context": False, "commands": commands},
                         {
@@ -352,7 +351,7 @@ describe HarpoonCase, "Building docker images":
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = "\n".join([line for line in output.split("\n") if "lxc-start" not in line])
 

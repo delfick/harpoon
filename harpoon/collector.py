@@ -25,7 +25,6 @@ from option_merge import Converter
 from ruamel.yaml import YAML
 import ruamel.yaml
 import logging
-import six
 import os
 
 log = logging.getLogger("harpoon.collector")
@@ -212,7 +211,7 @@ class Collector(Collector):
         if "images" in result and "__images_from__" in result["images"]:
             images_from_path = result["images"]["__images_from__"]
 
-            if isinstance(images_from_path, six.string_types):
+            if isinstance(images_from_path, str):
                 images_from_path = [images_from_path]
 
             for ifp in images_from_path:

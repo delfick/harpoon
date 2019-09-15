@@ -16,11 +16,10 @@ from docker.errors import APIError as DockerAPIError
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 from contextlib import contextmanager
-from six.moves import shlex_quote
 import logging
+import shlex
 import uuid
 import time
-import six
 import os
 
 log = logging.getLogger("harpoon.option_spec.image_objs")
@@ -196,7 +195,7 @@ class Image(dictobj):
         if bash not in (None, "", NotSpecified) and callable(bash):
             bash = bash()
         if bash not in (None, "", NotSpecified):
-            return "{0} -c {1}".format(self.resolved_shell, shlex_quote(bash))
+            return "{0} -c {1}".format(self.resolved_shell, shlex.quote(bash))
 
         command = self.command
         if command not in (None, "", NotSpecified) and callable(command):
@@ -213,7 +212,7 @@ class Image(dictobj):
     def dependencies(self, images):
         """Yield just the dependency images"""
         for dep in self.commands.dependent_images:
-            if not isinstance(dep, six.string_types):
+            if not isinstance(dep, str):
                 yield dep.name
 
         for image, _ in self.dependency_images():
@@ -232,7 +231,7 @@ class Image(dictobj):
             return
 
         for thing in cache_from:
-            if not isinstance(thing, six.string_types):
+            if not isinstance(thing, str):
                 yield thing.image_name
             else:
                 yield thing
@@ -260,7 +259,7 @@ class Image(dictobj):
                     or (hasattr(content, "is_dict") and content.is_dict)
                     and "image" in content
                 ):
-                    if not isinstance(content["image"], six.string_types):
+                    if not isinstance(content["image"], str):
                         candidates.append(content["image"].name)
 
         candidates.extend(list(self.shared_volume_containers()))
@@ -274,7 +273,7 @@ class Image(dictobj):
     def shared_volume_containers(self):
         """All the harpoon containers in volumes.share_with for this container"""
         for container in self.volumes.share_with:
-            if not isinstance(container, six.string_types):
+            if not isinstance(container, str):
                 yield container.name
 
     def find_missing_env(self):
@@ -498,7 +497,7 @@ class Volumes(dictobj):
     def share_with_names(self):
         """The names of the containers that we share with the running container"""
         for container in self.share_with:
-            if isinstance(container, six.string_types):
+            if isinstance(container, str):
                 yield container
             else:
                 yield container.container_name

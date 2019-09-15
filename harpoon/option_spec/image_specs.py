@@ -14,8 +14,6 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
 from input_algorithms.spec_base import Spec
 
-import six
-
 
 class image_name_spec(Spec):
     def normalise_filled(self, meta, val):
@@ -81,7 +79,7 @@ class link_spec(many_item_formatted_spec):
     def alter_1(self, given_container_name, container_name, meta, val):
         """Get the container_name of the container if a container is specified"""
         meta.container = None
-        if not isinstance(container_name, six.string_types):
+        if not isinstance(container_name, str):
             meta.container = container_name
             container_name = container_name.container_name
         return container_name

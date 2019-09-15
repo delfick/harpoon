@@ -13,7 +13,7 @@ from harpoon.errors import HarpoonError, BadOption
 from harpoon.helpers import a_temp_file
 
 from contextlib import contextmanager
-from six import BytesIO
+from io import BytesIO
 import subprocess
 import tempfile
 import tarfile
@@ -22,7 +22,6 @@ import logging
 import shutil
 import docker
 import shlex
-import six
 import os
 import re
 
@@ -121,7 +120,7 @@ class ContextBuilder(object):
     @contextmanager
     def the_context(self, content, silent_build=False):
         """Return either a file with the content written to it, or a whole new context tar"""
-        if isinstance(content, six.string_types):
+        if isinstance(content, str):
             with a_temp_file() as fle:
                 fle.write(content.encode("utf-8"))
                 fle.seek(0)

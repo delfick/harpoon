@@ -19,7 +19,6 @@ import fcntl
 import errno
 import struct
 import select as builtin_select
-import six
 
 
 def set_blocking(fd, blocking=True):
@@ -55,7 +54,7 @@ def select(read_streams, write_streams, timeout=0):
         return builtin_select.select(read_streams, write_streams, exception_streams, timeout)[0:2]
     except builtin_select.error as e:
         # POSIX signals interrupt select()
-        no = e.errno if six.PY3 else e[0]
+        no = e.errno
         if no == errno.EINTR:
             return ([], [])
         else:
@@ -231,7 +230,7 @@ class Demuxer(object):
         if size <= 0:
             return
         else:
-            data = six.binary_type()
+            data = b""
             while len(data) < size:
                 nxt = self.stream.read(size - len(data))
                 if not nxt:
@@ -281,7 +280,7 @@ class Demuxer(object):
             size = min(n, self.remain)
             self.remain -= size
         else:
-            data = six.binary_type()
+            data = b""
             while len(data) < 8:
                 nxt = self.stream.read(8 - len(data))
                 if not nxt:

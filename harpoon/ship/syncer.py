@@ -2,15 +2,12 @@
 The Syncer is responsible for pushing and pulling docker images
 """
 
-from __future__ import print_function
-
 from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
 from harpoon.errors import BadImage, ProgrammerError, FailedImage
 from harpoon.ship.builder import Builder
 
 from input_algorithms.spec_base import NotSpecified
 import logging
-import six
 
 log = logging.getLogger("harpoon.ship.syncer")
 
@@ -107,7 +104,7 @@ class Syncer(object):
                     conf.image_name, tag=None if conf.tag is NotSpecified else conf.tag, stream=True
                 ):
 
-                    for line in line.split(six.binary_type("\r\n", "utf-8")):
+                    for line in line.split(b"\r\n"):
                         if not line:
                             continue
 
@@ -134,10 +131,7 @@ class Syncer(object):
                             log.warning("Unknown line\tline=%s", error)
 
                         for part in sync_stream.printable():
-                            if six.PY3:
-                                conf.harpoon.stdout.write(part)
-                            else:
-                                conf.harpoon.stdout.write(part.encode("utf-8", "replace"))
+                            conf.harpoon.stdout.write(part)
                         conf.harpoon.stdout.flush()
 
                 # And stop the loop!

@@ -10,7 +10,6 @@ from tests.helpers import HarpoonCase
 from input_algorithms.meta import Meta
 import codecs
 import uuid
-import six
 import os
 import re
 
@@ -117,7 +116,7 @@ describe HarpoonCase, "Building docker images":
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = "\n".join([line for line in output.split("\n") if "lxc-start" not in line])
 
@@ -271,7 +270,7 @@ describe HarpoonCase, "Building docker images":
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
 
-        if isinstance(output, six.binary_type):
+        if isinstance(output, bytes):
             output = output.decode("utf-8")
         output = "\n".join([line for line in output.split("\n") if "lxc-start" not in line])
 

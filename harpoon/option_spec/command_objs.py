@@ -1,6 +1,5 @@
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
-import six
 
 
 class Command(dictobj):
@@ -63,7 +62,7 @@ class Command(dictobj):
         if type(self.instruction) is str:
             return self.instruction
 
-        if self.action == "FROM" and not isinstance(self.command, six.string_types):
+        if self.action == "FROM" and not isinstance(self.command, str):
             extra = "" if self.extra is NotSpecified else " {0}".format(self.extra)
             return "{0} {1}{2}".format(self.action, self.command.from_name, extra)
         else:
@@ -96,7 +95,7 @@ class Commands(dictobj):
         """
         found = []
         for dep in self.dependent_images:
-            if isinstance(dep, six.string_types):
+            if isinstance(dep, str):
                 if dep not in found:
                     yield dep
                     found.append(dep)

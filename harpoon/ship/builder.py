@@ -15,7 +15,6 @@ from harpoon.ship.runner import Runner
 from harpoon.layers import Layers
 
 import logging
-import six
 import sys
 
 log = logging.getLogger("harpoon.ship.builder")
@@ -142,7 +141,7 @@ class Builder(BuilderBase):
 
         if not ignore_parent:
             for dep in conf.commands.dependent_images:
-                if not isinstance(dep, six.string_types):
+                if not isinstance(dep, str):
                     self.make_image(
                         dep, images, chain, parent_chain + [conf.name], made=made, pushing=pushing
                     )
@@ -169,7 +168,8 @@ class Builder(BuilderBase):
                 if isinstance(error, KeyboardInterrupt):
                     raise UserQuit()
                 else:
-                    six.reraise(*exc_info)
+                    exc_info[1].__traceback__ = exc_info[2]
+                    raise exc_info[1]
             finally:
                 if stream and stream.intermediate_images and conf.cleanup_intermediate_images:
                     for image in stream.intermediate_images:

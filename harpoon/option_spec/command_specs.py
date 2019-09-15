@@ -15,7 +15,6 @@ from input_algorithms import validators
 
 import hashlib
 import json
-import six
 
 
 class CommandContentAddString(dictobj):
@@ -144,7 +143,7 @@ class complex_from_image_spec(sb.Spec):
         )
 
         img = conf = formatted_string.normalise(meta, val)
-        if isinstance(img, six.string_types):
+        if isinstance(img, str):
             conf = HarpoonSpec().image_spec.normalise(
                 meta.at("image"),
                 {"harpoon": meta.everything["harpoon"], "commands": ["FROM {0}".format(img)]},
@@ -244,10 +243,7 @@ class complex_ADD_spec(sb.Spec):
                 ),
                 dest=sb.required(formatted_string),
                 content=sb.match_spec(
-                    (
-                        six.string_types,
-                        sb.container_spec(CommandContentAddString, sb.string_spec()),
-                    ),
+                    (str, sb.container_spec(CommandContentAddString, sb.string_spec())),
                     fallback=complex_ADD_from_image_spec(),
                 ),
             ).normalise(meta, val)
@@ -267,7 +263,7 @@ class array_command_spec(many_item_formatted_spec):
                 sb.match_spec(
                     (dict, sb.dictionary_spec()),
                     (
-                        six.string_types + (list,),
+                        (str, list),
                         sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter),
                     ),
                 )
@@ -287,7 +283,7 @@ class array_command_spec(many_item_formatted_spec):
         return result
 
     def create_result(self, action, command, extra, meta, val, dividers):
-        if callable(command) or isinstance(command, six.string_types):
+        if callable(command) or isinstance(command, str):
             command = [command]
 
         result = []
@@ -352,7 +348,7 @@ string_command_spec = lambda: sb.container_spec(Command, sb.valid_string_spec(ha
 # The main spec
 # We match against, strings, lists, dictionaries and Command objects with different specs
 command_spec = lambda: sb.match_spec(
-    (six.string_types, string_command_spec()),
+    (str, string_command_spec()),
     (list, array_command_spec()),
     (dict, convert_dict_command_spec()),
     (Command, sb.any_spec()),

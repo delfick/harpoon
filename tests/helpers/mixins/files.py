@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from contextlib import contextmanager
 
 import tempfile
@@ -7,7 +5,6 @@ import tarfile
 import shutil
 import uuid
 import sys
-import six
 import os
 
 
@@ -131,7 +128,7 @@ class FilesAssertionsMixin:
                         nxt[filename] = {"/file/": os.path.join(nxt["/folder/"], filename)}
 
         for file_spec in files_list:
-            if isinstance(file_spec, six.string_types):
+            if isinstance(file_spec, str):
                 create(os.path.join(root, file_spec), None)
 
             else:
@@ -182,8 +179,8 @@ class FilesAssertionsMixin:
 
         for key, val in heirarchy.items():
             path = os.path.join(root, key)
-            if isinstance(val, (six.string_types + (list, tuple))) and not key.endswith("/"):
-                if isinstance(val, six.string_types):
+            if (isinstance(val, str) and not key.endswith("/")) or isinstance(val, (tuple, list)):
+                if isinstance(val, str):
                     val = [(key, val)]
                 elif isinstance(val, tuple):
                     val = [val]
@@ -207,8 +204,6 @@ class FilesAssertionsMixin:
         """Make sure content of a tarfile matches what we expect"""
         found = set()
         for identity, data, tarinfo in self.extract_tar(location):
-            if six.PY2 and sys.version_info[1] == 6:
-                identity = "./{0}".format(identity)
             found.add(identity)
             contents = expected[identity]
             if data is not None or contents is not None:

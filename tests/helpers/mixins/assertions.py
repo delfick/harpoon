@@ -3,7 +3,6 @@ from harpoon.errors import HarpoonError
 from contextlib import contextmanager
 from textwrap import dedent
 import json
-import six
 import re
 
 
@@ -48,9 +47,9 @@ class AssertionsAssertionsMixin:
 
         ansi_escape = re.compile(r"\x1b[^m]*m")
         for a, b in zip(expected_lines, output_lines):
-            if not isinstance(a, six.binary_type):
+            if not isinstance(a, bytes):
                 a = a.encode("utf-8")
-            if not isinstance(b, six.binary_type):
+            if not isinstance(b, bytes):
                 b = re.sub(ansi_escape, "", b).encode("utf-8")
             else:
                 b = re.sub(ansi_escape, "", b.decode("utf-8")).encode("utf-8")

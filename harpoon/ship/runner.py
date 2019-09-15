@@ -20,13 +20,11 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
-from six.moves import input
 import docker.errors
 import logging
 import socket
 import uuid
 import time
-import six
 import os
 
 log = logging.getLogger("harpoon.ship.runner")
@@ -231,7 +229,7 @@ class Runner(object):
                         )
 
                         logs = conf.harpoon.docker_api.logs(container_id)
-                        if isinstance(logs, six.binary_type):
+                        if isinstance(logs, bytes):
                             logs = logs.decode()
                         for line in logs.split("\n"):
                             hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))
@@ -552,7 +550,7 @@ class Runner(object):
                         ),
                     )
                     logs = conf.harpoon.docker_api.logs(container_id)
-                    if isinstance(logs, six.binary_type):
+                    if isinstance(logs, bytes):
                         logs = logs.decode()
                     for line in logs.split("\n"):
                         hp.write_to(conf.harpoon.stdout, "{0}\n".format(line))

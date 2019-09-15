@@ -5,7 +5,6 @@ from harpoon import helpers as hp
 
 from itertools import chain
 import logging
-import six
 
 log = logging.getLogger("harpoon.ship.builders.normal")
 
@@ -30,7 +29,7 @@ class NormalBuilder(BuilderBase):
         )
 
         for dep in conf.commands.dependent_images:
-            if isinstance(dep, six.string_types):
+            if isinstance(dep, str):
                 if ":" not in dep:
                     dep = "{0}:latest".format(dep)
 

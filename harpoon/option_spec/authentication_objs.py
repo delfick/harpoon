@@ -3,11 +3,10 @@ from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.dictobj import dictobj
 
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 import subprocess
 import logging
 import time
-import six
 import os
 
 log = logging.getLogger("harpoon.option_spec.authentication_objs")
@@ -36,7 +35,7 @@ class Authentication(dictobj):
                 # If it doesn't support --email then we can't supply it....
                 process = subprocess.Popen(["docker", "login", "--help"], stdout=subprocess.PIPE)
                 out, _ = process.communicate()
-                if isinstance(out, six.binary_type):
+                if isinstance(out, bytes):
                     out = out.decode()
 
                 if "-e, --email" in out:
