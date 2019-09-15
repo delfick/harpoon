@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.14.4 - TBD
+0.14.4 - 15 September 2019
      * Made boto an optional dependency. Features that require boto will still
        work, you just need to make sure boto3 is installed in your environment.
 
