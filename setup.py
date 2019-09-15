@@ -6,22 +6,17 @@ from harpoon import VERSION
 setup(
       name = "docker-harpoon"
     , version = VERSION
-    , packages = ['harpoon'] + ['harpoon.%s' % pkg for pkg in find_packages('harpoon')]
+    , packages = find_packages(include="harpoon.*", exclude=["tests*"])
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_app==0.9.9"
-      , "option_merge==1.6"
-      , "input_algorithms==0.6.0"
-      , "option_merge_addons==0.2"
+      [ "delfick_project==0.5"
 
       , "docker==3.5.0"
 
-      , "six"
-      , "glob2"
       , "humanize"
 
-      , "ruamel.yaml==0.15.87"
+      , "ruamel.yaml==0.16.5"
       ]
 
     , extras_require =
