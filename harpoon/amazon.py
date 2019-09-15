@@ -1,14 +1,18 @@
-from harpoon.errors import BadAmazon
+from harpoon.errors import BadAmazon, FoundNoBoto
 from harpoon import VERSION
 
-from botocore.exceptions import ClientError, NoCredentialsError
 from input_algorithms.spec_base import NotSpecified
 from six.moves.urllib.parse import urlparse
 from contextlib import contextmanager
 import logging
 import base64
-import boto3
 import os
+
+try:
+    from botocore.exceptions import ClientError, NoCredentialsError
+    import boto3
+except ImportError:
+    boto3 = None
 
 log = logging.getLogger("harpoon.amazon.iam")
 
@@ -47,6 +51,9 @@ def catch_boto_400(message, **info):
 
 
 def assume_role(arn):
+    if boto3 is None:
+        raise FoundNoBoto()
+
     log.info("Assuming role as %s", arn)
 
     session = boto3.session.Session()

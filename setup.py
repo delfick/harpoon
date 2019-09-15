@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 from harpoon import VERSION
 
+# fmt: off
+
 setup(
       name = "docker-harpoon"
     , version = VERSION
@@ -19,7 +21,6 @@ setup(
       , "glob2"
       , "humanize"
 
-      , "boto3==1.4.4"
       , "ruamel.yaml==0.15.87"
       ]
 
@@ -50,3 +51,4 @@ setup(
     , keywords = "docker"
     )
 
+# fmt: on

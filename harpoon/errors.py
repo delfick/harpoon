@@ -98,3 +98,9 @@ class AlreadyBoundPorts(HarpoonError):
 
 class NoSuchEnvironmentVariable(HarpoonError):
     desc = "Couldn't find environment variable"
+
+
+class FoundNoBoto(HarpoonError):
+    desc = (
+        "boto is now an optional dependency, add it to your pip requirements to use amazon features"
+    )

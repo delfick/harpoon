@@ -940,6 +940,9 @@ Authentication
 Harpoon supports authentication for registries via plain credentials, Kms
 encrypted credentials or via a "slip" in an S3 bucket.
 
+.. note:: kms and slip authentication require you install boto3 in your
+  environment. Since version 0.14.4, this is not installed by default
+
 It also supports the Google Container registry if you have run
 ``gcloud auth configure-docker``
 (https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker)

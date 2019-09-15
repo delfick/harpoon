@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.14.4 - TBD
+     * Made boto an optional dependency. Features that require boto will still
+       work, you just need to make sure boto3 is installed in your environment.
+
 0.14.3 - 4 September 2019
      * Reformatted the code with black
      * Fixed some lint warnings
