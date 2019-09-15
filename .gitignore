@@ -2,6 +2,7 @@
 *~
 .ropeproject/
 *.egg-info/
+pip-wheel-metadata/
 dist/
 .tox/
 docs/sphinx/_build
