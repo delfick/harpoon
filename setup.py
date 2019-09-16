@@ -17,6 +17,7 @@ setup(
       , "humanize"
 
       , "ruamel.yaml==0.16.5"
+      , "rainbow_logging_handler==2.2.2"
       ]
 
     , extras_require =
