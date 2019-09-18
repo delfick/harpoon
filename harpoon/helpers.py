@@ -65,7 +65,13 @@ class memoized_property(object):
 
 def write_to(output, txt):
     """Write some text to some output"""
-    if isinstance(txt, bytes) and isinstance(output, (TextIOWrapper, StringIO)):
-        output.write(txt.encode("utf-8", "replace"))
+    if isinstance(txt, bytes) and isinstance(output, StringIO):
+        output.write(txt.decode("utf-8", "replace"))
+    elif (
+        isinstance(txt, str)
+        and hasattr(output, "file")
+        and "b" in getattr(output.file, "mode", "w")
+    ):
+        output.write(txt.encode("utf-8", "replae"))
     else:
         output.write(txt)
