@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.15.1 - 2 October 2019
+     * No-op update of delfick_project
+
 0.15.0 - 18 September 2019
      * Migrated to `delfick_project <https://delfick-project.readthedocs.io/en/latest/index.html>`_
      * Harpoon is now python3.4+ only

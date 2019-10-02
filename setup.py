@@ -10,7 +10,7 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [ "delfick_project==0.5"
+      [ "delfick_project==0.5.1"
 
       , "docker==3.5.0"
 
