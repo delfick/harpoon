@@ -159,7 +159,7 @@ describe HarpoonCase, "Building docker images":
         with self.a_built_image(
             {"name": "one", "context": False, "commands": commands1}, harpoon=harpoon
         ) as (_, conf1):
-            self.assertEqual(len(conf1.harpoon.docker_context.networks.list()), 3)
+            assert len(conf1.harpoon.docker_context.networks.list()) == 3
             links = [[conf1, "one"]]
             with self.a_built_image(
                 {"name": "two", "links": links, "context": False, "commands": commands2},
@@ -173,7 +173,7 @@ describe HarpoonCase, "Building docker images":
                     Runner().run_container(
                         conf3, {conf1.name: conf1, conf2.name: conf2, conf3.name: conf3}
                     )
-        self.assertEqual(len(conf3.harpoon.docker_context.networks.list()), 3)
+        assert len(conf3.harpoon.docker_context.networks.list()) == 3
 
         with open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
@@ -182,7 +182,7 @@ describe HarpoonCase, "Building docker images":
             output = output.decode("utf-8")
         output = [line.strip() for line in output.split("\n") if "lxc-start" not in line]
 
-        self.assertEqual(output[-2:], ["hi1", "there2"])
+        assert output[-2:] == ["hi1", "there2"]
 
     it "can intervene a broken build":
         called = []
@@ -218,9 +218,9 @@ describe HarpoonCase, "Building docker images":
             assert expected.match(str(error.kwargs["msg"])), "Expected {0} to match {1}".format(
                 str(error.kwargs["msg"]), expected.pattern
             )
-            self.assertEqual(error.kwargs["image"], "awesome_image")
+            assert error.kwargs["image"] == "awesome_image"
 
-        self.assertEqual(called, ["commit_and_run"])
+        assert called == ["commit_and_run"]
 
         with open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
@@ -279,7 +279,7 @@ describe HarpoonCase, "Building docker images":
         except BadImage as error:
             assert "Failed to run container" in str(error)
 
-        self.assertEqual(called, ["commit_and_run"])
+        assert called == ["commit_and_run"]
 
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()
@@ -344,7 +344,7 @@ describe HarpoonCase, "Building docker images":
             print(error)
             assert "Failed to run container" in str(error)
 
-        self.assertEqual(called, ["commit_and_run"])
+        assert called == ["commit_and_run"]
 
         with codecs.open(fake_sys_stdout.name) as fle:
             output = fle.read().strip()

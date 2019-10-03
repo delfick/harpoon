@@ -24,7 +24,7 @@ describe HarpoonCase, "MergedOptionStringFormatter":
         # Caller must check for exceptions if expected is not specified
         if expected is sb.NotSpecified:
             assert False, "Tester must specify what is expected"
-        self.assertEqual(got, expected)
+        assert got == expected
 
     it "formats from the configuration":
         self.check_formatting({"vars": "one"}, "{vars}", expected="one")

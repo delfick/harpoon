@@ -13,12 +13,12 @@ class NotSpecified(object):
 class AssertionsAssertionsMixin:
     def assertSortedEqual(self, one, two):
         """Assert that the sorted of the two equal"""
-        self.assertEqual(sorted(one), sorted(two))
+        assert sorted(one) == sorted(two)
 
     def assertJsonDictEqual(self, one, two):
         """Assert the two dictionaries are the same, print out as json if not"""
         try:
-            self.assertEqual(one, two)
+            assert one == two
         except AssertionError:
             print("Got =============>")
             print(json.dumps(one, indent=2, sort_keys=True))
@@ -83,7 +83,7 @@ class AssertionsAssertionsMixin:
 
                 self.assertDictContainsSubset(values, error.kwargs)
                 if errors:
-                    self.assertEqual(sorted(error.errors), sorted(errors))
+                    assert sorted(error.errors) == sorted(errors)
             except AssertionError:
                 print("Got error: {0}".format(error))
                 print("Expected: {0}: {1}: {2}".format(expected_kls, expected_msg_regex, values))

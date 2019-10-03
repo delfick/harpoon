@@ -40,6 +40,6 @@ describe HarpoonCase, "Executing harpoon":
                         except SystemExit as error:
                             assert False
 
-                    self.assertEqual(open(fake_stdout.name).readlines()[-1].strip(), content)
+                    assert open(fake_stdout.name).readlines()[-1].strip() == content
         finally:
             logging.getLogger("").handlers = list(old_handlers)

@@ -47,4 +47,4 @@ class Repo_exampleAssertionsMixin:
             lines = sorted(lines)
             expected = sorted(expected)
 
-        self.assertEqual("\n".join(lines), "\n".join(expected))
+        assert "\n".join(lines) == "\n".join(expected)

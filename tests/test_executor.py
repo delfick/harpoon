@@ -19,10 +19,10 @@ describe HarpoonCase, "App":
                 args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
                     argv, app.cli_categories
                 )
-                self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
-                self.assertEqual(args_obj.harpoon_chosen_image, "blah")
-                self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
-                self.assertEqual(args_dict["harpoon"]["chosen_image"], "blah")
+                assert args_obj.harpoon_chosen_task == "list_tasks"
+                assert args_obj.harpoon_chosen_image == "blah"
+                assert args_dict["harpoon"]["chosen_task"] == "list_tasks"
+                assert args_dict["harpoon"]["chosen_image"] == "blah"
 
         it "takes in HARPOON_CONFIG as the configuration file":
             with self.a_temp_file() as config_location:
@@ -32,8 +32,8 @@ describe HarpoonCase, "App":
                     args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
                         argv, app.cli_categories
                     )
-                    self.assertEqual(args_obj.harpoon_config.name, config_location)
-                    self.assertEqual(args_dict["harpoon"]["config"].name, config_location)
+                    assert args_obj.harpoon_config.name == config_location
+                    assert args_dict["harpoon"]["config"].name == config_location
 
         it "defaults image to sb.NotSpecified and tasks to list_tasks":
             with self.a_temp_file() as config_location:
@@ -41,10 +41,10 @@ describe HarpoonCase, "App":
                 args_obj, args_dict, extra_args = app.make_cli_parser().interpret_args(
                     ["--harpoon-config", config_location], app.cli_categories
                 )
-                self.assertEqual(args_obj.harpoon_chosen_task, "list_tasks")
-                self.assertEqual(args_obj.harpoon_chosen_image, sb.NotSpecified)
-                self.assertEqual(args_dict["harpoon"]["chosen_task"], "list_tasks")
-                self.assertEqual(args_dict["harpoon"]["chosen_image"], sb.NotSpecified)
+                assert args_obj.harpoon_chosen_task == "list_tasks"
+                assert args_obj.harpoon_chosen_image == sb.NotSpecified
+                assert args_dict["harpoon"]["chosen_task"] == "list_tasks"
+                assert args_dict["harpoon"]["chosen_image"] == sb.NotSpecified
 
         it "complains if no config exists":
             with self.a_temp_file() as config_location:
@@ -58,13 +58,12 @@ describe HarpoonCase, "App":
                         ["--harpoon-config", config_location], app.cli_categories
                     )
                 except SystemExit as error:
-                    self.assertEqual(error.code, 2)
+                    assert error.code == 2
                     fake_stderr.seek(0)
-                    self.assertEqual(
-                        fake_stderr.read().split("\n")[-2],
+                    assert fake_stderr.read().split("\n")[-2] == (
                         "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(
                             config_location
-                        ),
+                        )
                     )
                 finally:
                     if old_stderr is not None:
@@ -104,11 +103,11 @@ describe HarpoonCase, "App":
             default_task = "DEFAULT"
 
             def setup_logging_theme_func(logging_handler, colors):
-                self.assertEqual(colors, "light")
+                assert colors == "light"
                 called.append(1)
 
             def task_runner(task):
-                self.assertEqual(task, default_task)
+                assert task == default_task
                 called.append(2)
 
             def prepare(filename, args_dict):
@@ -132,7 +131,7 @@ describe HarpoonCase, "App":
                 setup_logging_theme.side_effect = setup_logging_theme_func
                 collector.prepare.side_effect = prepare
 
-            self.assertEqual(called, [0, 1, 2])
+            assert called == [0, 1, 2]
 
         it "Sets up args_dict":
             called = []
@@ -144,12 +143,12 @@ describe HarpoonCase, "App":
 
             def task_runner(task):
                 args_dict = configuration["args_dict"]
-                self.assertEqual(args_dict["harpoon"]["extra"], "one two --three")
+                assert args_dict["harpoon"]["extra"] == "one two --three"
                 assert "docker_context_maker" in args_dict["harpoon"]
                 assert "docker_context" in args_dict["harpoon"]
                 assert "ran" not in args_dict
                 args_dict["ran"] = True
-                self.assertEqual(task, default_task)
+                assert task == default_task
                 called.append(2)
 
             def prepare(filename, args_dict):
@@ -171,8 +170,8 @@ describe HarpoonCase, "App":
                 setup_logging_theme,
                 args_dict,
             ):
-                self.assertEqual(args_dict["bash"], None)
-                self.assertEqual(args_dict["command"], None)
+                assert args_dict["bash"] == None
+                assert args_dict["command"] == None
                 assert "docker_context_maker" not in args_dict
                 assert "docker_context" not in args_dict
                 assert "extra" not in args_dict["harpoon"]
@@ -180,8 +179,8 @@ describe HarpoonCase, "App":
                 setup_logging_theme.side_effect = setup_logging_theme_func
                 collector.prepare.side_effect = prepare
 
-            self.assertEqual(called, [1, 2])
+            assert called == [1, 2]
 
-            self.assertEqual(args_dict["ran"], True)
-            self.assertIs(args_dict["harpoon"]["docker_context_maker"], docker_context_maker)
-            self.assertIs(args_dict["harpoon"]["docker_context"], docker_context)
+            assert args_dict["ran"] == True
+            assert args_dict["harpoon"]["docker_context_maker"] is docker_context_maker
+            assert args_dict["harpoon"]["docker_context"] is docker_context

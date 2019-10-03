@@ -19,25 +19,25 @@ describe HarpoonCase, "Context object":
 
     it "defaults _use_gitignore and to sb.NotSpecified an include and exclude to None":
         ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
-        self.assertIs(ctxt.enabled, self.enabled)
-        self.assertEqual(ctxt.parent_dir, os.path.abspath(self.parent_dir))
-        self.assertIs(ctxt.include, None)
-        self.assertIs(ctxt.exclude, None)
-        self.assertIs(ctxt._use_gitignore, sb.NotSpecified)
+        assert ctxt.enabled is self.enabled
+        assert ctxt.parent_dir == os.path.abspath(self.parent_dir)
+        assert ctxt.include is None
+        assert ctxt.exclude is None
+        assert ctxt._use_gitignore is sb.NotSpecified
 
     describe "use_gitignore":
         it "returns False if _use_gitignore is sb.NotSpecified":
             ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
-            self.assertIs(ctxt.use_gitignore, False)
+            assert ctxt.use_gitignore is False
 
         it "returns the value of _use_gitignore otherwise":
             ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
             ugi = mock.Mock(name="use_gitignore")
             ctxt.use_gitignore = ugi
-            self.assertIs(ctxt.use_gitignore, ugi)
+            assert ctxt.use_gitignore is ugi
 
             ctxt = objs.Context(use_gitignore=ugi, enabled=True, parent_dir=self.parent_dir)
-            self.assertIs(ctxt.use_gitignore, ugi)
+            assert ctxt.use_gitignore is ugi
 
     describe "parent_dir":
         it "gets set as the abspath of the value":
@@ -45,9 +45,9 @@ describe HarpoonCase, "Context object":
             abs_parent_dir = mock.Mock(name="abs_parent_dir")
             with mock.patch("os.path.abspath") as fake_abspath:
                 fake_abspath.return_value = abs_parent_dir
-                self.assertIs(
-                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).parent_dir,
-                    abs_parent_dir,
+                assert (
+                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).parent_dir
+                    is abs_parent_dir
                 )
                 fake_abspath.assert_called_once_with(parent_dir)
 
@@ -56,10 +56,9 @@ describe HarpoonCase, "Context object":
             with self.a_temp_dir() as directory:
                 parent_dir = os.path.join(directory, "blah", ".git", "meh", "stuff")
                 os.makedirs(parent_dir)
-                self.assertEqual(
-                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).git_root,
-                    os.path.abspath(os.path.join(directory, "blah")),
-                )
+                assert objs.Context(
+                    enabled=self.enabled, parent_dir=parent_dir
+                ).git_root == os.path.abspath(os.path.join(directory, "blah"))
 
         it "complains if it can't find a .git folder":
             with self.a_temp_dir() as directory:
@@ -79,7 +78,7 @@ describe HarpoonCase, "Link object":
         link_name = mock.Mock(name="link_name")
         container_name = mock.Mock(name="container_name")
         link = objs.Link(container, container_name, link_name)
-        self.assertEqual(link.pair, (container_name, link_name))
+        assert link.pair == (container_name, link_name)
 
 describe HarpoonCase, "Volume object":
     describe "share_with_names":
@@ -91,13 +90,13 @@ describe HarpoonCase, "Volume object":
             c2 = mock.Mock(name="c2", spec=objs.Image, container_name=cn2)
 
             volumes = objs.Volumes(mount=[], share_with=[c1, c2])
-            self.assertEqual(list(volumes.share_with_names), [cn1, cn2])
+            assert list(volumes.share_with_names) == [cn1, cn2]
 
         it "returns container as is if a string":
             container1 = self.unique_val()
             container2 = self.unique_val()
             volumes = objs.Volumes(mount=[], share_with=[container1, container2])
-            self.assertEqual(list(volumes.share_with_names), [container1, container2])
+            assert list(volumes.share_with_names) == [container1, container2]
 
         it "copes with mixed strings and container objects":
             cn2 = mock.Mock(name="cn2")
@@ -105,7 +104,7 @@ describe HarpoonCase, "Volume object":
             container2 = mock.Mock(name="container2", spec=objs.Image, container_name=cn2)
 
             volumes = objs.Volumes(mount=[], share_with=[container1, container2])
-            self.assertEqual(list(volumes.share_with_names), [container1, cn2])
+            assert list(volumes.share_with_names) == [container1, cn2]
 
     describe "volume_names":
         it "returns the container_path for each mount":
@@ -115,7 +114,7 @@ describe HarpoonCase, "Volume object":
             m2 = mock.Mock(name="m2", spec=objs.Mount, container_path=cp2)
 
             volumes = objs.Volumes(mount=[m1, m2], share_with=[])
-            self.assertEqual(list(volumes.volume_names), [cp1, cp2])
+            assert list(volumes.volume_names) == [cp1, cp2]
 
     describe "binds":
         it "returns a dictionary from mount pairs":
@@ -128,7 +127,7 @@ describe HarpoonCase, "Volume object":
             m2 = mock.Mock(name="m2", spec=objs.Mount, pair=(key2, val2))
 
             volumes = objs.Volumes(mount=[m1, m2], share_with=[])
-            self.assertEqual(volumes.binds, {key1: val1, key2: val2})
+            assert volumes.binds == {key1: val1, key2: val2}
 
 describe HarpoonCase, "Mount object":
     before_each:
@@ -138,15 +137,11 @@ describe HarpoonCase, "Mount object":
     describe "pair":
         it "returns with ro set to False if permissions are rw":
             mount = objs.Mount(self.local_path, self.container_path, "rw")
-            self.assertEqual(
-                mount.pair, (self.local_path, {"bind": self.container_path, "ro": False})
-            )
+            assert mount.pair == (self.local_path, {"bind": self.container_path, "ro": False})
 
         it "returns with ro set to True if permissions are not rw":
             mount = objs.Mount(self.local_path, self.container_path, "ro")
-            self.assertEqual(
-                mount.pair, (self.local_path, {"bind": self.container_path, "ro": True})
-            )
+            assert mount.pair == (self.local_path, {"bind": self.container_path, "ro": True})
 
 describe HarpoonCase, "Environment":
     before_each:
@@ -155,8 +150,8 @@ describe HarpoonCase, "Environment":
 
     it "defaults default_val and set_val to None":
         env = objs.Environment(self.env_name)
-        self.assertIs(env.default_val, None)
-        self.assertIs(env.set_val, None)
+        assert env.default_val is None
+        assert env.set_val is None
 
     describe "pair":
 
@@ -167,12 +162,12 @@ describe HarpoonCase, "Environment":
             it "returns env_name and default_val if we have a default_val":
                 for val in (self.fallback_val, ""):
                     env = objs.Environment(self.env_name, val, None)
-                    self.assertEqual(env.pair, (self.env_name, val))
+                    assert env.pair == (self.env_name, val)
 
             it "returns env_name and set_val if we have a set_val":
                 for val in (self.fallback_val, ""):
                     env = objs.Environment(self.env_name, None, val)
-                    self.assertEqual(env.pair, (self.env_name, val))
+                    assert env.pair == (self.env_name, val)
 
             it "complains if we have no default_val":
                 with self.fuzzyAssertRaisesError(KeyError, self.env_name):
@@ -189,15 +184,15 @@ describe HarpoonCase, "Environment":
 
             it "returns the value from the environment if default_val is set":
                 env = objs.Environment(self.env_name, self.fallback_val, None)
-                self.assertEqual(env.pair, (self.env_name, self.env_val))
+                assert env.pair == (self.env_name, self.env_val)
 
             it "returns the set_val if set_val is set":
                 env = objs.Environment(self.env_name, None, self.fallback_val)
-                self.assertEqual(env.pair, (self.env_name, self.fallback_val))
+                assert env.pair == (self.env_name, self.fallback_val)
 
             it "returns the value from the environment if no default or set val":
                 env = objs.Environment(self.env_name)
-                self.assertEqual(env.pair, (self.env_name, self.env_val))
+                assert env.pair == (self.env_name, self.env_val)
 
 describe HarpoonCase, "Port object":
     before_each:
@@ -211,11 +206,11 @@ describe HarpoonCase, "Port object":
     describe "pair":
         it "returns just container_port and host_port if no ip":
             port = objs.Port(sb.NotSpecified, self.host_port, self.container_port)
-            self.assertEqual(port.pair, (self.container_port_str, self.host_port))
+            assert port.pair == (self.container_port_str, self.host_port)
 
         it "returns container_port with pair of ip and host_port if ip is specified":
             port = objs.Port(self.ip, self.host_port, self.container_port)
-            self.assertEqual(port.pair, (self.container_port_str, (self.ip, self.host_port)))
+            assert port.pair == (self.container_port_str, (self.ip, self.host_port))
 
 describe HarpoonCase, "ContainerPort object":
     before_each:
@@ -224,23 +219,23 @@ describe HarpoonCase, "ContainerPort object":
 
     it "defaults transport to sb.NotSpecified":
         container_port = objs.ContainerPort(self.port)
-        self.assertEqual(container_port.transport, sb.NotSpecified)
+        assert container_port.transport == sb.NotSpecified
 
     describe "Port pair":
         it "defaults transport to tcp":
             container_port = objs.ContainerPort(self.port)
-            self.assertEqual(container_port.port_pair, (self.port, "tcp"))
+            assert container_port.port_pair == (self.port, "tcp")
 
         it "returns port and transport as a tuple":
             container_port = objs.ContainerPort(self.port, self.transport)
-            self.assertEqual(container_port.port_pair, (self.port, self.transport))
+            assert container_port.port_pair == (self.port, self.transport)
 
     describe "Port str":
         it "returns port stringified if no transport":
             port = mock.Mock(name="port")
             container_port = objs.ContainerPort(port)
-            self.assertEqual(container_port.port_str, str(port))
+            assert container_port.port_str == str(port)
 
         it "returns port and transport as slash joined string":
             container_port = objs.ContainerPort(self.port, self.transport)
-            self.assertEqual(container_port.port_str, self.port + "/" + self.transport)
+            assert container_port.port_str == self.port + "/" + self.transport

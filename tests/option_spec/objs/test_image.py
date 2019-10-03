@@ -33,8 +33,8 @@ describe HarpoonCase, "Image object":
         it "Creates a dockerfile object from the commands":
             image = self.make_image({"commands": ["FROM ubuntu:14.04"]})
             docker_file = image.docker_file
-            self.assertIs(type(docker_file), objs.DockerFile)
-            self.assertEqual(docker_file.docker_lines, ["FROM ubuntu:14.04"])
+            assert type(docker_file) is objs.DockerFile
+            assert docker_file.docker_lines == ["FROM ubuntu:14.04"]
 
     describe "Context":
         describe "make_context":
@@ -71,7 +71,7 @@ describe HarpoonCase, "Image object":
                                 mock.Mock(name="ContextBuilder", return_value=builder),
                             ):
                                 with image.make_context() as ct:
-                                    self.assertIs(ct, ctxt)
+                                    assert ct is ctxt
 
                 add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
                 make_context_manager.assert_called_once_with(
@@ -112,7 +112,7 @@ describe HarpoonCase, "Image object":
                                 mock.Mock(name="ContextBuilder", return_value=builder),
                             ):
                                 with image.make_context(docker_file=docker_file) as ct:
-                                    self.assertIs(ct, ctxt)
+                                    assert ct is ctxt
 
                 add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
                 make_context_manager.assert_called_once_with(

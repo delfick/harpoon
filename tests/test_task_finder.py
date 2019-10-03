@@ -17,8 +17,8 @@ describe HarpoonCase, "TaskFinder":
         collector.configuration = configuration
 
         task_finder = TaskFinder(collector)
-        self.assertEqual(task_finder.tasks, {})
-        self.assertIs(task_finder.collector, collector)
+        assert task_finder.tasks == {}
+        assert task_finder.collector is collector
 
     describe "image_finder":
         it "defaults to the chosen_image":
@@ -30,7 +30,7 @@ describe HarpoonCase, "TaskFinder":
 
             task_finder = TaskFinder(collector)
             task_finder.tasks["blah"] = type("Task", (object,), {})()
-            self.assertIs(task_finder.image_finder("blah"), chosen_image)
+            assert task_finder.image_finder("blah") is chosen_image
 
         it "chooses the image on the task":
             chosen_image = mock.Mock(name="chosen_image")
@@ -42,7 +42,7 @@ describe HarpoonCase, "TaskFinder":
 
             task_finder = TaskFinder(collector)
             task_finder.tasks["blah"] = type("Task", (object,), {"image": actual_image})()
-            self.assertIs(task_finder.image_finder("blah"), actual_image)
+            assert task_finder.image_finder("blah") is actual_image
 
     describe "task_runner":
         it "complains if the task doesn't exist":
@@ -90,17 +90,12 @@ describe HarpoonCase, "TaskFinder":
             with mock.patch("harpoon.actions.available_actions", available_actions):
                 with mock.patch("harpoon.task_finder.default_actions", default_actions):
                     base = TaskFinder(mock.Mock(name="collector")).default_tasks()
-                    self.assertEqual(
-                        base,
-                        {
-                            "one": Task(
-                                action="one", description="le description of stuff", label="Harpoon"
-                            ),
-                            "two": Task(
-                                action="two", description="trees and things", label="Harpoon"
-                            ),
-                        },
-                    )
+                    assert base == {
+                        "one": Task(
+                            action="one", description="le description of stuff", label="Harpoon"
+                        ),
+                        "two": Task(action="two", description="trees and things", label="Harpoon"),
+                    }
 
     describe "Finding tasks":
         it "returns default tasks with overrides added":
@@ -119,8 +114,8 @@ describe HarpoonCase, "TaskFinder":
             all_tasks.update(tasks)
             all_tasks.update(overrides)
             with mock.patch.object(task_finder, "default_tasks", default_tasks):
-                self.assertEqual(task_finder.find_tasks(overrides), all_tasks)
-                self.assertEqual(task_finder.tasks, all_tasks)
+                assert task_finder.find_tasks(overrides) == all_tasks
+                assert task_finder.tasks == all_tasks
 
         it "finds tasks attached to images":
             configuration = {
@@ -144,6 +139,6 @@ describe HarpoonCase, "TaskFinder":
 
                 with mock.patch.object(task_finder, "default_tasks", default_tasks):
                     tasks = task_finder.find_tasks({})
-                    self.assertEqual(sorted(list(tasks.keys())), sorted(["one", "two"]))
-                    self.assertEqual(tasks["one"].image, "blah")
-                    self.assertEqual(tasks["two"].image, "stuff")
+                    assert sorted(list(tasks.keys())) == sorted(["one", "two"])
+                    assert tasks["one"].image == "blah"
+                    assert tasks["two"].image == "stuff"

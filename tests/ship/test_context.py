@@ -23,19 +23,19 @@ describe HarpoonCase, "Context Wrapper":
 
     it "takes in a tarfile and tmpfile":
         wrapper = ContextWrapper(self.t, self.tmpfile)
-        self.assertIs(wrapper.t, self.t)
-        self.assertIs(wrapper.tmpfile, self.tmpfile)
+        assert wrapper.t is self.t
+        assert wrapper.tmpfile is self.tmpfile
 
     it "has a proxy to tmpfile.name":
         name = mock.Mock(name="mock")
         self.tmpfile.name = name
-        self.assertIs(ContextWrapper(self.t, self.tmpfile).name, name)
+        assert ContextWrapper(self.t, self.tmpfile).name is name
 
     describe "close":
         it "closes the tarfile and seeks to the beginning of the file":
             wrapper = ContextWrapper(self.t, self.tmpfile)
-            self.assertEqual(self.t.close.mock_calls, [])
-            self.assertEqual(self.tmpfile.seek.mock_calls, [])
+            assert self.t.close.mock_calls == []
+            assert self.tmpfile.seek.mock_calls == []
 
             wrapper.close()
             self.t.close.assert_called_once()
@@ -58,7 +58,7 @@ describe HarpoonCase, "Context Wrapper":
 
             with wrapper.clone_with_new_dockerfile(conf, docker_file) as new_wrapper:
                 assert new_wrapper.t is not wrapper.t
-                self.assertNotEqual(new_wrapper.tmpfile, wrapper.tmpfile)
+                assert new_wrapper.tmpfile != wrapper.tmpfile
                 new_wrapper.close()
                 self.assertTarFileContent(
                     new_wrapper.t.name,
@@ -153,7 +153,7 @@ describe HarpoonCase, "Context builder":
             )
 
             found_files = ContextBuilder().find_files(self.context, False)
-            self.assertEqual(found_files, expected_files)
+            assert found_files == expected_files
 
         it "ignores .git folder if use_gitignore is true":
             _, files = self.setup_directory(
@@ -176,7 +176,7 @@ describe HarpoonCase, "Context builder":
                 ContextBuilder, "find_notignored_git_files", self.find_notignored_git_files
             ):
                 found_files = ContextBuilder().find_files(self.context, False)
-                self.assertEqual(found_files, expected_files)
+                assert found_files == expected_files
 
         it "ignores files not specified as valid":
             _, files = self.setup_directory(
@@ -200,7 +200,7 @@ describe HarpoonCase, "Context builder":
                 ContextBuilder, "find_notignored_git_files", self.find_notignored_git_files
             ):
                 found_files = ContextBuilder().find_files(self.context, False)
-                self.assertEqual(found_files, expected_files)
+                assert found_files == expected_files
 
         it "excludes files matching the excluders":
             _, files = self.setup_directory(
@@ -218,7 +218,7 @@ describe HarpoonCase, "Context builder":
             self.context.exclude = [".git/**", "three/four"]
 
             found_files = ContextBuilder().find_files(self.context, False)
-            self.assertEqual(found_files, expected_files)
+            assert found_files == expected_files
 
         it "includes files after exclude is taken into account":
             _, files = self.setup_directory(
@@ -244,23 +244,21 @@ describe HarpoonCase, "Context builder":
             self.context.include = [".git/**"]
 
             found_files = ContextBuilder().find_files(self.context, False)
-            self.assertEqual(found_files, expected_files)
+            assert found_files == expected_files
 
     describe "Finding submodule files":
         it "is able to find files in a submodule":
             with self.cloned_submodule_example() as first_repo:
                 ctxt = objs.Context(enabled=True, parent_dir=first_repo, use_gitignore=True)
-                self.assertEqual(
-                    ContextBuilder().find_notignored_git_files(ctxt, False),
-                    set(["b", ".gitmodules", "vendor/two/a"]),
+                assert ContextBuilder().find_notignored_git_files(ctxt, False) == set(
+                    ["b", ".gitmodules", "vendor/two/a"]
                 )
 
     describe "find_notignored_git_files":
         it "finds the files":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True)
-                self.assertEqual(
-                    ContextBuilder().find_notignored_git_files(ctxt, False),
+                assert ContextBuilder().find_notignored_git_files(ctxt, False) == (
                     set(
                         [
                             ".gitignore",
@@ -272,7 +270,7 @@ describe HarpoonCase, "Context builder":
                             "two",
                             "three/.hidden2",
                         ]
-                    ),
+                    )
                 )
 
         it "includes modified and untracked files":
@@ -287,8 +285,7 @@ describe HarpoonCase, "Context builder":
                         ("fifty.pyc", "another"),
                     ],
                 )
-                self.assertEqual(
-                    ContextBuilder().find_notignored_git_files(ctxt, False),
+                assert ContextBuilder().find_notignored_git_files(ctxt, False) == (
                     set(
                         [
                             ".gitignore",
@@ -302,7 +299,7 @@ describe HarpoonCase, "Context builder":
                             "eight",
                             "three/nine",
                         ]
-                    ),
+                    )
                 )
 
                 self.assertExampleRepoStatus(
@@ -317,8 +314,7 @@ describe HarpoonCase, "Context builder":
         it "returns valid files":
             with self.cloned_repo_example() as root_folder:
                 ctxt = objs.Context(enabled=True, parent_dir=root_folder, use_gitignore=True)
-                self.assertEqual(
-                    ContextBuilder().find_notignored_git_files(ctxt, False),
+                assert ContextBuilder().find_notignored_git_files(ctxt, False) == (
                     set(
                         [
                             ".gitignore",
@@ -330,6 +326,6 @@ describe HarpoonCase, "Context builder":
                             "two",
                             "three/.hidden2",
                         ]
-                    ),
+                    )
                 )
                 self.assertExampleRepoStatus(root_folder, "")

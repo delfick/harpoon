@@ -20,7 +20,7 @@ describe HarpoonCase, "a_temp_file":
             fle.write("blah".encode("utf-8"))
             fle.close()
             with open(fle.name) as fread:
-                self.assertEqual(fread.read(), "blah")
+                assert fread.read() == "blah"
         assert not os.path.exists(fle.name)
 
 describe HarpoonCase, "until":
@@ -41,9 +41,9 @@ describe HarpoonCase, "until":
                 done.append(1)
                 break
 
-        self.assertEqual(len(fake_time.time.mock_calls), 0)
-        self.assertEqual(len(fake_log.info.mock_calls), 0)
-        self.assertEqual(done, [1])
+        assert len(fake_time.time.mock_calls) == 0
+        assert len(fake_log.info.mock_calls) == 0
+        assert done == [1]
 
     it "logs the action each time":
         done = []
@@ -63,17 +63,14 @@ describe HarpoonCase, "until":
                     break
                 else:
                     done.append(1)
-        self.assertEqual(done, [1, 1, 1, 1, 1])
-        self.assertEqual(
-            fake_log.info.mock_calls,
-            [
-                mock.call(action),
-                mock.call(action),
-                mock.call(action),
-                mock.call(action),
-                mock.call(action),
-            ],
-        )
+        assert done == [1, 1, 1, 1, 1]
+        assert fake_log.info.mock_calls == [
+            mock.call(action),
+            mock.call(action),
+            mock.call(action),
+            mock.call(action),
+            mock.call(action),
+        ]
 
     it "doesn't log the action each time if silent":
         done = []
@@ -85,8 +82,8 @@ describe HarpoonCase, "until":
                     break
                 else:
                     done.append(1)
-        self.assertEqual(done, [1, 1, 1, 1, 1])
-        self.assertEqual(fake_log.info.mock_calls, [])
+        assert done == [1, 1, 1, 1, 1]
+        assert fake_log.info.mock_calls == []
 
     it "errors out if we have an action and we timeout":
         done = []
@@ -104,8 +101,8 @@ describe HarpoonCase, "until":
             fake_time.time.side_effect = timer
             for _ in until(action=action, timeout=2):
                 done.append(1)
-        self.assertEqual(done, [1])
-        self.assertEqual(fake_log.error.mock_calls, [mock.call("Timedout %s", action)])
+        assert done == [1]
+        assert fake_log.error.mock_calls == [mock.call("Timedout %s", action)]
 
     it "errors out if we have an action and we timeout unless silent":
         done = []
@@ -123,8 +120,8 @@ describe HarpoonCase, "until":
             fake_time.time.side_effect = timer
             for _ in until(action=action, timeout=2, silent=True):
                 done.append(1)
-        self.assertEqual(done, [1])
-        self.assertEqual(fake_log.error.mock_calls, [])
+        assert done == [1]
+        assert fake_log.error.mock_calls == []
 
     it "sleeps the step each time":
         done = []
@@ -146,13 +143,14 @@ describe HarpoonCase, "until":
                 else:
                     done.append(1)
 
-        self.assertEqual(
-            done, [1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", "break"]
-        )
-        self.assertEqual(
-            fake_time.sleep.mock_calls,
-            [mock.call(step), mock.call(step), mock.call(step), mock.call(step), mock.call(step)],
-        )
+        assert done == [1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", 1, "sleep", "break"]
+        assert fake_time.sleep.mock_calls == [
+            mock.call(step),
+            mock.call(step),
+            mock.call(step),
+            mock.call(step),
+            mock.call(step),
+        ]
 
 describe HarpoonCase, "Memoized_property":
     it "takes in a function and sets name and cache_name":
@@ -161,9 +159,9 @@ describe HarpoonCase, "Memoized_property":
             pass
 
         prop = memoized_property(a_func_blah)
-        self.assertIs(prop.func, a_func_blah)
-        self.assertEqual(prop.name, "a_func_blah")
-        self.assertEqual(prop.cache_name, "_a_func_blah")
+        assert prop.func is a_func_blah
+        assert prop.name == "a_func_blah"
+        assert prop.cache_name == "_a_func_blah"
 
     it "returns the memoized_property if accessed from the owner":
         owner = type("owner", (object,), {})
@@ -172,14 +170,14 @@ describe HarpoonCase, "Memoized_property":
             pass
 
         prop = memoized_property(a_func_blah)
-        self.assertIs(prop.__get__(None, owner), prop)
+        assert prop.__get__(None, owner) is prop
 
         class Things(object):
             @memoized_property
             def blah(self):
                 pass
 
-        self.assertEqual(Things.blah.name, "blah")
+        assert Things.blah.name == "blah"
 
     it "caches the value on the instance":
         processed = []
@@ -193,27 +191,27 @@ describe HarpoonCase, "Memoized_property":
 
         instance = Things()
 
-        self.assertEqual(processed, [])
+        assert processed == []
         assert not hasattr(instance, "_yeap")
 
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [1])
+        assert instance.yeap is value
+        assert processed == [1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         # For proof it's not calling yeap again
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [1])
+        assert instance.yeap is value
+        assert processed == [1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         # And proof it's using the _yeap value
         value2 = mock.Mock(name="value2")
         instance._yeap = value2
-        self.assertIs(instance.yeap, value2)
-        self.assertEqual(processed, [1])
+        assert instance.yeap is value2
+        assert processed == [1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value2)
+        assert instance._yeap == value2
 
     it "recomputes the value if the cache isn't there anymore":
         processed = []
@@ -227,26 +225,26 @@ describe HarpoonCase, "Memoized_property":
 
         instance = Things()
 
-        self.assertEqual(processed, [])
+        assert processed == []
         assert not hasattr(instance, "_yeap")
 
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [1])
+        assert instance.yeap is value
+        assert processed == [1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         # For proof it's not calling yeap again
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [1])
+        assert instance.yeap is value
+        assert processed == [1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         # Unless the value isn't there anymore
         del instance._yeap
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [1, 1])
+        assert instance.yeap is value
+        assert processed == [1, 1]
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
     it "sets the cache value using setattr syntax":
         processed = []
@@ -260,21 +258,21 @@ describe HarpoonCase, "Memoized_property":
 
         instance = Things()
 
-        self.assertEqual(processed, [])
+        assert processed == []
         assert not hasattr(instance, "_yeap")
 
         instance.yeap = value
-        self.assertIs(instance.yeap, value)
-        self.assertEqual(processed, [])
+        assert instance.yeap is value
+        assert processed == []
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         value2 = mock.Mock(name="value2")
         instance.yeap = value2
-        self.assertIs(instance.yeap, value2)
-        self.assertEqual(processed, [])
+        assert instance.yeap is value2
+        assert processed == []
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value2)
+        assert instance._yeap == value2
 
     it "deletes the cache with del syntax":
         value = mock.Mock(name="value")
@@ -290,9 +288,9 @@ describe HarpoonCase, "Memoized_property":
         assert not hasattr(instance, "_yeap")
 
         instance.yeap = value
-        self.assertIs(instance.yeap, value)
+        assert instance.yeap is value
         assert hasattr(instance, "_yeap")
-        self.assertEqual(instance._yeap, value)
+        assert instance._yeap == value
 
         del instance.yeap
         assert not hasattr(instance, "_yeap")

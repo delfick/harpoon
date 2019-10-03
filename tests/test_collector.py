@@ -31,11 +31,9 @@ describe HarpoonCase, "Collector":
                 )
                 collector2 = collector.clone({"harpoon": {"chosen_image": "other"}})
 
-                self.assertNotEqual(
-                    collector.configuration["harpoon"], collector2.configuration["harpoon"]
-                )
-                self.assertEqual(collector.configuration["harpoon"].chosen_image, "blah")
-                self.assertEqual(collector2.configuration["harpoon"].chosen_image, "other")
+                assert collector.configuration["harpoon"] != collector2.configuration["harpoon"]
+                assert collector.configuration["harpoon"].chosen_image == "blah"
+                assert collector2.configuration["harpoon"].chosen_image == "other"
 
     describe "prepare":
         it "adds some items to the configuration from the args_dict":
@@ -62,16 +60,16 @@ describe HarpoonCase, "Collector":
                 collector.prepare(filename, args_dict)
 
                 # Done by option_merge
-                self.assertEqual(collector.configuration["getpass"], getpass)
-                self.assertEqual(collector.configuration["args_dict"].as_dict(), args_dict)
-                self.assertEqual(collector.configuration["collector"], collector)
-                self.assertEqual(collector.configuration["config_root"], os.path.dirname(filename))
+                assert collector.configuration["getpass"] == getpass
+                assert collector.configuration["args_dict"].as_dict() == args_dict
+                assert collector.configuration["collector"] == collector
+                assert collector.configuration["config_root"] == os.path.dirname(filename)
 
                 # Done by bespin
-                self.assertEqual(collector.configuration["$@"], extra)
-                self.assertEqual(collector.configuration["bash"], bash)
-                self.assertEqual(collector.configuration["command"], command)
-                self.assertEqual(collector.configuration["harpoon"]["extra"], extra)
+                assert collector.configuration["$@"] == extra
+                assert collector.configuration["bash"] == bash
+                assert collector.configuration["command"] == command
+                assert collector.configuration["harpoon"]["extra"] == extra
 
         it "adds task_runner from a TaskFinder to the configuration and finds tasks":
             task_finder = mock.Mock(name="task_finder")
@@ -84,7 +82,7 @@ describe HarpoonCase, "Collector":
                     collector.prepare(filename, args_dict)
                     task_finder.find_tasks.assert_called_once_with({})
 
-                    self.assertEqual(len(task_finder.task_runner.mock_calls), 0)
+                    assert len(task_finder.task_runner.mock_calls) == 0
                     collector.configuration["task_runner"]("blah")
                     task_finder.task_runner.assert_called_once_with("blah")
 
@@ -101,11 +99,11 @@ describe HarpoonCase, "Collector":
                 options = Collector().start_configuration()
                 options.update({"three": {"four": {"5": "6"}}, "seven": thing})
 
-                self.assertIs(type(options["three"]), MergedOptions)
-                self.assertEqual(options["three"].as_dict(), {"four": {"5": "6"}})
+                assert type(options["three"]) is MergedOptions
+                assert options["three"].as_dict() == {"four": {"5": "6"}}
 
-                self.assertIs(type(options["seven"]), Thing)
-                self.assertEqual(options["seven"], {"one": 1, "two": 2})
+                assert type(options["seven"]) is Thing
+                assert options["seven"] == {"one": 1, "two": 2}
 
         describe "Reading a file":
             it "reads a yaml file and returns it as a dictionary":
@@ -131,15 +129,12 @@ describe HarpoonCase, "Collector":
                 with self.a_temp_file(config) as filename:
                     collector = Collector()
                     readed = collector.read_file(filename)
-                    self.assertEqual(
-                        readed,
-                        {
-                            "one": 1,
-                            "two": {"three": 3, "four": 4},
-                            "five": "six\nseven\neight\n",
-                            "nine": "ten eleven twelve",
-                        },
-                    )
+                    assert readed == {
+                        "one": 1,
+                        "two": {"three": 3, "four": 4},
+                        "five": "six\nseven\neight\n",
+                        "nine": "ten eleven twelve",
+                    }
 
             it "complains about scanner errors":
                 config = dedent(
@@ -228,22 +223,19 @@ describe HarpoonCase, "Collector":
                         collector = Collector()
                         configuration = collector.collect_configuration(filename2, {})
                         as_dict = configuration.as_dict()
-                        self.assertEqual(
-                            as_dict,
-                            {
-                                "one": 1,
-                                "two": {"three": 5, "six": 6, "four": 4},
-                                "five": "six\nseven\neight\n",
-                                "nine": "ten eleven twelve",
-                                "harpoon": {"extra_files": filename1},
-                                "collector": collector,
-                                "getpass": getpass,
-                                "args_dict": {},
-                                "config_root": os.path.dirname(filename2),
-                                "authentication": sb.NotSpecified,
-                                "content": sb.NotSpecified,
-                            },
-                        )
+                        assert as_dict == {
+                            "one": 1,
+                            "two": {"three": 5, "six": 6, "four": 4},
+                            "five": "six\nseven\neight\n",
+                            "nine": "ten eleven twelve",
+                            "harpoon": {"extra_files": filename1},
+                            "collector": collector,
+                            "getpass": getpass,
+                            "args_dict": {},
+                            "config_root": os.path.dirname(filename2),
+                            "authentication": sb.NotSpecified,
+                            "content": sb.NotSpecified,
+                        }
 
             it "collects files in folders specified by images.__images_from__":
                 root, folders = self.setup_directory(
@@ -268,8 +260,7 @@ describe HarpoonCase, "Collector":
                     configuration, collect_another_source, done, result, src
                 )
 
-                self.assertEqual(
-                    sorted(collect_another_source.mock_calls),
+                assert sorted(collect_another_source.mock_calls) == (
                     sorted(
                         [
                             mock.call(
@@ -288,7 +279,7 @@ describe HarpoonCase, "Collector":
                                 prefix=["images", "seven"],
                             ),
                         ]
-                    ),
+                    )
                 )
 
             it "successfully prefixes included __images_from__":
@@ -319,10 +310,11 @@ describe HarpoonCase, "Collector":
                     cfg_three["config_root"] = folders["one"]["two"]["/folder/"]
                     cfg_four["config_root"] = folders["one"]["two"]["/folder/"]
                     cfg_seven["config_root"] = folders["one"]["six"]["/folder/"]
-                    self.assertEqual(
-                        collector.configuration["images"].as_dict(),
-                        {"three": cfg_three, "four": cfg_four, "seven": cfg_seven},
-                    )
+                    assert collector.configuration["images"].as_dict() == {
+                        "three": cfg_three,
+                        "four": cfg_four,
+                        "seven": cfg_seven,
+                    }
 
         describe "Converters":
             it "registers a harpoon converter":
@@ -330,13 +322,13 @@ describe HarpoonCase, "Collector":
                 configuration = collector.start_configuration()
                 configuration["harpoon"] = {}
                 configuration.converters.activate()
-                self.assertEqual(configuration["harpoon"].as_dict(), {})
-                self.assertNotEqual(type(configuration["harpoon"]), Harpoon)
+                assert configuration["harpoon"].as_dict() == {}
+                assert type(configuration["harpoon"]) != Harpoon
 
                 configuration.update({"args_dict": {"harpoon": configuration["harpoon"]}})
                 collector.extra_configuration_collection(configuration)
                 configuration.converters.activate()
-                self.assertEqual(type(configuration["harpoon"]), Harpoon)
+                assert type(configuration["harpoon"]) == Harpoon
 
             it "registers image converters for each image":
                 the_harpoon_spec = mock.Mock(name="the_harpoon_spec")
@@ -358,15 +350,14 @@ describe HarpoonCase, "Collector":
                     ):
                         collector.extra_configuration_collection(configuration)
 
-                self.assertEqual(
-                    sorted(make_image_converters.mock_calls),
+                assert sorted(make_image_converters.mock_calls) == (
                     sorted(
                         [
                             mock.call("blah", configuration, harpoon_spec),
                             mock.call("stuff", configuration, harpoon_spec),
                             mock.call("other", configuration, harpoon_spec),
                         ]
-                    ),
+                    )
                 )
 
         describe "Image converters":
@@ -393,10 +384,10 @@ describe HarpoonCase, "Collector":
                 configuration.converters.activate()
 
                 collector.make_image_converters("blah", configuration, harpoon_spec)
-                self.assertIs(configuration["images"]["blah"], normalised_image)
-                self.assertIs(configuration[["images", "blah", "tasks"]], normalised_tasks)
-                self.assertEqual(t1.image, "blah")
-                self.assertEqual(t2.image, "blah")
+                assert configuration["images"]["blah"] is normalised_image
+                assert configuration[["images", "blah", "tasks"]] is normalised_tasks
+                assert t1.image == "blah"
+                assert t2.image == "blah"
 
             it "uses root of configuration with image as an override for the image converter":
                 collector = Collector()
@@ -414,8 +405,7 @@ describe HarpoonCase, "Collector":
                 configuration.converters.activate()
                 collector.make_image_converters("blah", configuration, HarpoonSpec())
 
-                self.assertEqual(
-                    configuration["images"]["blah"].commands.orig_commands,
-                    [[command_objs.Command(("FROM", "30-2"))]],
-                )
-                self.assertEqual(configuration["images"]["blah"].context.enabled, False)
+                assert configuration["images"]["blah"].commands.orig_commands == [
+                    [command_objs.Command(("FROM", "30-2"))]
+                ]
+                assert configuration["images"]["blah"].context.enabled == False

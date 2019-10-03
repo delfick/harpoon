@@ -207,8 +207,8 @@ class FilesAssertionsMixin:
             found.add(identity)
             contents = expected[identity]
             if data is not None or contents is not None:
-                self.assertEqual(data.decode("utf-8"), contents)
-        self.assertEqual(found, set(expected.keys()))
+                assert data.decode("utf-8") == contents
+        assert found == set(expected.keys())
 
     def extract_tar(self, location):
         """Yield (identity, data, tarinfo) for everything in archive at provided location"""

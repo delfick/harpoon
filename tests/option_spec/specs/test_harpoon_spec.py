@@ -25,13 +25,12 @@ describe HarpoonCase, "HarpoonSpec":
             )
             meta = Meta(everything, [])
             fake = HarpoonSpec().image_spec.fake_filled(meta, with_non_defaulted=True)
-            self.assertEqual(fake.context.parent_dir, directory)
-            self.assertEqual(fake.name, "blah")
+            assert fake.context.parent_dir == directory
+            assert fake.name == "blah"
 
         as_dict = fake.as_dict()
-        self.assertEqual(type(as_dict["context"]), dict)
-        self.assertEqual(
-            sorted(as_dict["context"].keys()),
+        assert type(as_dict["context"]) == dict
+        assert sorted(as_dict["context"].keys()) == (
             sorted(
                 [
                     "enabled",
@@ -42,7 +41,7 @@ describe HarpoonCase, "HarpoonSpec":
                     "find_options",
                     "ignore_find_errors",
                 ]
-            ),
+            )
         )
 
     describe "name_spec":
@@ -88,7 +87,7 @@ describe HarpoonCase, "HarpoonSpec":
 
         it "allows values that are with alphanumeric, dashes and underscores":
             for value in ("dasdf", "ka-sd", "j_k", "l0Tk-", "d9001"):
-                self.assertEqual(self.spec.normalise(self.meta, value), value)
+                assert self.spec.normalise(self.meta, value) == value
 
         describe "task_name_spec":
 
@@ -99,12 +98,12 @@ describe HarpoonCase, "HarpoonSpec":
     describe "task spec":
         it "creates a Task object for each task":
             tasks = HarpoonSpec().tasks_spec(["run"]).normalise(self.meta, {"one": {}})
-            self.assertEqual(type(tasks), dict)
-            self.assertEqual(list(tasks.keys()), ["one"])
+            assert type(tasks) == dict
+            assert list(tasks.keys()) == ["one"]
 
             task = tasks["one"]
-            self.assertIs(task.__class__, Task)
-            self.assertEqual(task.action, "run")
-            self.assertEqual(task.options, {})
-            self.assertEqual(task.overrides, {})
-            self.assertEqual(task.description, "Run specified task in this image")
+            assert task.__class__ is Task
+            assert task.action == "run"
+            assert task.options == {}
+            assert task.overrides == {}
+            assert task.description == "Run specified task in this image"

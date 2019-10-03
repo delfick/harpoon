@@ -30,7 +30,7 @@ class CommandCase(HarpoonCase):
         result = self.spec.normalise(self.meta, command)
         if isinstance(result, Command):
             result = [result]
-        self.assertEqual([cmd.as_string for cmd in result], expected)
+        assert [cmd.as_string for cmd in result] == expected
 
 
 describe CommandCase, "array_command_spec":
@@ -70,7 +70,7 @@ describe CommandCase, "array_command_spec":
         command = ["ADD", second_val]
         with mock.patch.object(cs.complex_ADD_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
-        self.assertEqual(result, normalised)
+        assert result == normalised
 
     it "uses complex_ADD_spec if the second value is a dictionary with COPY":
         second_val = {self.unique_val(): self.unique_val()}
@@ -84,7 +84,7 @@ describe CommandCase, "array_command_spec":
         command = ["COPY", second_val]
         with mock.patch.object(cs.complex_COPY_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
-        self.assertEqual(result, normalised)
+        assert result == normalised
 
 describe CommandCase, "convert_dict_command_spec":
     before_each:
@@ -102,7 +102,7 @@ describe CommandCase, "convert_dict_command_spec":
 
         with mock.patch.object(cs.complex_ADD_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
-        self.assertEqual(result, normalised)
+        assert result == normalised
 
         normalise.assert_called_once_with(self.meta.at("ADD"), val)
 
@@ -118,7 +118,7 @@ describe CommandCase, "convert_dict_command_spec":
 
         with mock.patch.object(cs.complex_COPY_spec, "normalise", normalise):
             result = self.spec.normalise(self.meta, command)
-        self.assertEqual(result, normalised)
+        assert result == normalised
 
         normalise.assert_called_once_with(self.meta.at("COPY"), val)
 
@@ -137,11 +137,11 @@ describe CommandCase, "has_a_space validator":
 
     it "just returns the value if it has a space":
         val = "{0} {1}".format(self.unique_val(), self.unique_val())
-        self.assertEqual(cs.has_a_space().normalise(self.meta, val), val)
+        assert cs.has_a_space().normalise(self.meta, val) == val
 
     it "just returns the value if it has multiple spaces":
         val = "{0} {1} {2}".format(self.unique_val(), self.unique_val(), self.unique_val())
-        self.assertEqual(cs.has_a_space().normalise(self.meta, val), val)
+        assert cs.has_a_space().normalise(self.meta, val) == val
 
 describe CommandCase, "string_command_spec":
     before_each:
@@ -158,8 +158,8 @@ describe CommandCase, "string_command_spec":
         self.meta.everything = MergedOptions.using({"thing": self.unique_val()})
         val = "FROM {thing}"
         result = cs.string_command_spec().normalise(self.meta, val)
-        self.assertEqual(result.action, "FROM")
-        self.assertEqual(result.command, "{thing}")
+        assert result.action == "FROM"
+        assert result.command == "{thing}"
         self.assertDockerLines(val, ["FROM {thing}"])
 
 describe CommandCase, "command_spec":
@@ -215,32 +215,29 @@ describe CommandCase, "command_spec":
         ]
 
         result = self.spec.normalise(meta.at("images").at("blah").at("commands"), commands)
-        self.assertEqual(
-            [cmd.as_string for cmd in result.commands],
-            [
-                "FROM somewhere as base",
-                "FROM {0}".format(blah_image),
-                "ADD something /somewhere",
-                "COPY --from=blah something /somewhere",
-                "ENV ONE 1",
-                "ENV TWO 2",
-                "ENV THREE 3",
-                "ADD blah /projects/blah",
-                "ADD and /projects/and",
-                "ADD stuff /projects/stuff",
-                "ADD {0}-the_destination the_destination".format(md5),
-                "ADD {0}-the_destination2 the_destination2".format(md5),
-                "ADD {0}-the_destination3 the_destination3".format(md52),
-                "COPY --from=somewhere-blah2 /tmp/stuff copy_destination",
-                "COPY --from=1 /tmp/stuff copy_destination",
-                "FROM somewhere-blah3 as wat",
-                "COPY --from=wat things stuff",
-                "CMD cacafire",
-            ],
-        )
+        assert [cmd.as_string for cmd in result.commands] == [
+            "FROM somewhere as base",
+            "FROM {0}".format(blah_image),
+            "ADD something /somewhere",
+            "COPY --from=blah something /somewhere",
+            "ENV ONE 1",
+            "ENV TWO 2",
+            "ENV THREE 3",
+            "ADD blah /projects/blah",
+            "ADD and /projects/and",
+            "ADD stuff /projects/stuff",
+            "ADD {0}-the_destination the_destination".format(md5),
+            "ADD {0}-the_destination2 the_destination2".format(md5),
+            "ADD {0}-the_destination3 the_destination3".format(md52),
+            "COPY --from=somewhere-blah2 /tmp/stuff copy_destination",
+            "COPY --from=1 /tmp/stuff copy_destination",
+            "FROM somewhere-blah3 as wat",
+            "COPY --from=wat things stuff",
+            "CMD cacafire",
+        ]
 
         dependents = list(result.dependent_images)
-        self.assertEqual(dependents, ["somewhere", blah_image, blah2_image, blah3_image])
+        assert dependents == ["somewhere", blah_image, blah2_image, blah3_image]
 
         externals = list(result.external_dependencies)
-        self.assertEqual(externals, ["somewhere", blah_image])
+        assert externals == ["somewhere", blah_image]

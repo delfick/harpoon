@@ -180,7 +180,7 @@ describe HarpoonCase, "Building docker images":
         untagged = [
             image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})
         ]
-        self.assertEqual(untagged, untagged_before)
+        assert untagged == untagged_before
 
     it "can not cleanup intermediate images from multi stage builds":
         from_line = "FROM {0}".format(os.environ["BASE_IMAGE"])
@@ -219,7 +219,7 @@ describe HarpoonCase, "Building docker images":
         untagged = [
             image["Id"] for image in self.docker_client.api.images(filters={"dangling": True})
         ]
-        self.assertEqual(len(untagged), len(untagged_before) + 1)
+        assert len(untagged) == len(untagged_before) + 1
 
         with self.a_built_image(
             {"cleanup_intermediate_images": False, "context": False, "commands": commands2},

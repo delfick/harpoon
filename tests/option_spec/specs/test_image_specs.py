@@ -19,12 +19,12 @@ describe HarpoonCase, "Mount spec":
 
     def check_paths(self, value):
         made = specs.mount_spec().normalise(self.meta, value)
-        self.assertEqual(made.local_path, self.local_path)
-        self.assertEqual(made.container_path, self.container_path)
+        assert made.local_path == self.local_path
+        assert made.container_path == self.container_path
 
     def check_permissions(self, value, expected):
         made = specs.mount_spec().normalise(self.meta, value)
-        self.assertEqual(made.permissions, expected)
+        assert made.permissions == expected
 
     it "takes as [local_path, container_path]":
         self.check_paths(self.array_format)
@@ -53,51 +53,51 @@ describe HarpoonCase, "Env spec":
         assert "=" not in self.env_name
 
         made = specs.env_spec().normalise(self.meta, self.env_name)
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, None)
-        self.assertEqual(made.default_val, None)
+        assert made.env_name == self.env_name
+        assert made.set_val == None
+        assert made.default_val == None
 
     it "takes in env as a list with 1 item":
         assert ":" not in self.env_name
         assert "=" not in self.env_name
 
         made = specs.env_spec().normalise(self.meta, [self.env_name])
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, None)
-        self.assertEqual(made.default_val, None)
+        assert made.env_name == self.env_name
+        assert made.set_val == None
+        assert made.default_val == None
 
     it "takes in env as a list with 2 items":
         assert ":" not in self.env_name
         assert "=" not in self.env_name
 
         made = specs.env_spec().normalise(self.meta, [self.env_name, self.fallback_val])
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, None)
-        self.assertEqual(made.default_val, self.fallback_val)
+        assert made.env_name == self.env_name
+        assert made.set_val == None
+        assert made.default_val == self.fallback_val
 
     it "takes in env with blank default if suffixed with a colon":
         made = specs.env_spec().normalise(self.meta, self.env_name + ":")
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, None)
-        self.assertEqual(made.default_val, "")
+        assert made.env_name == self.env_name
+        assert made.set_val == None
+        assert made.default_val == ""
 
     it "takes in env with blank set if suffixed with an equals sign":
         made = specs.env_spec().normalise(self.meta, self.env_name + "=")
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, "")
-        self.assertEqual(made.default_val, None)
+        assert made.env_name == self.env_name
+        assert made.set_val == ""
+        assert made.default_val == None
 
     it "takes in default value if seperated by a colon":
         made = specs.env_spec().normalise(self.meta, self.env_name + ":" + self.fallback_val)
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, None)
-        self.assertEqual(made.default_val, self.fallback_val)
+        assert made.env_name == self.env_name
+        assert made.set_val == None
+        assert made.default_val == self.fallback_val
 
     it "takes in set value if seperated by an equals sign":
         made = specs.env_spec().normalise(self.meta, self.env_name + "=" + self.fallback_val)
-        self.assertEqual(made.env_name, self.env_name)
-        self.assertEqual(made.set_val, self.fallback_val)
-        self.assertEqual(made.default_val, None)
+        assert made.env_name == self.env_name
+        assert made.set_val == self.fallback_val
+        assert made.default_val == None
 
 describe HarpoonCase, "Link spec":
     before_each:
@@ -115,9 +115,9 @@ describe HarpoonCase, "Link spec":
 
     def do_check(self, value, container, expected_alias):
         made = specs.link_spec().normalise(self.meta, value)
-        self.assertEqual(made.container, container)
-        self.assertEqual(made.container_name, self.container.container_name)
-        self.assertEqual(made.link_name, expected_alias)
+        assert made.container == container
+        assert made.container_name == self.container.container_name
+        assert made.link_name == expected_alias
 
     it "takes in as a list of 1 or two items":
         self.do_check(
@@ -162,19 +162,19 @@ describe HarpoonCase, "Port spec":
         made = specs.port_spec().normalise(self.meta, value)
 
         if has_ip:
-            self.assertEqual(made.ip, self.ip)
+            assert made.ip == self.ip
         else:
-            self.assertEqual(made.ip, sb.NotSpecified)
+            assert made.ip == sb.NotSpecified
 
         if has_host_port:
-            self.assertEqual(made.host_port, self.host_port)
+            assert made.host_port == self.host_port
         else:
-            self.assertEqual(made.host_port, sb.NotSpecified)
+            assert made.host_port == sb.NotSpecified
 
         if has_container_port:
-            self.assertEqual(made.container_port, self.container_port_val(expected_transport))
+            assert made.container_port == self.container_port_val(expected_transport)
         else:
-            self.assertEqual(made.container_port, sb.NotSpecified)
+            assert made.container_port == sb.NotSpecified
 
     it "takes as a list of 1 to 3 items":
         self.do_check(
@@ -248,17 +248,14 @@ describe HarpoonCase, "Container Port Spec":
         self.meta = mock.Mock(name="meta", spec=Meta)
 
     it "defaults transport to sb.NotSpecified":
-        self.assertEqual(
-            specs.container_port_spec().normalise(self.meta, "80"),
-            objs.ContainerPort(80, sb.NotSpecified),
+        assert specs.container_port_spec().normalise(self.meta, "80") == objs.ContainerPort(
+            80, sb.NotSpecified
         )
 
     it "takes in transport as a string or as a list":
-        self.assertEqual(
-            specs.container_port_spec().normalise(self.meta, "80/tcp"),
-            objs.ContainerPort(80, "tcp"),
+        assert specs.container_port_spec().normalise(self.meta, "80/tcp") == objs.ContainerPort(
+            80, "tcp"
         )
-        self.assertEqual(
-            specs.container_port_spec().normalise(self.meta, ["80", "tcp"]),
-            objs.ContainerPort(80, "tcp"),
-        )
+        assert specs.container_port_spec().normalise(
+            self.meta, ["80", "tcp"]
+        ) == objs.ContainerPort(80, "tcp")
