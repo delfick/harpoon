@@ -1,6 +1,3 @@
-from harpoon.errors import HarpoonError
-
-from contextlib import contextmanager
 from textwrap import dedent
 import json
 import re
@@ -57,40 +54,4 @@ class AssertionsAssertionsMixin:
                 a, b
             ), "Didn't match! Expected ===>\n{0}\n\nTo match ===>\n{1}\n\n===>Failed matching {2} to {3}".format(
                 expected, output, a, b
-            )
-
-    @contextmanager
-    def fuzzyAssertRaisesError(self, expected_kls, expected_msg_regex=NotSpecified, **values):
-        """
-        Assert that something raises a particular type of error.
-
-        The error raised must be a subclass of the expected_kls
-        Have a message that matches the specified regex.
-
-        And have atleast the values specified in it's kwargs.
-        """
-        try:
-            yield
-        except HarpoonError as error:
-            try:
-                assert issubclass(error.__class__, expected_kls)
-                if expected_msg_regex is not NotSpecified:
-                    self.assertRegexpMatches(expected_msg_regex, error.message)
-
-                errors = values.get("_errors")
-                if "_errors" in values:
-                    del values["_errors"]
-
-                self.assertDictContainsSubset(values, error.kwargs)
-                if errors:
-                    assert sorted(error.errors) == sorted(errors)
-            except AssertionError:
-                print("Got error: {0}".format(error))
-                print("Expected: {0}: {1}: {2}".format(expected_kls, expected_msg_regex, values))
-                raise
-        else:
-            assert (
-                False
-            ), "Expected an exception to be raised\n\texpected_kls: {0}\n\texpected_msg_regex: {1}\n\thave_atleast: {2}".format(
-                expected_kls, expected_msg_regex, values
             )

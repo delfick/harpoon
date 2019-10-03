@@ -5,8 +5,8 @@ from harpoon.executor import App
 from contextlib import contextmanager
 from tests.helpers import HarpoonCase
 from delfick_project.norms import sb
+from unittest import mock
 from io import StringIO
-import mock
 import sys
 import os
 
@@ -61,7 +61,7 @@ describe HarpoonCase, "App":
                     assert error.code == 2
                     fake_stderr.seek(0)
                     assert fake_stderr.read().split("\n")[-2] == (
-                        "nosetests: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(
+                        "pytest: error: argument --harpoon-config: can't open '{0}': [Errno 2] No such file or directory: '{0}'".format(
                             config_location
                         )
                     )
@@ -96,7 +96,7 @@ describe HarpoonCase, "App":
                                 yield collector, docker_context_maker, docker_context, app, setup_logging_theme, args_dict
                                 app.execute(args_obj, args_dict, extra_args, logging_handler)
 
-            FakeCollector.assert_called_once()
+            FakeCollector.assert_called_once_with()
 
         it "sets up logging theme if term_colors is in the configuration":
             called = []

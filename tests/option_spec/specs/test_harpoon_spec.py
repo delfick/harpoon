@@ -6,16 +6,19 @@ from harpoon.option_spec.task_objs import Task
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import Meta
-import mock
+from unittest import mock
+import pytest
 
 describe HarpoonCase, "HarpoonSpec":
-    before_each:
-        self.docker_context = mock.Mock(name="docker_context")
-        self.harpoon = mock.Mock(name="harpoon", docker_context=self.docker_context)
-        self.meta = Meta({"harpoon": self.harpoon}, [])
+
+    @pytest.fixture()
+    def meta(self):
+        docker_context = mock.Mock(name="docker_context")
+        harpoon = mock.Mock(name="harpoon", docker_context=docker_context)
+        return Meta({"harpoon": harpoon}, [])
 
     it "can get a fake Image":
         with self.a_temp_dir() as directory:
@@ -52,42 +55,32 @@ describe HarpoonCase, "HarpoonSpec":
         def spec(self):
             raise NotImplementedError
 
-        it "can't have whitespace":
+        it "can't have whitespace", meta:
             regex = self.spec.validators[1].regexes[0][0]
             for value in (" adsf", "d  d", "\t", " ", "d "):
                 errors = [
-                    BadSpecValue("Expected no whitespace", meta=self.meta, val=value),
+                    BadSpecValue("Expected no whitespace", meta=meta, val=value),
                     BadSpecValue(
-                        "Expected value to match regex, it didn't",
-                        meta=self.meta,
-                        val=value,
-                        spec=regex,
+                        "Expected value to match regex, it didn't", meta=meta, val=value, spec=regex
                     ),
                 ]
-                with self.fuzzyAssertRaisesError(
-                    BadSpecValue, "Failed to validate", _errors=errors
-                ):
-                    self.spec.normalise(self.meta, value)
+                with assertRaises(BadSpecValue, "Failed to validate", _errors=errors):
+                    self.spec.normalise(meta, value)
 
-        it "can only have alphanumeric, dashes and underscores and start with a letter":
+        it "can only have alphanumeric, dashes and underscores and start with a letter", meta:
             regex = self.spec.validators[1].regexes[0][0]
             for value in ("^dasdf", "kasd$", "*k", "[", "}", "<", "0", "0d"):
                 errors = [
                     BadSpecValue(
-                        "Expected value to match regex, it didn't",
-                        meta=self.meta,
-                        val=value,
-                        spec=regex,
+                        "Expected value to match regex, it didn't", meta=meta, val=value, spec=regex
                     )
                 ]
-                with self.fuzzyAssertRaisesError(
-                    BadSpecValue, "Failed to validate", _errors=errors
-                ):
-                    self.spec.normalise(self.meta, value)
+                with assertRaises(BadSpecValue, "Failed to validate", _errors=errors):
+                    self.spec.normalise(meta, value)
 
-        it "allows values that are with alphanumeric, dashes and underscores":
+        it "allows values that are with alphanumeric, dashes and underscores", meta:
             for value in ("dasdf", "ka-sd", "j_k", "l0Tk-", "d9001"):
-                assert self.spec.normalise(self.meta, value) == value
+                assert self.spec.normalise(meta, value) == value
 
         describe "task_name_spec":
 
@@ -96,8 +89,8 @@ describe HarpoonCase, "HarpoonSpec":
                 return HarpoonSpec().task_name_spec
 
     describe "task spec":
-        it "creates a Task object for each task":
-            tasks = HarpoonSpec().tasks_spec(["run"]).normalise(self.meta, {"one": {}})
+        it "creates a Task object for each task", meta:
+            tasks = HarpoonSpec().tasks_spec(["run"]).normalise(meta, {"one": {}})
             assert type(tasks) == dict
             assert list(tasks.keys()) == ["one"]
 

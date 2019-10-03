@@ -7,22 +7,17 @@ from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import Meta
+from unittest import mock
 import datetime
 import tarfile
-import mock
 import os
 
 describe HarpoonCase, "Image object":
-    before_each:
-        self.silent_build = False
 
     def make_image(self, options):
         config_root = self.make_temp_dir()
-        harpoon = HarpoonSpec().harpoon_spec.normalise(
-            Meta({}, []), {"silent_build": self.silent_build}
-        )
+        harpoon = HarpoonSpec().harpoon_spec.normalise(Meta({}, []), {"silent_build": False})
         if "harpoon" not in options:
             options["harpoon"] = harpoon
         return HarpoonSpec().image_spec.normalise(
@@ -75,7 +70,7 @@ describe HarpoonCase, "Image object":
 
                 add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
                 make_context_manager.assert_called_once_with(
-                    context_options, silent_build=self.silent_build, extra_context=extra_context
+                    context_options, silent_build=False, extra_context=extra_context
                 )
 
             it "uses ContextBuilder with docker_file passed in":
@@ -116,7 +111,7 @@ describe HarpoonCase, "Image object":
 
                 add_docker_file_to_tarfile.assert_called_once_with(docker_file, t)
                 make_context_manager.assert_called_once_with(
-                    context_options, silent_build=self.silent_build, extra_context=extra_context
+                    context_options, silent_build=False, extra_context=extra_context
                 )
 
         describe "add_docker_file_to_tarfile":

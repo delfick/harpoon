@@ -7,39 +7,40 @@ from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import Meta
+from unittest import mock
 import tarfile
 import shutil
+import pytest
 import time
-import nose
-import mock
 import os
 
 describe HarpoonCase, "Context Wrapper":
-    before_each:
-        self.t = mock.Mock(name="t")
-        self.tmpfile = mock.Mock(name="tmpfile")
-
     it "takes in a tarfile and tmpfile":
-        wrapper = ContextWrapper(self.t, self.tmpfile)
-        assert wrapper.t is self.t
-        assert wrapper.tmpfile is self.tmpfile
+        t = mock.Mock(name="t")
+        tmpfile = mock.Mock(name="tmpfile")
+        wrapper = ContextWrapper(t, tmpfile)
+        assert wrapper.t is t
+        assert wrapper.tmpfile is tmpfile
 
     it "has a proxy to tmpfile.name":
+        t = mock.Mock(name="t")
+        tmpfile = mock.Mock(name="tmpfile")
         name = mock.Mock(name="mock")
-        self.tmpfile.name = name
-        assert ContextWrapper(self.t, self.tmpfile).name is name
+        tmpfile.name = name
+        assert ContextWrapper(t, tmpfile).name is name
 
     describe "close":
         it "closes the tarfile and seeks to the beginning of the file":
-            wrapper = ContextWrapper(self.t, self.tmpfile)
-            assert self.t.close.mock_calls == []
-            assert self.tmpfile.seek.mock_calls == []
+            t = mock.Mock(name="t")
+            tmpfile = mock.Mock(name="tmpfile")
+            wrapper = ContextWrapper(t, tmpfile)
+            assert t.close.mock_calls == []
+            assert tmpfile.seek.mock_calls == []
 
             wrapper.close()
-            self.t.close.assert_called_once()
-            self.tmpfile.seek.assert_called_once_with(0)
+            t.close.assert_called_once_with()
+            tmpfile.seek.assert_called_once_with(0)
 
     describe "clone_with_new_dockerfile":
         it "copies over files from the old tar file into a new tarfile and returns a new wrapper":
@@ -70,24 +71,27 @@ describe HarpoonCase, "Context Wrapper":
                 )
 
 describe HarpoonCase, "Context builder":
-    before_each:
-        self.folder = self.make_temp_dir()
-        self.context = objs.Context(enabled=True, parent_dir=self.folder)
 
-        self.one_val = self.unique_val()
-        self.two_val = self.unique_val()
-        self.three_val = self.unique_val()
-        self.four_val = self.unique_val()
-        self.five_val = self.unique_val()
+    @pytest.fixture()
+    def M(self):
+        f = self.make_temp_dir()
+
+        class Mocks:
+            folder = f
+            ctx = objs.Context(enabled=True, parent_dir=f)
+            one_val = self.unique_val()
+            two_val = self.unique_val()
+            three_val = self.unique_val()
+            four_val = self.unique_val()
+            five_val = self.unique_val()
+            find_notignored_git_files = mock.Mock(name="find_notignored_git_files")
+
+        return Mocks
 
     describe "make_context":
-        before_each:
-            self.docker_lines = "\n".join(["FROM somewhere", "RUN touch /tmp/stuff"])
-            self.docker_file = objs.DockerFile(self.docker_lines)
-
-        it "adds everything from find_files_for_tar":
+        it "adds everything from find_files_for_tar", M:
             folder, files = self.setup_directory(
-                {"one": {"1": self.one_val}, "two": self.two_val}, root=self.folder
+                {"one": {"1": M.one_val}, "two": M.two_val}, root=M.folder
             )
 
             find_files_for_tar = mock.Mock(name="find_files_for_tar")
@@ -98,19 +102,18 @@ describe HarpoonCase, "Context builder":
             ]
 
             with mock.patch.object(ContextBuilder, "find_files_for_tar", find_files_for_tar):
-                with ContextBuilder().make_context(self.context) as tmpfile:
+                with ContextBuilder().make_context(M.ctx) as tmpfile:
                     tmpfile.close()
                     self.assertTarFileContent(
-                        tmpfile.name,
-                        {"./one": None, "./one/1": self.one_val, "./two": self.two_val},
+                        tmpfile.name, {"./one": None, "./one/1": M.one_val, "./two": M.two_val}
                     )
 
-        it "adds extra_content after find_files_for_tar":
+        it "adds extra_content after find_files_for_tar", M:
             find_files_for_tar = mock.Mock(name="find_files_for_tar")
-            extra_context = [(self.three_val, "./one"), (self.four_val, "./four")]
+            extra_context = [(M.three_val, "./one"), (M.four_val, "./four")]
 
             folder, files = self.setup_directory(
-                {"one": self.one_val, "two": self.two_val}, root=self.folder
+                {"one": M.one_val, "two": M.two_val}, root=M.folder
             )
             find_files_for_tar.return_value = [
                 (files["one"]["/file/"], "./one"),
@@ -118,28 +121,23 @@ describe HarpoonCase, "Context builder":
             ]
 
             with mock.patch.object(ContextBuilder, "find_files_for_tar", find_files_for_tar):
-                with ContextBuilder().make_context(
-                    self.context, extra_context=extra_context
-                ) as tmpfile:
+                with ContextBuilder().make_context(M.ctx, extra_context=extra_context) as tmpfile:
                     tmpfile.close()
                     self.assertTarFileContent(
                         tmpfile.name,
-                        {"./one": self.three_val, "./two": self.two_val, "./four": self.four_val},
+                        {"./one": M.three_val, "./two": M.two_val, "./four": M.four_val},
                     )
 
     describe "find_files":
-        before_each:
-            self.find_notignored_git_files = mock.Mock(name="find_notignored_git_files")
-
-        it "returns all the files if not using git":
+        it "returns all the files if not using git", M:
             _, files = self.setup_directory(
                 {
                     ".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}},
-                    "one": self.one_val,
-                    "two": self.two_val,
-                    "three": {"four": self.four_val},
+                    "one": M.one_val,
+                    "two": M.two_val,
+                    "three": {"four": M.four_val},
                 },
-                root=self.folder,
+                root=M.folder,
             )
 
             expected_files = sorted(
@@ -152,83 +150,83 @@ describe HarpoonCase, "Context builder":
                 ]
             )
 
-            found_files = ContextBuilder().find_files(self.context, False)
+            found_files = ContextBuilder().find_files(M.ctx, False)
             assert found_files == expected_files
 
-        it "ignores .git folder if use_gitignore is true":
+        it "ignores .git folder if use_gitignore is true", M:
             _, files = self.setup_directory(
                 {
                     ".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}},
-                    "one": self.one_val,
-                    "two": self.two_val,
-                    "three": {"four": self.four_val},
+                    "one": M.one_val,
+                    "two": M.two_val,
+                    "three": {"four": M.four_val},
                 },
-                root=self.folder,
+                root=M.folder,
             )
 
-            self.context.use_gitignore = True
+            M.ctx.use_gitignore = True
             expected_files = sorted(
                 [files["one"]["/file/"], files["two"]["/file/"], files["three"]["four"]["/file/"]]
             )
 
-            self.find_notignored_git_files.return_value = set()
+            M.find_notignored_git_files.return_value = set()
             with mock.patch.object(
-                ContextBuilder, "find_notignored_git_files", self.find_notignored_git_files
+                ContextBuilder, "find_notignored_git_files", M.find_notignored_git_files
             ):
-                found_files = ContextBuilder().find_files(self.context, False)
+                found_files = ContextBuilder().find_files(M.ctx, False)
                 assert found_files == expected_files
 
-        it "ignores files not specified as valid":
+        it "ignores files not specified as valid", M:
             _, files = self.setup_directory(
                 {
                     ".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}},
-                    "one": self.one_val,
-                    "two": self.two_val,
-                    "three": {"four": self.four_val},
-                    "five": self.five_val,
+                    "one": M.one_val,
+                    "two": M.two_val,
+                    "three": {"four": M.four_val},
+                    "five": M.five_val,
                 },
-                root=self.folder,
+                root=M.folder,
             )
 
-            self.context.use_gitignore = True
+            M.ctx.use_gitignore = True
             expected_files = sorted(
                 [files["two"]["/file/"], files["three"]["four"]["/file/"], files["five"]["/file/"]]
             )
 
-            self.find_notignored_git_files.return_value = set(["two", "three/four", "five"])
+            M.find_notignored_git_files.return_value = set(["two", "three/four", "five"])
             with mock.patch.object(
-                ContextBuilder, "find_notignored_git_files", self.find_notignored_git_files
+                ContextBuilder, "find_notignored_git_files", M.find_notignored_git_files
             ):
-                found_files = ContextBuilder().find_files(self.context, False)
+                found_files = ContextBuilder().find_files(M.ctx, False)
                 assert found_files == expected_files
 
-        it "excludes files matching the excluders":
+        it "excludes files matching the excluders", M:
             _, files = self.setup_directory(
                 {
                     ".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}},
-                    "one": self.one_val,
-                    "two": self.two_val,
-                    "three": {"four": self.four_val},
+                    "one": M.one_val,
+                    "two": M.two_val,
+                    "three": {"four": M.four_val},
                 },
-                root=self.folder,
+                root=M.folder,
             )
 
             expected_files = sorted([files["one"]["/file/"], files["two"]["/file/"]])
 
-            self.context.exclude = [".git/**", "three/four"]
+            M.ctx.exclude = [".git/**", "three/four"]
 
-            found_files = ContextBuilder().find_files(self.context, False)
+            found_files = ContextBuilder().find_files(M.ctx, False)
             assert found_files == expected_files
 
-        it "includes files after exclude is taken into account":
+        it "includes files after exclude is taken into account", M:
             _, files = self.setup_directory(
                 {
                     ".git": {"info": {"exclude": ""}, "objects": {"ref": {"blah": ""}}},
-                    "one": self.one_val,
-                    "two": self.two_val,
-                    "three": {"four": self.four_val},
+                    "one": M.one_val,
+                    "two": M.two_val,
+                    "three": {"four": M.four_val},
                 },
-                root=self.folder,
+                root=M.folder,
             )
 
             expected_files = sorted(
@@ -240,10 +238,10 @@ describe HarpoonCase, "Context builder":
                 ]
             )
 
-            self.context.exclude = [".git/**", "three/four"]
-            self.context.include = [".git/**"]
+            M.ctx.exclude = [".git/**", "three/four"]
+            M.ctx.include = [".git/**"]
 
-            found_files = ContextBuilder().find_files(self.context, False)
+            found_files = ContextBuilder().find_files(M.ctx, False)
             assert found_files == expected_files
 
     describe "Finding submodule files":

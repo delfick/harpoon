@@ -5,11 +5,13 @@ from harpoon.executor import main
 from tests.helpers import HarpoonCase
 from io import StringIO
 import logging
-import nose
+import pytest
 import uuid
 import json
 import sys
 import os
+
+pytestmark = pytest.mark.integration
 
 describe HarpoonCase, "Executing harpoon":
     it "executes the given task":

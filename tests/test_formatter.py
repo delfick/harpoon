@@ -5,6 +5,7 @@ from harpoon.formatter import MergedOptionStringFormatter
 
 from tests.helpers import HarpoonCase
 
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import sb
 import uuid
@@ -54,16 +55,14 @@ describe HarpoonCase, "MergedOptionStringFormatter":
 
     it "complains if from_env references a variable that doesn't exist":
         assert "WAT_ENV" not in os.environ
-        with self.fuzzyAssertRaisesError(NoSuchEnvironmentVariable, wanted="WAT_ENV"):
+        with assertRaises(NoSuchEnvironmentVariable, wanted="WAT_ENV"):
             self.check_formatting({}, "{WAT_ENV:from_env} stuff")
 
     it "formats formatted values":
         self.check_formatting({"one": "{two}", "two": 2}, "{one}", expected="2")
 
     it "complains about circular references":
-        with self.fuzzyAssertRaisesError(
-            BadOptionFormat, "Recursive option", chain=["two", "one", "two"]
-        ):
+        with assertRaises(BadOptionFormat, "Recursive option", chain=["two", "one", "two"]):
             self.check_formatting(
                 {"one": "{two}", "two": "{one}"}, "{two}", expected="circular reference"
             )

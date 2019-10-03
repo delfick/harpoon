@@ -7,9 +7,9 @@ from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import Meta
-import mock
+from unittest import mock
+import pytest
 import os
 
 describe HarpoonCase, "Context object":
@@ -38,26 +38,30 @@ describe HarpoonCase, "Context object":
             assert co.Command(("FROM", cmd)).as_string == "FROM {0}".format(from_name)
 
 describe HarpoonCase, "Commands":
-    before_each:
-        self.config_root = self.make_temp_dir()
-        self.docker_context = mock.Mock(name="docker_context")
-        self.harpoon = HarpoonSpec().harpoon_spec.normalise(
-            Meta({}, []), {"docker_context": self.docker_context}
+
+    @pytest.fixture()
+    def config_root(self):
+        return self.make_temp_dir()
+
+    @pytest.fixture()
+    def harpoon(self):
+        docker_context = mock.Mock(name="docker_context")
+        return HarpoonSpec().harpoon_spec.normalise(
+            Meta({}, []), {"docker_context": docker_context}
         )
-        self.meta = Meta(
-            {"harpoon": self.harpoon, "mtime": lambda c: 123, "config_root": self.config_root}, []
-        )
 
-    def make_image(self, name, options):
-        if "harpoon" not in options:
-            options["harpoon"] = self.harpoon
-        return HarpoonSpec().image_spec.normalise(self.meta.at("images").at(name), options)
+    @pytest.fixture()
+    def meta(self, harpoon, config_root):
+        return Meta({"harpoon": harpoon, "mtime": lambda c: 123, "config_root": config_root}, [])
 
-    def make_add_command(self, options):
-        return cs.array_command_spec().normalise(self.meta, ["ADD", options])
+    def make_image(self, meta, name, options):
+        return HarpoonSpec().image_spec.normalise(meta.at("images").at(name), options)
 
-    def make_copy_command(self, options):
-        return cs.array_command_spec().normalise(self.meta, ["COPY", options])
+    def make_add_command(self, meta, options):
+        return cs.array_command_spec().normalise(meta, ["ADD", options])
+
+    def make_copy_command(self, meta, options):
+        return cs.array_command_spec().normalise(meta, ["COPY", options])
 
     describe "commands":
         it "goes through all the orig_commands and flattens the commands":
@@ -139,18 +143,21 @@ describe HarpoonCase, "Commands":
             ]
             assert list(co.Commands(orig_commands).dependent_images) == [image, "meh:14", "another"]
 
-        it "yields from ADDs that have images":
-            harpoon = mock.Mock(name="harpoon")
-            image = self.make_image("image1", {"commands": ["FROM elsewhere"]})
-            image2 = self.make_image("image2", {"commands": ["FROM elsewhere"]})
+        it "yields from ADDs that have images", meta, harpoon:
+            image = self.make_image(
+                meta, "image1", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
+            image2 = self.make_image(
+                meta, "image2", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
 
             add1 = self.make_add_command(
-                {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
+                meta, {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
             )
             add2 = self.make_add_command(
-                {"dest": "/", "content": {"image": image2, "path": "/thing"}}
+                meta, {"dest": "/", "content": {"image": image2, "path": "/thing"}}
             )
-            add3 = self.make_add_command({"dest": "/", "content": "blah"})
+            add3 = self.make_add_command(meta, {"dest": "/", "content": "blah"})
 
             orig_commands = [
                 co.Command(("FROM", image)),
@@ -170,13 +177,18 @@ describe HarpoonCase, "Commands":
                 image2,
             ]
 
-        it "yields from COPYs that have images":
-            harpoon = mock.Mock(name="harpoon")
-            image = self.make_image("image1", {"commands": ["FROM elsewhere"]})
-            image2 = self.make_image("image2", {"commands": ["FROM elsewhere"]})
+        it "yields from COPYs that have images", meta, harpoon:
+            image = self.make_image(
+                meta, "image1", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
+            image2 = self.make_image(
+                meta, "image2", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
 
-            copy1 = self.make_copy_command({"from": "thing:latest", "to": "/", "path": "/thing"})
-            copy2 = self.make_copy_command({"from": image2, "to": "/", "path": "/thing"})
+            copy1 = self.make_copy_command(
+                meta, {"from": "thing:latest", "to": "/", "path": "/thing"}
+            )
+            copy2 = self.make_copy_command(meta, {"from": image2, "to": "/", "path": "/thing"})
 
             orig_commands = [
                 co.Command(("FROM", image)),
@@ -196,18 +208,21 @@ describe HarpoonCase, "Commands":
             ]
 
     describe "external_dependencies":
-        it "returns the string deps from dependent_images":
-            harpoon = mock.Mock(name="harpoon")
-            image = self.make_image("image1", {"commands": ["FROM elsewhere"]})
-            image2 = self.make_image("image2", {"commands": ["FROM elsewhere"]})
+        it "returns the string deps from dependent_images", meta, harpoon:
+            image = self.make_image(
+                meta, "image1", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
+            image2 = self.make_image(
+                meta, "image2", {"commands": ["FROM elsewhere"], "harpoon": harpoon}
+            )
 
             add1 = self.make_add_command(
-                {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
+                meta, {"dest": "/", "content": {"image": "thing:latest", "path": "/thing"}}
             )
             add2 = self.make_add_command(
-                {"dest": "/", "content": {"image": image2, "path": "/thing"}}
+                meta, {"dest": "/", "content": {"image": image2, "path": "/thing"}}
             )
-            add3 = self.make_add_command({"dest": "/", "content": "blah"})
+            add3 = self.make_add_command(meta, {"dest": "/", "content": "blah"})
 
             orig_commands = [
                 co.Command(("FROM", image)),

@@ -1,2 +1,2 @@
 #!/bin/bash
-nosetests --with-noy --exclude-path ./tests/docker $@
+exec pytest -q -m "not integration" $@

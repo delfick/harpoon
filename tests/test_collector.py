@@ -7,10 +7,11 @@ from harpoon.collector import Collector
 from tests.helpers import HarpoonCase
 
 from delfick_project.option_merge import MergedOptions
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb, dictobj
 from textwrap import dedent
 from getpass import getpass
-import mock
+from unittest import mock
 import json
 import os
 
@@ -150,7 +151,7 @@ describe HarpoonCase, "Collector":
 
                 with self.a_temp_file(config) as filename:
                     collector = Collector()
-                    with self.fuzzyAssertRaisesError(
+                    with assertRaises(
                         collector.BadFileErrorKls,
                         "Failed to read yaml",
                         location=filename,
@@ -172,7 +173,7 @@ describe HarpoonCase, "Collector":
 
                 with self.a_temp_file(config) as filename:
                     collector = Collector()
-                    with self.fuzzyAssertRaisesError(
+                    with assertRaises(
                         collector.BadFileErrorKls,
                         "Failed to read yaml",
                         location=filename,

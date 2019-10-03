@@ -5,72 +5,74 @@ from harpoon.errors import HarpoonError
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp, noy_sup_tearDown
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
-import mock
+from unittest import mock
+import pytest
 import os
 
 describe HarpoonCase, "Context object":
-    before_each:
-        self.include = [self.unique_val()]
-        self.exclude = [self.unique_val()]
-        self.enabled = mock.Mock(name="enabled")
-        self.parent_dir = self.unique_val()
 
-    it "defaults _use_gitignore and to sb.NotSpecified an include and exclude to None":
-        ctxt = objs.Context(enabled=self.enabled, parent_dir=self.parent_dir)
-        assert ctxt.enabled is self.enabled
-        assert ctxt.parent_dir == os.path.abspath(self.parent_dir)
+    @pytest.fixture()
+    def parent_dir(self):
+        return self.unique_val()
+
+    it "defaults _use_gitignore and to sb.NotSpecified an include and exclude to None", parent_dir:
+        enabled = mock.Mock(name="enabled")
+        ctxt = objs.Context(enabled=enabled, parent_dir=parent_dir)
+        assert ctxt.enabled is enabled
+        assert ctxt.parent_dir == os.path.abspath(parent_dir)
         assert ctxt.include is None
         assert ctxt.exclude is None
         assert ctxt._use_gitignore is sb.NotSpecified
 
     describe "use_gitignore":
-        it "returns False if _use_gitignore is sb.NotSpecified":
-            ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
+        it "returns False if _use_gitignore is sb.NotSpecified", parent_dir:
+            ctxt = objs.Context(enabled=True, parent_dir=parent_dir)
             assert ctxt.use_gitignore is False
 
-        it "returns the value of _use_gitignore otherwise":
-            ctxt = objs.Context(enabled=True, parent_dir=self.parent_dir)
+        it "returns the value of _use_gitignore otherwise", parent_dir:
+            ctxt = objs.Context(enabled=True, parent_dir=parent_dir)
             ugi = mock.Mock(name="use_gitignore")
             ctxt.use_gitignore = ugi
             assert ctxt.use_gitignore is ugi
 
-            ctxt = objs.Context(use_gitignore=ugi, enabled=True, parent_dir=self.parent_dir)
+            ctxt = objs.Context(use_gitignore=ugi, enabled=True, parent_dir=parent_dir)
             assert ctxt.use_gitignore is ugi
 
     describe "parent_dir":
         it "gets set as the abspath of the value":
+            enabled = mock.Mock(name="enabled")
             parent_dir = mock.Mock(name="parent_dir")
             abs_parent_dir = mock.Mock(name="abs_parent_dir")
             with mock.patch("os.path.abspath") as fake_abspath:
                 fake_abspath.return_value = abs_parent_dir
                 assert (
-                    objs.Context(enabled=self.enabled, parent_dir=parent_dir).parent_dir
+                    objs.Context(enabled=enabled, parent_dir=parent_dir).parent_dir
                     is abs_parent_dir
                 )
                 fake_abspath.assert_called_once_with(parent_dir)
 
     describe "git_root":
         it "goes up directories till it finds the .git folder":
+            enabled = mock.Mock(name="enabled")
             with self.a_temp_dir() as directory:
                 parent_dir = os.path.join(directory, "blah", ".git", "meh", "stuff")
                 os.makedirs(parent_dir)
                 assert objs.Context(
-                    enabled=self.enabled, parent_dir=parent_dir
+                    enabled=enabled, parent_dir=parent_dir
                 ).git_root == os.path.abspath(os.path.join(directory, "blah"))
 
         it "complains if it can't find a .git folder":
+            enabled = mock.Mock(name="enabled")
             with self.a_temp_dir() as directory:
                 nxt = directory
                 while nxt != "/" and not os.path.exists(os.path.join(nxt, ".git")):
                     nxt = os.path.dirname(nxt)
                 assert not os.path.exists(os.path.join(nxt, ".git"))
 
-                with self.fuzzyAssertRaisesError(
-                    HarpoonError, "Couldn't find a .git folder", start_at=directory
-                ):
-                    objs.Context(enabled=self.enabled, parent_dir=directory).git_root
+                with assertRaises(HarpoonError, "Couldn't find a .git folder", start_at=directory):
+                    objs.Context(enabled=enabled, parent_dir=directory).git_root
 
 describe HarpoonCase, "Link object":
     it "Has a pair property returning container_name and link_name":
@@ -130,105 +132,136 @@ describe HarpoonCase, "Volume object":
             assert volumes.binds == {key1: val1, key2: val2}
 
 describe HarpoonCase, "Mount object":
-    before_each:
-        self.local_path = self.unique_val()
-        self.container_path = self.unique_val()
+
+    @pytest.fixture()
+    def M(self):
+        class Mocks:
+            local_path = self.unique_val()
+            container_path = self.unique_val()
+
+        return Mocks
 
     describe "pair":
-        it "returns with ro set to False if permissions are rw":
-            mount = objs.Mount(self.local_path, self.container_path, "rw")
-            assert mount.pair == (self.local_path, {"bind": self.container_path, "ro": False})
+        it "returns with ro set to False if permissions are rw", M:
+            mount = objs.Mount(M.local_path, M.container_path, "rw")
+            assert mount.pair == (M.local_path, {"bind": M.container_path, "ro": False})
 
-        it "returns with ro set to True if permissions are not rw":
-            mount = objs.Mount(self.local_path, self.container_path, "ro")
-            assert mount.pair == (self.local_path, {"bind": self.container_path, "ro": True})
+        it "returns with ro set to True if permissions are not rw", M:
+            mount = objs.Mount(M.local_path, M.container_path, "ro")
+            assert mount.pair == (M.local_path, {"bind": M.container_path, "ro": True})
 
 describe HarpoonCase, "Environment":
-    before_each:
-        self.env_name = self.unique_val()
-        self.fallback_val = self.unique_val()
 
-    it "defaults default_val and set_val to None":
-        env = objs.Environment(self.env_name)
+    @pytest.fixture()
+    def env_name(self):
+        return self.unique_val()
+
+    @pytest.fixture()
+    def fallback_val(self):
+        return self.unique_val()
+
+    it "defaults default_val and set_val to None", env_name:
+        env = objs.Environment(env_name)
         assert env.default_val is None
         assert env.set_val is None
 
     describe "pair":
 
         describe "Env name not in environment":
-            before_each:
-                assert self.env_name not in os.environ
 
-            it "returns env_name and default_val if we have a default_val":
-                for val in (self.fallback_val, ""):
-                    env = objs.Environment(self.env_name, val, None)
-                    assert env.pair == (self.env_name, val)
+            @pytest.fixture(autouse=True)
+            def assertEnvNotSet(self, env_name):
+                assert env_name not in os.environ
 
-            it "returns env_name and set_val if we have a set_val":
-                for val in (self.fallback_val, ""):
-                    env = objs.Environment(self.env_name, None, val)
-                    assert env.pair == (self.env_name, val)
+            it "returns env_name and default_val if we have a default_val", env_name, fallback_val:
+                for val in (fallback_val, ""):
+                    env = objs.Environment(env_name, val, None)
+                    assert env.pair == (env_name, val)
 
-            it "complains if we have no default_val":
-                with self.fuzzyAssertRaisesError(KeyError, self.env_name):
-                    env = objs.Environment(self.env_name)
+            it "returns env_name and set_val if we have a set_val", env_name, fallback_val:
+                for val in (fallback_val, ""):
+                    env = objs.Environment(env_name, None, val)
+                    assert env.pair == (env_name, val)
+
+            it "complains if we have no default_val", env_name:
+                with assertRaises(KeyError, env_name):
+                    env = objs.Environment(env_name)
                     env.pair
 
         describe "Env name is in environment":
-            before_each:
-                self.env_val = self.unique_val()
-                os.environ[self.env_name] = self.env_val
 
-            after_each:
-                del os.environ[self.env_name]
+            @pytest.fixture()
+            def env_val(self, env_name):
+                env_val = self.unique_val()
+                original = os.environ.get(env_name, sb.NotSpecified)
+                try:
+                    os.environ[env_name] = env_val
+                    yield env_val
+                finally:
+                    if original is sb.NotSpecified:
+                        if env_name in os.environ:
+                            del os.environ[env_name]
+                    else:
+                        os.environ[env_name] = original
 
-            it "returns the value from the environment if default_val is set":
-                env = objs.Environment(self.env_name, self.fallback_val, None)
-                assert env.pair == (self.env_name, self.env_val)
+            it "returns the value from the environment if default_val is set", env_name, env_val, fallback_val:
+                env = objs.Environment(env_name, fallback_val, None)
+                assert env.pair == (env_name, env_val)
 
-            it "returns the set_val if set_val is set":
-                env = objs.Environment(self.env_name, None, self.fallback_val)
-                assert env.pair == (self.env_name, self.fallback_val)
+            it "returns the set_val if set_val is set", env_name, env_val, fallback_val:
+                env = objs.Environment(env_name, None, fallback_val)
+                assert env.pair == (env_name, fallback_val)
 
-            it "returns the value from the environment if no default or set val":
-                env = objs.Environment(self.env_name)
-                assert env.pair == (self.env_name, self.env_val)
+            it "returns the value from the environment if no default or set val", env_name, env_val:
+                env = objs.Environment(env_name)
+                assert env.pair == (env_name, env_val)
 
 describe HarpoonCase, "Port object":
-    before_each:
-        self.ip = self.unique_val()
-        self.host_port = self.unique_val()
-        self.container_port_str = self.unique_val()
-        self.container_port = mock.Mock(
-            name="container_port", spec=objs.ContainerPort, port_str=self.container_port_str
+
+    @pytest.fixture()
+    def M(self):
+        class Mocks:
+            ip = self.unique_val()
+            host_port = self.unique_val()
+            container_port_str = self.unique_val()
+
+        Mocks.container_port = mock.Mock(
+            name="container_port", spec=objs.ContainerPort, port_str=Mocks.container_port_str
         )
 
-    describe "pair":
-        it "returns just container_port and host_port if no ip":
-            port = objs.Port(sb.NotSpecified, self.host_port, self.container_port)
-            assert port.pair == (self.container_port_str, self.host_port)
+        return Mocks
 
-        it "returns container_port with pair of ip and host_port if ip is specified":
-            port = objs.Port(self.ip, self.host_port, self.container_port)
-            assert port.pair == (self.container_port_str, (self.ip, self.host_port))
+    describe "pair":
+        it "returns just container_port and host_port if no ip", M:
+            port = objs.Port(sb.NotSpecified, M.host_port, M.container_port)
+            assert port.pair == (M.container_port_str, M.host_port)
+
+        it "returns container_port with pair of ip and host_port if ip is specified", M:
+            port = objs.Port(M.ip, M.host_port, M.container_port)
+            assert port.pair == (M.container_port_str, (M.ip, M.host_port))
 
 describe HarpoonCase, "ContainerPort object":
-    before_each:
-        self.port = self.unique_val()
-        self.transport = self.unique_val()
 
-    it "defaults transport to sb.NotSpecified":
-        container_port = objs.ContainerPort(self.port)
+    @pytest.fixture()
+    def M(self):
+        class Mocks:
+            port = self.unique_val()
+            transport = self.unique_val()
+
+        return Mocks
+
+    it "defaults transport to sb.NotSpecified", M:
+        container_port = objs.ContainerPort(M.port)
         assert container_port.transport == sb.NotSpecified
 
     describe "Port pair":
-        it "defaults transport to tcp":
-            container_port = objs.ContainerPort(self.port)
-            assert container_port.port_pair == (self.port, "tcp")
+        it "defaults transport to tcp", M:
+            container_port = objs.ContainerPort(M.port)
+            assert container_port.port_pair == (M.port, "tcp")
 
-        it "returns port and transport as a tuple":
-            container_port = objs.ContainerPort(self.port, self.transport)
-            assert container_port.port_pair == (self.port, self.transport)
+        it "returns port and transport as a tuple", M:
+            container_port = objs.ContainerPort(M.port, M.transport)
+            assert container_port.port_pair == (M.port, M.transport)
 
     describe "Port str":
         it "returns port stringified if no transport":
@@ -236,6 +269,6 @@ describe HarpoonCase, "ContainerPort object":
             container_port = objs.ContainerPort(port)
             assert container_port.port_str == str(port)
 
-        it "returns port and transport as slash joined string":
-            container_port = objs.ContainerPort(self.port, self.transport)
-            assert container_port.port_str == self.port + "/" + self.transport
+        it "returns port and transport as slash joined string", M:
+            container_port = objs.ContainerPort(M.port, M.transport)
+            assert container_port.port_str == M.port + "/" + M.transport

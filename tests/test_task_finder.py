@@ -7,7 +7,8 @@ from harpoon.errors import BadTask
 
 from tests.helpers import HarpoonCase
 
-import mock
+from delfick_project.errors_pytest import assertRaises
+from unittest import mock
 import json
 
 describe HarpoonCase, "TaskFinder":
@@ -47,9 +48,7 @@ describe HarpoonCase, "TaskFinder":
     describe "task_runner":
         it "complains if the task doesn't exist":
             task = mock.Mock(name="task")
-            with self.fuzzyAssertRaisesError(
-                BadTask, "Unknown task", task=task, available=["one", "two"]
-            ):
+            with assertRaises(BadTask, "Unknown task", task=task, available=["one", "two"]):
                 task_finder = TaskFinder(mock.Mock(name="collector"))
                 task_finder.tasks = {"one": mock.Mock(name="one"), "two": mock.Mock(name="two")}
                 task_finder.task_runner(task)

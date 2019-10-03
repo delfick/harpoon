@@ -9,13 +9,15 @@ from tests.helpers import HarpoonCase
 from delfick_project.option_merge import Converter, MergedOptions
 from delfick_project.norms import sb, Meta
 from contextlib import contextmanager
+from unittest import mock
 import logging
 import socket
 import codecs
-import nose
-import mock
+import pytest
 import os
 import re
+
+pytestmark = pytest.mark.integration
 
 log = logging.getLogger("tests.docker.test_docker_run")
 
@@ -74,7 +76,7 @@ describe HarpoonCase, "Building docker images":
 
     it "can complain if ports are already bound to something else":
         if self.docker_api.base_url.startswith("http"):
-            raise nose.SkipTest()
+            pytest.skip("docker api is http based")
 
         commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 1"]
 
@@ -101,7 +103,7 @@ describe HarpoonCase, "Building docker images":
 
     it "does not complain if nothing is using a port":
         if self.docker_api.base_url.startswith("http"):
-            raise nose.SkipTest()
+            pytest.skip("docker api is http based")
 
         commands = ["FROM {0}".format(os.environ["BASE_IMAGE"]), "CMD exit 0"]
 
@@ -213,7 +215,7 @@ describe HarpoonCase, "Building docker images":
                         pass
         except FailedImage as error:
             expected = re.compile(
-                "The command [\[']/bin/sh -c exit 1[\]'] returned a non-zero code: 1"
+                r"The command [\[']/bin/sh -c exit 1[\]'] returned a non-zero code: 1"
             )
             assert expected.match(str(error.kwargs["msg"])), "Expected {0} to match {1}".format(
                 str(error.kwargs["msg"]), expected.pattern

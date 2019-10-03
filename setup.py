@@ -22,11 +22,8 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti>=1.7"
-        , "nose"
-        , "mock==1.0.1"
-        , "nose-pattern-exclude"
-        , "nose-focus==0.1.3"
+        [ "noseOfYeti==1.9.1"
+        , "pytest"
         , "tox"
         ]
       }

@@ -4,9 +4,8 @@ from harpoon.helpers import a_temp_file, until, memoized_property
 
 from tests.helpers import HarpoonCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
-import mock
+from unittest import mock
 import os
 
 describe HarpoonCase, "a_temp_file":

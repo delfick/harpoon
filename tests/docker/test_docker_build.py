@@ -9,9 +9,12 @@ from tests.helpers import HarpoonCase
 
 from delfick_project.norms import Meta
 import codecs
+import pytest
 import uuid
 import os
 import re
+
+pytestmark = pytest.mark.integration
 
 describe HarpoonCase, "Building docker images":
 
