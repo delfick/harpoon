@@ -9,6 +9,6 @@
     docs/code_swimming
     docs/changelog
 
-.. _harpoon
+.. _harpoon:
 
-.. include:: ../../README.rst
+.. include:: ../README.rst

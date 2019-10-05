@@ -1,3 +1,2 @@
-*.pyc
-sphinx/_build
-sphinx/venv
+_build/
+.sphinx-build/

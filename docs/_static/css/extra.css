@@ -1,8 +1,6 @@
-@import "theme.css";
-
 h2 {
   background: rgba(26, 255, 0, 0.12);
-	padding: 3px;
+  padding: 3px;
 }
 
 .option_spec_option {

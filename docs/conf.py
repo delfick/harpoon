@@ -1,8 +1,23 @@
-"""
-    Configuration specific to project
-"""
-copyright = u'2016, Stephen Moore'
-project = u'Harpoon'
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx_rtd_theme",
+    "harpoon.sphinx.show_specs",
+    "harpoon.sphinx.show_tasks",
+]
 
-version = '0.1'
-release = '0.1'
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
+html_css_files = ["css/extra.css"]
+
+exclude_patterns = ["_build/**", ".sphinx-build/**", "README.rst"]
+
+master_doc = "index"
+source_suffix = ".rst"
+
+pygments_style = "pastie"
+
+copyright = "2019, delfick"
+project = "harpoon"
+
+version = "0.1"
+release = "0.1"

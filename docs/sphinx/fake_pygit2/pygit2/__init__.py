@@ -1,2 +1,0 @@
-class Repository(object):
-    pass

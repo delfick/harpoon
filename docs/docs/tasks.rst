@@ -6,21 +6,21 @@ Tasks
 Harpoon's mechanism for doing anything are tasks. By default Harpoon comes with a
 number of tasks as describe below:
 
-.. show_tasks::
+.. show_tasks:
 
 Custom Tasks
 ------------
 
-You can add tasks within your container.
+You can add tasks within your container. For example:
 
-For example::
+.. code-block:: yaml
 
   ---
 
   images:
     app:
       commands:
-        ...
+        - FROM some_image:3
         - CMD startup_app
 
        tasks:
@@ -32,8 +32,8 @@ For example::
           options:
             bash: cd /app && rake tests
 
-Each task has no required options but can be configured with ``action``, ``options``
-, ``overrides``, ``description`` and ``label``.
+Each task has no required options but can be configured with ``action``,
+``options``, ``overrides``, ``description`` and ``label``.
 
 If ``action`` or ``options`` are not specified then the task will just create the
 image it's defined under and run the default command.
@@ -47,7 +47,9 @@ is the default value for ``action``.
 The tasks defined in these definitions will be shown when you do
 "harpoon --task list_tasks".
 
-You may also use extra arbitrary cli options for your tasks with ``{$@}``::
+You may also use extra arbitrary cli options for your tasks with ``{$@}``:
+
+.. code-block:: yaml
 
   ---
 
@@ -70,4 +72,3 @@ Then it will start up the app container and run::
 
 Because everything that comes after a ``--`` in the argv to harpoon will be
 available as "$@".
-
