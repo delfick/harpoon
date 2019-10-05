@@ -4,9 +4,9 @@ export BASE_TAG=buildroot-2014.02
 export BASE_IMAGE=busybox:$BASE_TAG
 export DOCKER_MACHINE_NAME=harpoon-tests
 
-exclusions=""
+marks=""
 if [[ -z $TOX ]]; then
-    exclusions="--only-include-filename test_docker_*.py"
+    marks="-m integration"
 fi
 
 if [[ -z $CI_SERVER ]]; then
@@ -47,4 +47,4 @@ if [[ -z $DONT_PULL_PYTHON ]]; then
 fi
 
 export DESTRUCTIVE_DOCKER_TESTS=true
-exec pytest -q -m "integration" $@
+exec pytest -q $marks $@
