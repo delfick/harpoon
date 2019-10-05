@@ -134,13 +134,13 @@ something else that uses it. For example, you could say something like:
     harpoon container_manager $info
     
     PORT=$(head -n1 $info)
-    export MANAGER_URI="http://localhost:$PORT"
+    export HARPOON_CONTAINER_MANAGER="http://localhost:$PORT"
     
     cleanup() {
         if ! rm $info; then
             echo "Failed to remove temporary file at $info"
         fi
-        curl "$MANAGER_URI/shutdown"
+        curl "$HARPOON_CONTAINER_MANAGER/shutdown"
     }
     trap cleanup EXIT
     
