@@ -1,5 +1,5 @@
-from io import TextIOWrapper, StringIO
 from contextlib import contextmanager
+from io import StringIO
 import tempfile
 import logging
 import time
