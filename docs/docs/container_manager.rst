@@ -131,7 +131,7 @@ something else that uses it. For example, you could say something like:
     # container_manager will exit with an error status if we couldn't start
     # The container manager. But because we gave it just a file, it'll run the
     # web server in the background and the script will continue
-    harpoon container_manager $info
+    harpoon container_manager $info --non-interactive
     
     PORT=$(head -n1 $info)
     export HARPOON_CONTAINER_MANAGER="http://localhost:$PORT"
