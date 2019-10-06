@@ -72,6 +72,6 @@ def write_to(output, txt):
         and hasattr(output, "file")
         and "b" in getattr(output.file, "mode", "w")
     ):
-        output.write(txt.encode("utf-8", "replae"))
+        output.write(txt.encode("utf-8", "replace"))
     else:
         output.write(txt)
