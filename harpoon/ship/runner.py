@@ -15,7 +15,7 @@ from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon import helpers as hp
 from harpoon.helpers import until
 
-from docker.errors import APIError as DockerAPIError
+from docker.errors import APIError as DockerAPIError, NotFound
 from delfick_project.norms import sb, Meta
 from contextlib import contextmanager
 from harpoon import dockerpty
@@ -624,7 +624,7 @@ class Runner(object):
                 try:
                     conf.harpoon.docker_api.remove_container(container_id)
                     break
-                except socket.timeout:
+                except (socket.timeout, NotFound):
                     break
                 except (ValueError, DockerAPIError) as error:
                     log.warning(
