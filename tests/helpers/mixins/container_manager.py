@@ -192,4 +192,4 @@ class Container_managerAssertionsMixin:
                 except Exception as error:
                     errors.append(error)
 
-            assert len(errors) == 0
+            assert len(errors) == 0, errors
