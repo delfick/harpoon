@@ -107,7 +107,13 @@ class Container_managerAssertionsMixin:
         def start_inprocess(self, manager):
             port = self.free_port()
             server = make_server(manager, ("127.0.0.1", port))
-            self.shutdowns.append(server.shutdown)
+            uri = lambda path: "http://127.0.0.1:{0}{1}".format(port, path)
+
+            def shutdown():
+                if manager.shutting_down is not True:
+                    requests.get(uri("/shutdown"))
+
+            self.shutdowns.append(shutdown)
 
             thread = threading.Thread(target=server.serve_forever)
             thread.daemon = True
@@ -115,15 +121,16 @@ class Container_managerAssertionsMixin:
 
             self.wait_for_port(port)
 
-            return lambda path: "http://127.0.0.1:{0}{1}".format(port, path)
+            return uri
 
         def start(self, specifier, filename=None, port=None, log_file=None, config=""):
-            info = {"done": False, "pid": None, "port": port}
+            uri = lambda path: "http://localhost:{0}{1}".format(info["port"], path)
+            info = {"done": False, "pid": None, "port": port, "uri": uri}
 
             def shutdown():
                 if filename or not info["done"]:
                     if info["port"]:
-                        requests.get("http://localhost:{0}/shutdown".format(info["port"]))
+                        requests.get(uri("/shutdown"))
                     if info["pid"]:
                         self.wait_for_pid(info["pid"])
                 if "p" in info:
@@ -168,7 +175,6 @@ class Container_managerAssertionsMixin:
                     info["pid"] = int(lines[1])
                     assert self.pid_running(info["pid"])
 
-            info["uri"] = lambda path: "http://localhost:{0}{1}".format(info["port"], path)
             return info
 
     @pytest.fixture()
