@@ -373,6 +373,5 @@ describe HarpoonCase, "locking containers":
 
         requests.get(uri("/shutdown"))
 
-        print(event2)
         assert event2.wait(timeout=2), called
         assert len(build_and_run.mock_calls) == 2
