@@ -215,11 +215,20 @@ def make_server(manager, address):
         def handle(self):
             try:
                 super().handle()
-            except DelfickError as error:
+            except KeyboardInterrupt:
+                raise
+            except Exception as error:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                e = {"error": error.as_dict(), "error_code": error.__class__.__name__}
+
+                if isinstance(error, DelfickError):
+                    asdct = error.as_dict()
+                else:
+                    log.exception("Unexpected error")
+                    asdct = {"message": str(error)}
+
+                e = {"error": asdct, "error_code": error.__class__.__name__}
                 self.wfile.write(json.dumps(e, default=lambda o: repr(o)).encode())
 
         def do_GET(self):
