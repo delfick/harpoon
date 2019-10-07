@@ -60,7 +60,7 @@ You can then either explicitly stop this container by saying::
 
    $ curl -XPOST http://localhost:4545/stop_container \
       -HContent-Type:application/json \
-      -d '{"image": "server"}' 
+      -d '{"image": "server"}'
 
 Which will return an empty 204 response.
 
@@ -79,6 +79,29 @@ The last endpoint is /version which will return something like::
 
    $ curl http://localhost:4545/version
    harpoon 0.16.0
+
+Locking containers
+------------------
+
+You can also lock access to a running container by specifying as such when you
+start the container, and then unlocking the container when you're finished with
+it.
+
+To do this, add ``"lock": true`` to the ``/start_container`` request::
+
+   $ curl -XPOST http://localhost:4545/start_container \
+      -HContent-Type:application/json \
+      -d '{"image": "server", "ports": [[0, 4545]], "lock": true}'
+
+Then any subsequent ``/start_container`` calls for that image will wait in turn
+until you call ``/unlock_container`` for that image::
+
+   $ curl -XPOST http://localhost:4545/unlock_container \
+      -HContent-Type:application/json \
+      -d '{"image": "server"}'
+
+So if you start three ``/start_container`` calls, then you'll need three
+``/unlock_container`` calls.
 
 .. _container_manager_options:
 
@@ -121,21 +144,21 @@ something else that uses it. For example, you could say something like:
 .. code-block:: bash
 
     #!/bin/bash
-    
+
     set -e
-    
+
     info=$(mktemp)
     cleanup() { rm $info; }
     trap cleanup EXIT
-    
+
     # container_manager will exit with an error status if we couldn't start
     # The container manager. But because we gave it just a file, it'll run the
     # web server in the background and the script will continue
     harpoon container_manager $info --non-interactive
-    
+
     PORT=$(head -n1 $info)
     export HARPOON_CONTAINER_MANAGER="http://localhost:$PORT"
-    
+
     cleanup() {
         if ! rm $info; then
             echo "Failed to remove temporary file at $info"
@@ -143,6 +166,6 @@ something else that uses it. For example, you could say something like:
         curl "$HARPOON_CONTAINER_MANAGER/shutdown"
     }
     trap cleanup EXIT
-    
+
     # Run tests
     bazel test

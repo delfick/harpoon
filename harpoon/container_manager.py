@@ -35,14 +35,23 @@ class ImageAlreadyFailed(HarpoonError):
     desc = "Already attempted to start image and that failed"
 
 
+class ShuttingDown(HarpoonError):
+    desc = "The container manager is shutting down"
+
+
 class StartContainerRequest(dictobj.Spec):
     image = dictobj.Field(sb.string_spec, wrapper=sb.required)
     ports = dictobj.Field(
         sb.listof(image_specs.port_spec(), expect=image_objs.Port), wrapper=sb.required
     )
+    lock = dictobj.Field(sb.boolean, default=False)
 
 
 class StopContainerRequest(dictobj.Spec):
+    image = dictobj.Field(sb.string_spec, wrapper=sb.required)
+
+
+class UnlockContainerRequest(dictobj.Spec):
     image = dictobj.Field(sb.string_spec, wrapper=sb.required)
 
 
@@ -75,11 +84,14 @@ class ContainerInfo:
     Contains a lock that says we're already building
 
     A switch that says if we've already tried to build before and it didn't work
+
+    And events that says this container is in use and waiting for it to be unlocked.
     """
 
     def __init__(self):
         self.lock = Lock()
         self.building = None
+        self.use_events = []
         self.failed_already = False
 
     def force_unlock(self):
@@ -87,6 +99,9 @@ class ContainerInfo:
         with self.lock:
             if self.building:
                 self.building.set()
+
+            for event in self.use_events:
+                event.set()
 
     def wait_for_running(self):
         """Wait for any existing /start_container calls to finish"""
@@ -113,6 +128,29 @@ class ContainerInfo:
         with self.lock:
             self.building.set()
 
+    def wait_for_lock(self):
+        """Wait for any existing holders of the container to be finished"""
+        with self.lock:
+            event = Event()
+            events = list(self.use_events)
+            self.use_events.append(event)
+
+        for e in events:
+            e.wait()
+
+    def unlock(self):
+        """
+        Allow the next user of the container to use the container.
+
+        We do this by removing the first event from our use_events array and
+        setting it. Any existing /start_container calls will then proceed to
+        start waiting on the next event.
+        """
+        with self.lock:
+            if self.use_events:
+                event = self.use_events.pop(0)
+                event.set()
+
 
 class Manager:
     def __init__(self, harpoon, images, image_puller):
@@ -126,6 +164,7 @@ class Manager:
 
         self.stop_container_spec = StopContainerRequest.FieldSpec()
         self.start_container_spec = StartContainerRequest.FieldSpec()
+        self.unlock_container_spec = UnlockContainerRequest.FieldSpec()
 
         self.info_lock = Lock()
         self.info = {}
@@ -176,6 +215,13 @@ class Manager:
         finally:
             info.success_running()
 
+        if options.lock:
+            if self.shutting_down:
+                raise ShuttingDown()
+
+            log.info(lc("Waiting for lock for container", image=options.image))
+            info.wait_for_lock()
+
         self._send_container_info(request, image, just_created)
 
     def _build_and_run(self, options, image):
@@ -216,6 +262,21 @@ class Manager:
                 del self.runners[options.image]
 
             raise BadImage("Failed to start the container", error=error)
+
+    def unlock_container(self, request):
+        options, image = self._make_options(request, self.unlock_container_spec)
+
+        with self.info_lock:
+            if options.image not in self.info:
+                request.send_response(204)
+                request.end_headers()
+                return
+            info = self.info[options.image]
+
+        log.info(lc("Unlocking container", image=options.image))
+        info.unlock()
+        request.send_response(204)
+        request.end_headers()
 
     def stop_container(self, request):
         options, image = self._make_options(request, self.stop_container_spec)
@@ -325,6 +386,8 @@ def make_server(manager, address):
                 manager.stop_container(self)
             elif self.path == "/start_container":
                 manager.start_container(self)
+            elif self.path == "/unlock_container":
+                manager.unlock_container(self)
             else:
                 self.send_response(404)
                 self.end_headers()

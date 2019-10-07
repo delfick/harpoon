@@ -4,6 +4,7 @@ from harpoon.container_manager import Manager
 
 from tests.helpers import HarpoonCase
 
+from delfick_project.norms import sb
 from threading import Event
 from unittest import mock
 import threading
@@ -12,6 +13,7 @@ import tempfile
 import pytest
 import signal
 import time
+import uuid
 import json
 import os
 
@@ -185,26 +187,33 @@ describe HarpoonCase, "locking containers":
 
         yield uri, private_build_and_run
 
-    def ask_for_image(self, name, uri, called, result=None):
-        event = Event()
-        info = {"done": None}
-        called.append(info)
+    def ask_for_images(self, uri, called, optionssets, results=None):
+        events = [Event() for event in optionssets]
 
-        def ask_for_image():
-            j = {"image": name, "ports": [[0, 6379]]}
-            res = requests.post(uri("/start_container"), json=j)
-            if result is not None:
-                content = res.content
-                if isinstance(content, bytes):
-                    content = content.decode()
-                result["res"] = json.loads(content)
-            info["done"] = time.time()
-            event.set()
+        def ask_for_images():
+            for i, options in enumerate(optionssets):
+                if isinstance(options, str):
+                    options = {"image": options, "ports": [[0, 6379]]}
+                elif isinstance(options, tuple):
+                    options = {"image": options[0], "ports": [[0, 6379]], "lock": options[1]}
 
-        thread = threading.Thread(target=ask_for_image)
+                called.append(("start_container", i))
+
+                res = requests.post(uri("/start_container"), json=options)
+
+                if results is not None:
+                    content = res.content
+                    if isinstance(content, bytes):
+                        content = content.decode()
+                    results.append(json.loads(content))
+
+                called.append(("done", i))
+                events[i].set()
+
+        thread = threading.Thread(target=ask_for_images)
         thread.daemon = True
         thread.start()
-        return event
+        return events
 
     it "does not build if an image is already building", cm_fake_run:
         called = []
@@ -223,11 +232,10 @@ describe HarpoonCase, "locking containers":
         build_and_run.side_effect = builder
 
         start = time.time()
-        event1 = self.ask_for_image("redis", uri, called)
-        event2 = self.ask_for_image("redis", uri, called)
+        event1, event2 = self.ask_for_images(uri, called, ["redis", "redis"])
 
         try:
-            started_building.wait(timeout=5)
+            started_building.wait()
 
             assert cc == ["builder"]
 
@@ -236,8 +244,8 @@ describe HarpoonCase, "locking containers":
 
             build_event.set()
 
-            assert event1.wait(timeout=5)
-            assert event2.wait(timeout=5)
+            event1.wait(timeout=2)
+            event2.wait(timeout=2)
 
             assert cc == ["builder", "built", "builder", "built"]
         finally:
@@ -249,25 +257,26 @@ describe HarpoonCase, "locking containers":
 
         build_event = Event()
         started_building = [Event(), Event()]
-        sb = list(started_building)
         cc = []
+
+        info = {"i": 0}
 
         def builder(*args, **kwargs):
             cc.append("builder")
-            if sb:
-                sb.pop(0).set()
+            started_building[info["i"]].set()
+            info["i"] += 1
             build_event.wait()
             cc.append("built")
 
         build_and_run.side_effect = builder
 
         start = time.time()
-        event1 = self.ask_for_image("redis", uri, called)
-        event2 = self.ask_for_image("postgres", uri, called)
+        (event1,) = self.ask_for_images(uri, called, ["redis"])
+        (event2,) = self.ask_for_images(uri, called, ["postgres"])
 
         try:
             for s in started_building:
-                s.wait(timeout=5)
+                s.wait(timeout=1)
 
             assert cc == ["builder", "builder"]
 
@@ -276,8 +285,8 @@ describe HarpoonCase, "locking containers":
 
             build_event.set()
 
-            assert event1.wait(timeout=5)
-            assert event2.wait(timeout=5)
+            event1.wait(timeout=2)
+            event2.wait(timeout=2)
 
             assert cc == ["builder", "builder", "built", "built"]
         finally:
@@ -291,14 +300,79 @@ describe HarpoonCase, "locking containers":
 
         build_and_run.side_effect = builder
 
-        result = {}
-        event1 = self.ask_for_image("redis", uri, [], result=result)
-        assert event1.wait(timeout=5)
-        assert result["res"] == {"error": {"message": "NOPE"}, "error_code": "ValueError"}
+        results = []
 
-        event2 = self.ask_for_image("redis", uri, [], result=result)
-        assert event2.wait(timeout=5)
-        assert result["res"] == {
+        (event1,) = self.ask_for_images(uri, [], ["redis"], results=results)
+        assert event1.wait(timeout=1)
+        assert results[0] == {"error": {"message": "NOPE"}, "error_code": "ValueError"}
+
+        (event2,) = self.ask_for_images(uri, [], ["redis"], results=results)
+        assert event2.wait(timeout=1)
+        assert results[1] == {
             "error": {"message": "Already attempted to start image and that failed"},
             "error_code": "ImageAlreadyFailed",
         }
+
+    it "doesn't lock images by default", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+
+        event1, event2 = self.ask_for_images(uri, called, ["redis", "redis"])
+
+        event1.wait(timeout=2)
+        event2.wait(timeout=2)
+
+    it "locked images don't lock other images", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+
+        event1, event2 = self.ask_for_images(uri, called, [("redis", True), ("postgres", True)])
+
+        event1.wait(timeout=2)
+        event2.wait(timeout=2)
+
+    it "subsequent /start_container for locked images require an unlock", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+        event1, event2, event3 = self.ask_for_images(
+            uri, called, [("redis", True), ("redis", True), ("redis", True)]
+        )
+        assert event1.wait(timeout=2), called
+
+        requests.post(uri("/unlock_container"), json={"image": "redis"})
+        assert event2.wait(timeout=2), called
+
+        requests.post(uri("/unlock_container"), json={"image": "redis"})
+        assert event3.wait(timeout=2), called
+
+        requests.post(uri("/unlock_container"), json={"image": "redis"})
+
+        assert called == [
+            ("start_container", 0),
+            ("done", 0),
+            ("start_container", 1),
+            ("done", 1),
+            ("start_container", 2),
+            ("done", 2),
+        ]
+
+    it "can still shutdown if an image is locked", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+        (event1,) = self.ask_for_images(uri, called, [("redis", True)])
+
+        # Make sure event2 is after event1
+        time.sleep(0.2)
+
+        (event2,) = self.ask_for_images(uri, called, [("redis", True)])
+
+        assert event1.wait(timeout=2), called
+        time.sleep(0.2)
+
+        assert not event2.is_set()
+
+        requests.get(uri("/shutdown"))
+
+        print(event2)
+        assert event2.wait(timeout=2), called
+        assert len(build_and_run.mock_calls) == 2
