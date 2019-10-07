@@ -1,12 +1,18 @@
 # coding: spec
 
+from harpoon.container_manager import Manager
+
 from tests.helpers import HarpoonCase
 
+from threading import Event
 from unittest import mock
+import threading
 import requests
 import tempfile
 import pytest
 import signal
+import time
+import json
 import os
 
 
@@ -144,3 +150,155 @@ describe HarpoonCase, "container_manager":
         res = requests.post(uri("/stop_container"))
         assert res.status_code == 200, res.content
         manager.stop_container.assert_called_once_with(mock.ANY)
+
+
+describe HarpoonCase, "locking containers":
+
+    @pytest.fixture()
+    def cm_fake_run(self, container_manager):
+        harpoon = mock.NonCallableMock(name="harpoon", spec=[])
+        image_puller = mock.NonCallableMock(name="image_puller", spec=[])
+
+        pg_image = mock.NonCallableMock(name="postgres_image", spec=[])
+        redis_image = mock.NonCallableMock(name="redis_image ", spec=[])
+
+        images = {"redis": redis_image, "postgres": pg_image}
+
+        manager = Manager(harpoon, images, image_puller)
+
+        def send_info(request, *args, **kwargs):
+            request.send_response(200)
+            request.send_header("Content-Type", "application/json")
+            request.end_headers()
+
+            p = {"ports": {"6379": 5678}, "just_created": True, "container_id": "__CONTAINER_ID__"}
+            request.wfile.write(json.dumps(p).encode())
+
+        private_send_container_info = mock.Mock(name="_send_container_info", side_effect=send_info)
+
+        private_build_and_run = mock.Mock(name="_build_and_run")
+
+        mock.patch.object(manager, "_send_container_info", private_send_container_info).start()
+        mock.patch.object(manager, "_build_and_run", private_build_and_run).start()
+
+        uri = container_manager.start_inprocess(manager)
+
+        yield uri, private_build_and_run
+
+    def ask_for_image(self, name, uri, called, result=None):
+        event = Event()
+        info = {"done": None}
+        called.append(info)
+
+        def ask_for_image():
+            j = {"image": name, "ports": [[0, 6379]]}
+            res = requests.post(uri("/start_container"), json=j)
+            if result is not None:
+                content = res.content
+                if isinstance(content, bytes):
+                    content = content.decode()
+                result["res"] = json.loads(content)
+            info["done"] = time.time()
+            event.set()
+
+        thread = threading.Thread(target=ask_for_image)
+        thread.daemon = True
+        thread.start()
+        return event
+
+    it "does not build if an image is already building", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+
+        build_event = Event()
+        started_building = Event()
+        cc = []
+
+        def builder(*args, **kwargs):
+            cc.append("builder")
+            started_building.set()
+            build_event.wait()
+            cc.append("built")
+
+        build_and_run.side_effect = builder
+
+        start = time.time()
+        event1 = self.ask_for_image("redis", uri, called)
+        event2 = self.ask_for_image("redis", uri, called)
+
+        try:
+            started_building.wait(timeout=5)
+
+            assert cc == ["builder"]
+
+            assert not event1.is_set()
+            assert not event2.is_set()
+
+            build_event.set()
+
+            assert event1.wait(timeout=5)
+            assert event2.wait(timeout=5)
+
+            assert cc == ["builder", "built", "builder", "built"]
+        finally:
+            build_event.set()
+
+    it "can build two types of images at the same time", cm_fake_run:
+        called = []
+        uri, build_and_run = cm_fake_run
+
+        build_event = Event()
+        started_building = [Event(), Event()]
+        sb = list(started_building)
+        cc = []
+
+        def builder(*args, **kwargs):
+            cc.append("builder")
+            if sb:
+                sb.pop(0).set()
+            build_event.wait()
+            cc.append("built")
+
+        build_and_run.side_effect = builder
+
+        start = time.time()
+        event1 = self.ask_for_image("redis", uri, called)
+        event2 = self.ask_for_image("postgres", uri, called)
+
+        try:
+            for s in started_building:
+                s.wait(timeout=5)
+
+            assert cc == ["builder", "builder"]
+
+            assert not event1.is_set()
+            assert not event2.is_set()
+
+            build_event.set()
+
+            assert event1.wait(timeout=5)
+            assert event2.wait(timeout=5)
+
+            assert cc == ["builder", "builder", "built", "built"]
+        finally:
+            build_event.set()
+
+    it "says no if a previous build failed", cm_fake_run:
+        uri, build_and_run = cm_fake_run
+
+        def builder(*args, **kwargs):
+            raise ValueError("NOPE")
+
+        build_and_run.side_effect = builder
+
+        result = {}
+        event1 = self.ask_for_image("redis", uri, [], result=result)
+        assert event1.wait(timeout=5)
+        assert result["res"] == {"error": {"message": "NOPE"}, "error_code": "ValueError"}
+
+        event2 = self.ask_for_image("redis", uri, [], result=result)
+        assert event2.wait(timeout=5)
+        assert result["res"] == {
+            "error": {"message": "Already attempted to start image and that failed"},
+            "error_code": "ImageAlreadyFailed",
+        }

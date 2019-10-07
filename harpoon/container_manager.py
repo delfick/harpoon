@@ -9,6 +9,7 @@ from docker.errors import APIError as DockerAPIError
 from delfick_project.norms import dictobj, sb, Meta
 from delfick_project.errors import DelfickError
 from delfick_project.logging import lc
+from threading import Event, Lock
 import socketserver
 import logging
 import socket
@@ -28,6 +29,10 @@ class BadRequest(HarpoonError):
 
 class FailedToWaitForServer(HarpoonError):
     desc = "Timed out waiting for the container manager to start"
+
+
+class ImageAlreadyFailed(HarpoonError):
+    desc = "Already attempted to start image and that failed"
 
 
 class StartContainerRequest(dictobj.Spec):
@@ -63,6 +68,52 @@ def wait_for_server(port):
         raise FailedToWaitForServer(port=port)
 
 
+class ContainerInfo:
+    """
+    Information about a running container
+
+    Contains a lock that says we're already building
+
+    A switch that says if we've already tried to build before and it didn't work
+    """
+
+    def __init__(self):
+        self.lock = Lock()
+        self.building = None
+        self.failed_already = False
+
+    def force_unlock(self):
+        """Used by shutdown to making all the events set"""
+        with self.lock:
+            if self.building:
+                self.building.set()
+
+    def wait_for_running(self):
+        """Wait for any existing /start_container calls to finish"""
+        with self.lock:
+            if self.failed_already:
+                raise ImageAlreadyFailed()
+
+            if self.building is None:
+                self.building = Event()
+                return
+
+            building = self.building
+
+        building.wait()
+
+    def failed_running(self):
+        """Mark this container as failed to have been built and started"""
+        with self.lock:
+            self.failed_already = True
+            self.building.set()
+
+    def success_running(self):
+        """Mark this container as having succeeded to have been build and started"""
+        with self.lock:
+            self.building.set()
+
+
 class Manager:
     def __init__(self, harpoon, images, image_puller):
         self.images = images
@@ -76,6 +127,9 @@ class Manager:
         self.stop_container_spec = StopContainerRequest.FieldSpec()
         self.start_container_spec = StartContainerRequest.FieldSpec()
 
+        self.info_lock = Lock()
+        self.info = {}
+
     def version(self, request):
         from harpoon import VERSION
 
@@ -86,6 +140,11 @@ class Manager:
     def shutdown(self, request):
         self.shutting_down = True
         log.info("Stopping the manager")
+
+        with self.info_lock:
+            for info in self.info.values():
+                info.force_unlock()
+
         for image, runner in self.runners.items():
             try:
                 log.info("Stopping container for {0}".format(image))
@@ -99,48 +158,64 @@ class Manager:
     def start_container(self, request):
         options, image = self._make_options(request, self.start_container_spec)
 
+        with self.info_lock:
+            if options.image not in self.info:
+                self.info[options.image] = ContainerInfo()
+            info = self.info[options.image]
+
+        info.wait_for_running()
+
         just_created = False
-        if options.image not in self.runners:
-            just_created = True
-
-            image.ports = options.ports
-            self._pull_external(image)
-            Builder().make_image(image, self.images)
-
-            runner = ContainerRunner(Runner(), self.images[options.image], self.images, detach=True)
-            self.runners[options.image] = runner
-
-            container_id = None
-
-            try:
-                runner.start()
-
-                class FakeConf:
-                    harpoon = image.harpoon
-                    dependency_options = sb.NotSpecified
-
-                    def dependency_images(self):
-                        yield options.image, None
-
-                container_id = runner.conf.container_id
-                Runner().wait_for_deps(FakeConf(), self.images)
-            except Exception as error:
-                if not isinstance(error, DockerAPIError):
-                    log.exception("Unexpected error starting container\terror=%s", error)
-
-                try:
-                    if container_id:
-                        runner.conf.container_id = container_id
-
-                    runner.finish(force=True)
-                except Exception as e:
-                    log.error("Failed to make sure image was cleaned up\terror=%s", e)
-                finally:
-                    del self.runners[options.image]
-
-                raise BadImage("Failed to start the container", error=error)
+        try:
+            if options.image not in self.runners:
+                just_created = True
+                self._build_and_run(options, image)
+        except:
+            info.failed_running()
+            raise
+        finally:
+            info.success_running()
 
         self._send_container_info(request, image, just_created)
+
+    def _build_and_run(self, options, image):
+        image.ports = options.ports
+        self._pull_external(image)
+
+        Builder().make_image(image, self.images)
+
+        runner = ContainerRunner(Runner(), self.images[options.image], self.images, detach=True)
+        self.runners[options.image] = runner
+
+        container_id = None
+
+        try:
+            runner.start()
+
+            class FakeConf:
+                harpoon = image.harpoon
+                dependency_options = sb.NotSpecified
+
+                def dependency_images(self):
+                    yield options.image, None
+
+            container_id = runner.conf.container_id
+            Runner().wait_for_deps(FakeConf(), self.images)
+        except Exception as error:
+            if not isinstance(error, DockerAPIError):
+                log.exception("Unexpected error starting container\terror=%s", error)
+
+            try:
+                if container_id:
+                    runner.conf.container_id = container_id
+
+                runner.finish(force=True)
+            except Exception as e:
+                log.error("Failed to make sure image was cleaned up\terror=%s", e)
+            finally:
+                del self.runners[options.image]
+
+            raise BadImage("Failed to start the container", error=error)
 
     def stop_container(self, request):
         options, image = self._make_options(request, self.stop_container_spec)
