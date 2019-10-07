@@ -10,8 +10,10 @@ from harpoon import VERSION
 from delfick_project.app import App, OptionalFileType
 from docker.errors import APIError, DockerException
 from delfick_project.norms import sb
+import argparse
 import logging
 import docker
+import sys
 import os
 
 log = logging.getLogger("harpoon.executor")
@@ -188,6 +190,14 @@ class App(App):
             help="Used by the pull commands to ignore if an image doesn't exist",
             dest="harpoon_ignore_missing",
             action="store_true",
+        )
+
+        parser.add_argument(
+            "--docker-output",
+            help="The file we print docker output to",
+            dest="harpoon_stdout",
+            type=argparse.FileType("w"),
+            default=sys.stdout,
         )
 
         return parser

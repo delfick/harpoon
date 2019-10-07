@@ -6,6 +6,8 @@ Changelog
    * Implemented a container_manager web server functionality, see
      :ref:`container_manager`.
    * Made harpoon.yml optional
+   * Added --docker-output argument for specifying a file to print docker output
+     to
 
 0.15.1 - 2 October 2019
    * No-op update of delfick_project
