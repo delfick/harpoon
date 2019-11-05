@@ -9,8 +9,10 @@ setup(
     , packages = find_packages(include="harpoon.*", exclude=["tests*"])
     , include_package_data = True
 
+    , python_requires = ">= 3.6"
+
     , install_requires =
-      [ "delfick_project==0.5.2"
+      [ "delfick_project==0.7.0"
 
       , "docker==3.5.0"
 

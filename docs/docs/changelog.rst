@@ -8,6 +8,8 @@ Changelog
    * Made harpoon.yml optional
    * Added --docker-output argument for specifying a file to print docker output
      to
+   * Upgraded delfick_project, which also means harpoon is no longer supported
+     on python3.4 or python3.5.
 
 0.15.1 - 2 October 2019
    * No-op update of delfick_project

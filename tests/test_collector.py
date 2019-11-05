@@ -156,9 +156,6 @@ describe HarpoonCase, "Collector":
                         "Failed to read yaml",
                         location=filename,
                         error_type="ScannerError",
-                        error='did not find expected comment or line break  in "{0}", line 3, column 8'.format(
-                            filename
-                        ),
                     ):
                         readed = collector.read_file(filename)
 
@@ -178,9 +175,6 @@ describe HarpoonCase, "Collector":
                         "Failed to read yaml",
                         location=filename,
                         error_type="ParserError",
-                        error="did not find expected ',' or '}}'  in \"{0}\", line 4, column 1".format(
-                            filename
-                        ),
                     ):
                         readed = collector.read_file(filename)
 
