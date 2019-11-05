@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.16.0 - TBD
+0.16.0 - 5 November 2019
    * Converted tests to pytest
    * Implemented a container_manager web server functionality, see
      :ref:`container_manager`.
