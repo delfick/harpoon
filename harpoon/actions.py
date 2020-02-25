@@ -302,6 +302,14 @@ def print_dockerfile(collector, image, **kwargs):
     print("\n".join(image.docker_file.docker_lines))
 
 
+@an_action(needs_image=True)
+def get_docker_context(collector, image, **kwargs):
+    """Output the context that would be sent to docker if we made this image"""
+    with image.make_context() as context:
+        context.close()
+        shutil.copyfile(context.name, os.environ.get("FILENAME", f"./context_{image.name}.tar"))
+
+
 @an_action()
 def print_all_dockerfiles(collector, **kwargs):
     """Print all the dockerfiles"""

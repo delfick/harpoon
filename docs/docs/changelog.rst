@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.16.1 - TBD
+   * Added a ``get_docker_context`` CLI action for getting the tar file that
+     would be sent to the Docker daemon if we made that image.
+
 0.16.0 - 5 November 2019
    * Converted tests to pytest
    * Implemented a container_manager web server functionality, see
