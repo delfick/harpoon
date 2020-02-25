@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.16.1 - TBD
+0.16.1 - 25 February 2020
    * Added a ``get_docker_context`` CLI action for getting the tar file that
      would be sent to the Docker daemon if we made that image.
 
