@@ -12,9 +12,9 @@ setup(
     , python_requires = ">= 3.6"
 
     , install_requires =
-      [ "delfick_project==0.7.0"
+      [ "delfick_project==0.7.9"
 
-      , "docker==3.5.0"
+      , "docker==6.1.3"
 
       , "humanize"
 
@@ -24,7 +24,7 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti==1.9.1"
+        [ "noseOfYeti==2.4.2"
         , "psutil==5.6.3"
         , "pytest"
         , "tox"
