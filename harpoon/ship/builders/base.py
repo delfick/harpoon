@@ -27,8 +27,10 @@ class BuilderBase(object):
         if not conf.harpoon.keep_replaced:
             try:
                 current_id = conf.harpoon.docker_api.inspect_image(image_name)["Id"]
+            except docker.errors.ImageNotFound:
+                current_id = None
             except docker.errors.APIError as error:
-                if str(error).startswith("404 Client Error: Not Found"):
+                if str(error).startswith("404 Client Error") and "Not Found" in str(error):
                     current_id = None
                 else:
                     raise

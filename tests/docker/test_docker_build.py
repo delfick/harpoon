@@ -47,8 +47,9 @@ describe HarpoonCase, "Building docker images":
         images = self.docker_api.images()
         repo_tags = [image["RepoTags"] for image in images if image["RepoTags"] is not None]
         assert any(
-            ident_tag in repo_tag_list for repo_tag_list in repo_tags
-        ), "Couldn't find {0} in {1}".format(ident_tag, images)
+            ident_tag in repo_tag_list or "docker.io/library/{0}".format(ident_tag) in repo_tag_list
+            for repo_tag_list in repo_tags
+        ), "Couldn't find {0} in {1}".format(ident_tag, repo_tags)
 
         self.docker_api.remove_image(ident_tag)
 

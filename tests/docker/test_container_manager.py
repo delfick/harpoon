@@ -2,6 +2,7 @@
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import time
 from contextlib import contextmanager
@@ -42,9 +43,17 @@ class Case(HarpoonCase):
             return
 
         machine_name = os.environ["DOCKER_MACHINE_NAME"]
+
+        if shutil.which("docker-machine"):
+            cmd = "docker-machine"
+        elif shutil.which("podman"):
+            cmd = "podman machine"
+        else:
+            raise AssertionError("no docker-machine or podman machine")
+
         p = subprocess.Popen(
             shlex.split(
-                "docker-machine ssh {0} -N -L 0.0.0.0:{1}:127.0.0.1:{1}".format(machine_name, port)
+                "{0} ssh {1} -N -L 0.0.0.0:{2}:127.0.0.1:{2}".format(cmd, machine_name, port)
             )
         )
 
@@ -62,10 +71,11 @@ describe Case, "Container manager pulling":
     it "can pull in images", container_manager:
         try:
             self.docker_api.remove_image("python:2")
-        except ImageNotFound:
+        except (NotFound, ImageNotFound):
             pass
 
         port = container_manager.free_port()
+        host_port = container_manager.free_port()
 
         config = dedent(
             """
@@ -93,7 +103,7 @@ describe Case, "Container manager pulling":
 
         info = container_manager.start(":{0}".format(port), port=port, config=config)
         res = requests.post(
-            info["uri"]("/start_container"), json={"image": "py", "ports": [[0, port]]}
+            info["uri"]("/start_container"), json={"image": "py", "ports": [[host_port, port]]}
         )
 
         assert res.status_code == 200, res.content
@@ -111,7 +121,7 @@ describe Case, "Container manager pulling":
             assert requests.get("http://127.0.0.1:{0}/a".format(host_port)).content == b"hello"
 
         info["shutdown"]()
-        with assertRaises(NotFound, r'404 Client Error: Not Found \("No such container:.+'):
+        with assertRaises(NotFound, r"404 Client Error .+ Not Found .+ [Nn]o such container"):
             self.docker_api.inspect_container(container_id)
 
 describe Case, "container_manager":
@@ -167,7 +177,7 @@ describe Case, "container_manager":
             res = requests.post(info["uri"]("/stop_container"), json={"image": "py"})
             assert res.status_code == 204, res.content
 
-            with assertRaises(NotFound, r'404 Client Error: Not Found \("No such container:.+'):
+            with assertRaises(NotFound, r"404 Client Error .+ Not Found .+ [Nn]o such container"):
                 self.docker_api.inspect_container(container_id)
 
     it "returns the same container on subsequent starts", container_manager:

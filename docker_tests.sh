@@ -10,23 +10,14 @@ if [[ -z $TOX ]]; then
 fi
 
 if [[ -z $CI_SERVER ]]; then
-    if docker-machine ls | grep $DOCKER_MACHINE_NAME; then
-        if [[ $(docker-machine status $DOCKER_MACHINE_NAME) != "Running" ]]; then
-            if ! docker-machine start $DOCKER_MACHINE_NAME; then
-                echo "Couldn't start $DOCKER_MACHINE_NAME"
-                exit 1
-            fi
-        fi
-        captured=$(docker-machine env $DOCKER_MACHINE_NAME --shell sh)
-        if [[ $? != 0 ]]; then
-            echo -e $captured
-            echo "Failed to do $DOCKER_MACHINE_NAME environment"
-            exit 1
-        else
-            eval $captured
+    if podman machine ls | grep $DOCKER_MACHINE_NAME; then
+        if ! podman machine ls | grep $DOCKER_MACHINE_NAME | grep "Currently running"; then
+            podman machine stop
+            podman machine start $DOCKER_MACHINE_NAME
+            podman system connect default $DOCKER_MACHINE_NAME
         fi
     else
-        echo "Use docker-machine to create an environment called '$DOCKER_MACHINE_NAME'"
+        echo "Use podman machine to create an environment called '$DOCKER_MACHINE_NAME'"
         exit 1
     fi
 fi
@@ -47,4 +38,4 @@ if [[ -z $DONT_PULL_PYTHON ]]; then
 fi
 
 export DESTRUCTIVE_DOCKER_TESTS=true
-exec pytest -q $marks $@
+exec ./test.sh $marks $@

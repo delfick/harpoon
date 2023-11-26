@@ -310,8 +310,9 @@ class Runner(object):
     def exposed(self, ports):
         result = {}
         for p in ports:
-            key = "/".join(str(s) for s in p.container_port.port_pair)
-            result[key] = {"HostIP": "0.0.0.0", "HostPort": "{0}/tcp".format(p.host_port)}
+            if p.host_port is not sb.NotSpecified:
+                key = "/".join(str(s) for s in p.container_port.port_pair)
+                result[key] = {"HostIP": "0.0.0.0", "HostPort": str(p.host_port)}
         return result
 
     def create_container(self, conf, detach, tty):
@@ -442,8 +443,10 @@ class Runner(object):
                 self.start_tty(conf, interactive=tty, **conf.other_options.start)
             else:
                 conf.harpoon.docker_api.start(container_id, **conf.other_options.start)
+        except docker.errors.ImageNotFound:
+            log.error("Container died before we could even get to it...")
         except docker.errors.APIError as error:
-            if str(error).startswith("404 Client Error: Not Found"):
+            if str(error).startswith("404 Client Error") and "Not Found" in str(error):
                 log.error("Container died before we could even get to it...")
 
         inspection = None
