@@ -16,7 +16,7 @@ keywords = [
     "docker",
 ]
 dependencies = [
-    "delfick_project==0.7.9",
+    "delfick_project==0.8.0",
     "docker==6.1.3",
     "humanize",
     "rainbow_logging_handler==2.2.2",
