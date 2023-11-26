@@ -1,20 +1,20 @@
 # coding: spec
 
-from tests.helpers import HarpoonCase
-
-from harpoon.executor import docker_context as docker_context_maker
-
-from delfick_project.errors_pytest import assertRaises
-from docker.errors import ImageNotFound, NotFound
-from contextlib import contextmanager
-from textwrap import dedent
-import subprocess
-import requests
-import pytest
-import shlex
-import time
 import json
 import os
+import shlex
+import subprocess
+import time
+from contextlib import contextmanager
+from textwrap import dedent
+
+import pytest
+import requests
+from delfick_project.errors_pytest import assertRaises
+from docker.errors import ImageNotFound, NotFound
+
+from harpoon.executor import docker_context as docker_context_maker
+from tests.helpers import HarpoonCase
 
 pytestmark = pytest.mark.integration
 

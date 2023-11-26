@@ -1,16 +1,16 @@
 # coding: spec
 
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.errors import BadSpec, BadSpecValue
-from harpoon.option_spec.task_objs import Task
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import Meta
 from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta
+from delfick_project.option_merge import MergedOptions
+
+from harpoon.errors import BadSpec, BadSpecValue
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.option_spec.task_objs import Task
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "HarpoonSpec":
 

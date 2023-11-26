@@ -1,4 +1,4 @@
-from delfick_project.norms import sb, dictobj
+from delfick_project.norms import dictobj, sb
 
 
 class Command(dictobj):

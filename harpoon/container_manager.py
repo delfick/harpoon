@@ -1,20 +1,20 @@
-from harpoon.errors import NoSuchImage, BadImage, HarpoonError
-from harpoon.ship.runner import ContainerRunner, Runner
-from harpoon.option_spec import image_specs
-from harpoon.option_spec import image_objs
-from harpoon.ship.builder import Builder
-
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from docker.errors import APIError as DockerAPIError
-from delfick_project.norms import dictobj, sb, Meta
-from delfick_project.errors import DelfickError
-from delfick_project.logging import lc
-from threading import Event, Lock
-import socketserver
+import json
 import logging
 import socket
+import socketserver
 import time
-import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Event, Lock
+
+from delfick_project.errors import DelfickError
+from delfick_project.logging import lc
+from delfick_project.norms import Meta, dictobj, sb
+from docker.errors import APIError as DockerAPIError
+
+from harpoon.errors import BadImage, HarpoonError, NoSuchImage
+from harpoon.option_spec import image_objs, image_specs
+from harpoon.ship.builder import Builder
+from harpoon.ship.runner import ContainerRunner, Runner
 
 log = logging.getLogger("harpoon.container_manager")
 

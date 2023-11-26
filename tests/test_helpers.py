@@ -1,12 +1,11 @@
 # coding: spec
 
-from harpoon.helpers import a_temp_file, until, memoized_property
-
-from tests.helpers import HarpoonCase
-
+import os
 from contextlib import contextmanager
 from unittest import mock
-import os
+
+from harpoon.helpers import a_temp_file, memoized_property, until
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "a_temp_file":
     it "yields the file object of a file that disappears after the context":

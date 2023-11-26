@@ -1,18 +1,18 @@
 # coding: spec
 
-from tests.helpers import CommandCase
-
-from harpoon.option_spec.image_objs import Image, Context
-from harpoon.errors import BadSpecValue, ProgrammerError
-from harpoon.option_spec import command_specs as cs
-from harpoon.option_spec import command_objs as co
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from unittest import mock
 import hashlib
-import pytest
 import json
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+
+from harpoon.errors import BadSpecValue, ProgrammerError
+from harpoon.option_spec import command_objs as co
+from harpoon.option_spec import command_specs as cs
+from harpoon.option_spec.image_objs import Context, Image
+from tests.helpers import CommandCase
 
 
 @pytest.fixture()

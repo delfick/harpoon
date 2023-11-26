@@ -1,15 +1,15 @@
 # coding: spec
 
-from harpoon.errors import BadOptionFormat, NoSuchEnvironmentVariable
-from harpoon.formatter import MergedOptionStringFormatter
-
-from tests.helpers import HarpoonCase
+import os
+import uuid
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import sb
-import uuid
-import os
+from delfick_project.option_merge import MergedOptions
+
+from harpoon.errors import BadOptionFormat, NoSuchEnvironmentVariable
+from harpoon.formatter import MergedOptionStringFormatter
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "MergedOptionStringFormatter":
 

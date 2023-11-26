@@ -3,8 +3,8 @@ Responsible for finding tasks in the configuration and executing them
 """
 
 from harpoon.actions import available_actions, default_actions
-from harpoon.option_spec.task_objs import Task
 from harpoon.errors import BadTask
+from harpoon.option_spec.task_objs import Task
 
 
 class TaskFinder(object):

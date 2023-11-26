@@ -1,7 +1,7 @@
-from contextlib import contextmanager
-import subprocess
-import shutil
 import os
+import shutil
+import subprocess
+from contextlib import contextmanager
 
 this_dir = os.path.dirname(__file__)
 

@@ -1,7 +1,8 @@
-import tempfile
-import pytest
-import sys
 import os
+import sys
+import tempfile
+
+import pytest
 
 
 @pytest.hookimpl(tryfirst=True)

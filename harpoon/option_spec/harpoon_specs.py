@@ -5,17 +5,17 @@ options.
 The specifications are responsible for sanitation, validation and normalisation.
 """
 
-from harpoon.option_spec.command_specs import command_spec
-from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.option_spec.command_objs import Commands
-from harpoon.option_spec import authentication_objs
-from harpoon.ship.network import NetworkManager
-from harpoon.helpers import memoized_property
-from harpoon.option_spec import task_objs
-from harpoon import helpers as hp
-
-from delfick_project.norms import sb, dictobj, va
 import sys
+
+from delfick_project.norms import dictobj, sb, va
+
+from harpoon import helpers as hp
+from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.helpers import memoized_property
+from harpoon.option_spec import authentication_objs, task_objs
+from harpoon.option_spec.command_objs import Commands
+from harpoon.option_spec.command_specs import command_spec
+from harpoon.ship.network import NetworkManager
 
 
 class Harpoon(dictobj):
@@ -181,8 +181,8 @@ class HarpoonSpec(object):
     @memoized_property
     def image_spec(self):
         """Spec for each image"""
-        from harpoon.option_spec import image_specs as specs
         from harpoon.option_spec import image_objs
+        from harpoon.option_spec import image_specs as specs
 
         class persistence_shell_spec(sb.Spec):
             """Make the persistence shell default to the shell on the image"""

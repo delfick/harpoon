@@ -1,6 +1,7 @@
-from docker.errors import APIError as DockerAPIError
 import logging
 import uuid
+
+from docker.errors import APIError as DockerAPIError
 
 log = logging.getLogger("harpoon.ship.network")
 

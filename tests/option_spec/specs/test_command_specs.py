@@ -1,19 +1,18 @@
 # coding: spec
 
-from harpoon.option_spec.command_objs import Command, Commands
-from harpoon.option_spec import command_specs as cs
-from harpoon.errors import BadSpecValue, BadOption
-
-from tests.helpers import CommandCase
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from unittest import mock
 import hashlib
-import pytest
 import json
+from unittest import mock
 
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+from delfick_project.option_merge import MergedOptions
+
+from harpoon.errors import BadOption, BadSpecValue
+from harpoon.option_spec import command_specs as cs
+from harpoon.option_spec.command_objs import Command, Commands
+from tests.helpers import CommandCase
 
 describe CommandCase, "array_command_spec":
 

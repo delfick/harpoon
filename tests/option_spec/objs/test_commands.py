@@ -1,16 +1,16 @@
 # coding: spec
 
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.option_spec import command_specs as cs
-from harpoon.option_spec import command_objs as co
-from harpoon.errors import HarpoonError
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.norms import Meta
-from unittest import mock
-import pytest
 import os
+from unittest import mock
+
+import pytest
+from delfick_project.norms import Meta
+
+from harpoon.errors import HarpoonError
+from harpoon.option_spec import command_objs as co
+from harpoon.option_spec import command_specs as cs
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "Context object":
     it "sets action and command from a space separated string":

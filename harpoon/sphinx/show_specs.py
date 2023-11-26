@@ -1,11 +1,12 @@
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-
-from docutils.statemachine import ViewList
-from docutils.parsers.rst import Directive
-from delfick_project.norms import sb
 from textwrap import dedent
-from docutils import nodes
+
 import six
+from delfick_project.norms import sb
+from docutils import nodes
+from docutils.parsers.rst import Directive
+from docutils.statemachine import ViewList
+
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 
 
 class ShowSpecsDirective(Directive):
@@ -100,8 +101,8 @@ class ShowSpecsDirective(Directive):
 
     def nodes_for_spec(self, spec):
         """
-            Determine nodes for an input_algorithms spec
-            Taking into account nested specs
+        Determine nodes for an input_algorithms spec
+        Taking into account nested specs
         """
         tokens = []
         if isinstance(spec, sb.create_spec):

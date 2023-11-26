@@ -3,18 +3,19 @@ This is where the mainline sits and is responsible for setting up the logging,
 the argument parsing and for starting up Harpoon.
 """
 
-from harpoon.errors import BadDockerConnection
-from harpoon.collector import Collector
-from harpoon.version import VERSION
-
-from delfick_project.app import App, OptionalFileType
-from docker.errors import APIError, DockerException
-from delfick_project.norms import sb
 import argparse
 import logging
-import docker
-import sys
 import os
+import sys
+
+import docker
+from delfick_project.app import App, OptionalFileType
+from delfick_project.norms import sb
+from docker.errors import APIError, DockerException
+
+from harpoon.collector import Collector
+from harpoon.errors import BadDockerConnection
+from harpoon.version import VERSION
 
 log = logging.getLogger("harpoon.executor")
 

@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import fcntl
 import errno
-import struct
+import fcntl
+import os
 import select as builtin_select
+import struct
 
 
 def set_blocking(fd, blocking=True):

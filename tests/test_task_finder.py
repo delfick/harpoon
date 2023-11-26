@@ -1,15 +1,15 @@
 # coding: spec
 
-from harpoon.option_spec.task_objs import Task
-from harpoon.task_finder import TaskFinder
-from harpoon.collector import Collector
-from harpoon.errors import BadTask
-
-from tests.helpers import HarpoonCase
+import json
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import json
+
+from harpoon.collector import Collector
+from harpoon.errors import BadTask
+from harpoon.option_spec.task_objs import Task
+from harpoon.task_finder import TaskFinder
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "TaskFinder":
     it "takes in a collector":

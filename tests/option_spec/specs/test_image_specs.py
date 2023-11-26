@@ -1,13 +1,14 @@
 # coding: spec
 
-from harpoon.option_spec import image_specs as specs, image_objs as objs
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import sb, dictobj, Meta
 from unittest import mock
+
 import pytest
+from delfick_project.norms import Meta, dictobj, sb
+from delfick_project.option_merge import MergedOptions
+
+from harpoon.option_spec import image_objs as objs
+from harpoon.option_spec import image_specs as specs
+from tests.helpers import HarpoonCase
 
 
 @pytest.fixture()

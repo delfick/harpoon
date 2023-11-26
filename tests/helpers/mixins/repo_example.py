@@ -1,8 +1,8 @@
+import os
+import shutil
+import subprocess
 from contextlib import contextmanager
 from textwrap import dedent
-import subprocess
-import shutil
-import os
 
 this_dir = os.path.dirname(__file__)
 

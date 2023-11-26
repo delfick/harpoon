@@ -1,11 +1,10 @@
-from contextlib import contextmanager
-
-import tempfile
-import tarfile
-import shutil
-import uuid
-import sys
 import os
+import shutil
+import sys
+import tarfile
+import tempfile
+import uuid
+from contextlib import contextmanager
 
 
 class FilesAssertionsMixin:
@@ -155,18 +154,18 @@ class FilesAssertionsMixin:
 
     def setup_directory(self, heirarchy, root=None, record=None):
         """
-            Setup hierarchy of folders in a temp directory
-            So if heirarchy is
-            { 'one' : {'two':{"six": ''}, 'three':'', 'four':'contents'}
-            , 'five' : {'etc':''}
-            }
-            Then under a temp directory you'll get
-            one/two, one/three, one/four, five/etc
+        Setup hierarchy of folders in a temp directory
+        So if heirarchy is
+        { 'one' : {'two':{"six": ''}, 'three':'', 'four':'contents'}
+        , 'five' : {'etc':''}
+        }
+        Then under a temp directory you'll get
+        one/two, one/three, one/four, five/etc
 
-            And this function would return a tuple of (root, record)
-            where root is the base directory
-            And record would be like:
-            {'one':{'/folder/':'/path/to/one', 'two':{'/folder/':'/path/to/one/two', 'six': '/path/to/one/six'}, 'four':{'/file/':'/path/to/one/four'}, ... etc
+        And this function would return a tuple of (root, record)
+        where root is the base directory
+        And record would be like:
+        {'one':{'/folder/':'/path/to/one', 'two':{'/folder/':'/path/to/one/two', 'six': '/path/to/one/six'}, 'four':{'/file/':'/path/to/one/four'}, ... etc
         """
         if root is None:
             root = self.make_temp_dir()

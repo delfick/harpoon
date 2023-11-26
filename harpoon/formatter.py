@@ -14,11 +14,11 @@ To do this we define the MergedOptionStringFormatter below that uses the magic
 of MergedOptions to do the lookup for us.
 """
 
-from harpoon.errors import NoSuchEnvironmentVariable
+import os
 
 from delfick_project.option_merge.formatter import MergedOptionStringFormatter
 
-import os
+from harpoon.errors import NoSuchEnvironmentVariable
 
 
 class MergedOptionStringFormatter(MergedOptionStringFormatter):

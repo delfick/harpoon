@@ -1,17 +1,17 @@
 # coding: spec
 
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.option_spec import image_objs as objs
-from harpoon.option_spec import command_objs
-from harpoon.errors import HarpoonError
-
-from tests.helpers import HarpoonCase
+import datetime
+import os
+import tarfile
+from unittest import mock
 
 from delfick_project.norms import Meta
-from unittest import mock
-import datetime
-import tarfile
-import os
+
+from harpoon.errors import HarpoonError
+from harpoon.option_spec import command_objs
+from harpoon.option_spec import image_objs as objs
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "Image object":
 

@@ -5,20 +5,21 @@ modules.
 .. autoclass:: harpoon.collector.Collector
 """
 
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.errors import BadYaml, BadConfiguration
-from harpoon.option_spec.task_objs import Task
-from harpoon.actions import available_actions
-from harpoon.task_finder import TaskFinder
-
-from delfick_project.option_merge import Collector, MergedOptions, Converter
-from delfick_project.addons import Result, Addon, Register, AddonGetter
-from delfick_project.norms import sb, dictobj, Meta
-from ruamel.yaml import YAML
-import ruamel.yaml
 import logging
 import os
+
+import ruamel.yaml
+from delfick_project.addons import Addon, AddonGetter, Register, Result
+from delfick_project.norms import Meta, dictobj, sb
+from delfick_project.option_merge import Collector, Converter, MergedOptions
+from ruamel.yaml import YAML
+
+from harpoon.actions import available_actions
+from harpoon.errors import BadConfiguration, BadYaml
+from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.option_spec.task_objs import Task
+from harpoon.task_finder import TaskFinder
 
 log = logging.getLogger("harpoon.collector")
 

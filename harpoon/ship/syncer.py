@@ -2,12 +2,13 @@
 The Syncer is responsible for pushing and pulling docker images
 """
 
-from harpoon.ship.progress_stream import ProgressStream, Failure, Unknown
-from harpoon.errors import BadImage, ProgrammerError, FailedImage
-from harpoon.ship.builder import Builder
+import logging
 
 from delfick_project.norms import sb
-import logging
+
+from harpoon.errors import BadImage, FailedImage, ProgrammerError
+from harpoon.ship.builder import Builder
+from harpoon.ship.progress_stream import Failure, ProgressStream, Unknown
 
 log = logging.getLogger("harpoon.ship.syncer")
 

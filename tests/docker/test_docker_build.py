@@ -1,18 +1,18 @@
 # coding: spec
 
+import codecs
+import os
+import re
+import uuid
+
+import pytest
+from delfick_project.norms import Meta
+
 from harpoon.executor import docker_context as docker_context_maker
 from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from harpoon.ship.builder import Builder
 from harpoon.ship.runner import Runner
-
 from tests.helpers import HarpoonCase
-
-from delfick_project.norms import Meta
-import codecs
-import pytest
-import uuid
-import os
-import re
 
 pytestmark = pytest.mark.integration
 

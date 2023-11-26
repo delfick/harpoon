@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 
 log = logging.getLogger("harpoon.ship.progress_stream")
 

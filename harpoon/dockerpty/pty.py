@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import signal
+import sys
 from ssl import SSLError
 
-from harpoon.dockerpty import io
-from harpoon.dockerpty import tty
+from harpoon.dockerpty import io, tty
 
 
 class WINCHHandler(object):

@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import fcntl
 import os
+import struct
 import termios
 import tty
-import fcntl
-import struct
 
 
 def size(fd):

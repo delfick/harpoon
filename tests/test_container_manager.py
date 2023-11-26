@@ -1,21 +1,21 @@
 # coding: spec
 
-from harpoon.container_manager import Manager
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.norms import sb
-from threading import Event
-from unittest import mock
-import threading
-import requests
-import tempfile
-import pytest
-import signal
-import time
-import uuid
 import json
 import os
+import signal
+import tempfile
+import threading
+import time
+import uuid
+from threading import Event
+from unittest import mock
+
+import pytest
+import requests
+from delfick_project.norms import sb
+
+from harpoon.container_manager import Manager
+from tests.helpers import HarpoonCase
 
 
 @pytest.fixture()

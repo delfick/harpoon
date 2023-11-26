@@ -6,10 +6,10 @@ as well as options that are used to override those in the image it's attached
 to.
 """
 
-from harpoon.errors import BadOption
-
-from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import dictobj
+from delfick_project.option_merge import MergedOptions
+
+from harpoon.errors import BadOption
 
 
 class Task(dictobj):

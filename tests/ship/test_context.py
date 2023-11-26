@@ -1,19 +1,19 @@
 # coding: spec
 
-from harpoon.ship.context import ContextBuilder, ContextWrapper
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.option_spec import image_objs as objs
-from harpoon.errors import HarpoonError
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.norms import Meta
-from unittest import mock
-import tarfile
-import shutil
-import pytest
-import time
 import os
+import shutil
+import tarfile
+import time
+from unittest import mock
+
+import pytest
+from delfick_project.norms import Meta
+
+from harpoon.errors import HarpoonError
+from harpoon.option_spec import image_objs as objs
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.ship.context import ContextBuilder, ContextWrapper
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "Context Wrapper":
     it "takes in a tarfile and tmpfile":

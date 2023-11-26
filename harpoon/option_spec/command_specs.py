@@ -2,14 +2,14 @@
 It's recommended you read this file from the bottom up.
 """
 
-from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.errors import BadOption, ProgrammerError
-from harpoon.option_spec.command_objs import Command
-
-from delfick_project.norms import sb, BadSpecValue, dictobj, va, Validator
-
 import hashlib
 import json
+
+from delfick_project.norms import BadSpecValue, Validator, dictobj, sb, va
+
+from harpoon.errors import BadOption, ProgrammerError
+from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.option_spec.command_objs import Command
 
 
 class CommandContentAddString(dictobj):

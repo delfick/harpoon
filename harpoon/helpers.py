@@ -1,9 +1,9 @@
+import logging
+import os
+import tempfile
+import time
 from contextlib import contextmanager
 from io import StringIO
-import tempfile
-import logging
-import time
-import os
 
 log = logging.getLogger("harpoon.helpers")
 

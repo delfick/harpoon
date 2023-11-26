@@ -1,9 +1,10 @@
-from contextlib import contextmanager
-from delfick_project.norms import sb
-import docker.errors
-import humanize
 import logging
 import os
+from contextlib import contextmanager
+
+import docker.errors
+import humanize
+from delfick_project.norms import sb
 
 log = logging.getLogger("harpoon.ship.builders.mixin")
 

@@ -1,15 +1,15 @@
 # coding: spec
 
-from harpoon.option_spec import image_objs as objs
-from harpoon.errors import HarpoonError
+import os
+from unittest import mock
 
-from tests.helpers import HarpoonCase
-
+import pytest
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
-from unittest import mock
-import pytest
-import os
+
+from harpoon.errors import HarpoonError
+from harpoon.option_spec import image_objs as objs
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "Context object":
 

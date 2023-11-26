@@ -1,17 +1,18 @@
-from harpoon.container_manager import make_server
-
-from contextlib import contextmanager
-import subprocess
-import threading
-import requests
-import tempfile
-import socket
-import psutil
-import signal
-import pytest
-import time
-import sys
 import os
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from contextlib import contextmanager
+
+import psutil
+import pytest
+import requests
+
+from harpoon.container_manager import make_server
 
 
 @contextmanager

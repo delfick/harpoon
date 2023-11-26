@@ -1,15 +1,16 @@
 # coding: spec
 
-from harpoon.executor import main
-
-from tests.helpers import HarpoonCase
-from io import StringIO
-import logging
-import pytest
-import uuid
 import json
-import sys
+import logging
 import os
+import sys
+import uuid
+from io import StringIO
+
+import pytest
+
+from harpoon.executor import main
+from tests.helpers import HarpoonCase
 
 pytestmark = pytest.mark.integration
 

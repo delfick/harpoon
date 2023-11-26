@@ -1,6 +1,6 @@
-from textwrap import dedent
 import json
 import re
+from textwrap import dedent
 
 
 class NotSpecified(object):

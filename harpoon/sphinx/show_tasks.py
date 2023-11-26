@@ -1,9 +1,9 @@
-from harpoon.task_finder import TaskFinder
-from harpoon.collector import Collector
-
-from docutils.statemachine import ViewList
-from docutils.parsers.rst import Directive
 from docutils import nodes
+from docutils.parsers.rst import Directive
+from docutils.statemachine import ViewList
+
+from harpoon.collector import Collector
+from harpoon.task_finder import TaskFinder
 
 
 class ShowTasksDirective(Directive):

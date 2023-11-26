@@ -5,30 +5,31 @@ Each task is specified with the ``a_task`` decorator and indicates whether it's
 necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
-from harpoon.container_manager import make_server, Manager, wait_for_server
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.errors import BadOption, HarpoonError
-from harpoon.ship.context import ContextBuilder
-from harpoon.ship.builder import Builder
-from harpoon.ship.syncer import Syncer
-
-from docker.errors import APIError as DockerAPIError
-from delfick_project.norms import sb, Meta
-from urllib.parse import urlparse
-from functools import partial
-from textwrap import dedent
-from itertools import chain
-import docker.errors
-import itertools
-import threading
-import requests
-import logging
-import signal
-import socket
-import shutil
 import errno
+import itertools
+import logging
 import os
 import re
+import shutil
+import signal
+import socket
+import threading
+from functools import partial
+from itertools import chain
+from textwrap import dedent
+from urllib.parse import urlparse
+
+import docker.errors
+import requests
+from delfick_project.norms import Meta, sb
+from docker.errors import APIError as DockerAPIError
+
+from harpoon.container_manager import Manager, make_server, wait_for_server
+from harpoon.errors import BadOption, HarpoonError
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.ship.builder import Builder
+from harpoon.ship.context import ContextBuilder
+from harpoon.ship.syncer import Syncer
 
 log = logging.getLogger("harpoon.actions")
 
@@ -305,9 +306,9 @@ def print_dockerfile(collector, image, **kwargs):
 @an_action(needs_image=True)
 def get_docker_context(collector, image, **kwargs):
     """Output the context that would be sent to docker if we made this image"""
-    with image.make_context() as context:
-        context.close()
-        shutil.copyfile(context.name, os.environ.get("FILENAME", f"./context_{image.name}.tar"))
+    with image.make_context() as ctx:
+        ctx.close()
+        shutil.copyfile(ctx.name, os.environ.get("FILENAME", f"./context_{image.name}.tar"))
 
 
 @an_action()

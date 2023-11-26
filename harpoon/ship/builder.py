@@ -6,15 +6,16 @@ Building an image requires building all dependent images, creating the necessary
 context, and actually building the current image.
 """
 
-from harpoon.errors import NoSuchImage, BadCommand, UserQuit
-from harpoon.ship.progress_stream import ProgressStream
-from harpoon.ship.builders.normal import NormalBuilder
-from harpoon.ship.builders.base import BuilderBase
-from harpoon.ship.runner import Runner
-
-from delfick_project.layerz import Layers
 import logging
 import sys
+
+from delfick_project.layerz import Layers
+
+from harpoon.errors import BadCommand, NoSuchImage, UserQuit
+from harpoon.ship.builders.base import BuilderBase
+from harpoon.ship.builders.normal import NormalBuilder
+from harpoon.ship.progress_stream import ProgressStream
+from harpoon.ship.runner import Runner
 
 log = logging.getLogger("harpoon.ship.builder")
 

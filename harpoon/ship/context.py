@@ -9,21 +9,22 @@ sent to the server in a zip file.
 Here we define the class that builds this "context" zip file.
 """
 
-from harpoon.errors import HarpoonError, BadOption
-from harpoon.helpers import a_temp_file
-
-from contextlib import contextmanager
-from io import BytesIO
-import subprocess
-import tempfile
-import tarfile
 import fnmatch
 import logging
-import shutil
-import docker
-import shlex
 import os
 import re
+import shlex
+import shutil
+import subprocess
+import tarfile
+import tempfile
+from contextlib import contextmanager
+from io import BytesIO
+
+import docker
+
+from harpoon.errors import BadOption, HarpoonError
+from harpoon.helpers import a_temp_file
 
 regexes = {"whitespace": re.compile(r"\s+")}
 
@@ -132,7 +133,7 @@ class ContextBuilder(object):
                 wrapper.close()
                 yield wrapper.tmpfile
         elif "image" in content:
-            from harpoon.ship.runner import Runner, ContainerRunner
+            from harpoon.ship.runner import ContainerRunner, Runner
 
             with a_temp_file() as fle:
                 content["conf"].command = "yes"

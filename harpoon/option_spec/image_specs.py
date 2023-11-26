@@ -5,11 +5,18 @@ The idea is that these understand the conditions around representation of the
 options.
 """
 
-from harpoon.option_spec.image_objs import Image, Link, Mount, Environment, Port, ContainerPort
-from harpoon.formatter import MergedOptionStringFormatter
-from harpoon.errors import BadConfiguration
-
 from delfick_project.norms import sb
+
+from harpoon.errors import BadConfiguration
+from harpoon.formatter import MergedOptionStringFormatter
+from harpoon.option_spec.image_objs import (
+    ContainerPort,
+    Environment,
+    Image,
+    Link,
+    Mount,
+    Port,
+)
 
 
 class image_name_spec(sb.Spec):
@@ -68,7 +75,7 @@ class link_spec(sb.many_item_formatted_spec):
     formatter = MergedOptionStringFormatter
 
     def determine_2(self, container_name, container_alias, meta, val):
-        """"Default the alias to the name of the container"""
+        """ "Default the alias to the name of the container"""
         if container_alias is not sb.NotSpecified:
             return container_alias
         return container_name[container_name.rfind(":") + 1 :].replace("/", "-")

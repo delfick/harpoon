@@ -1,21 +1,21 @@
 # coding: spec
 
-from harpoon.errors import FailedImage, BadImage, AlreadyBoundPorts, ProgrammerError
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon.ship.runner import Runner
-
-from tests.helpers import HarpoonCase
-
-from delfick_project.option_merge import Converter, MergedOptions
-from delfick_project.norms import sb, Meta
-from contextlib import contextmanager
-from unittest import mock
-import logging
-import socket
 import codecs
-import pytest
+import logging
 import os
 import re
+import socket
+from contextlib import contextmanager
+from unittest import mock
+
+import pytest
+from delfick_project.norms import Meta, sb
+from delfick_project.option_merge import Converter, MergedOptions
+
+from harpoon.errors import AlreadyBoundPorts, BadImage, FailedImage, ProgrammerError
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
+from harpoon.ship.runner import Runner
+from tests.helpers import HarpoonCase
 
 pytestmark = pytest.mark.integration
 

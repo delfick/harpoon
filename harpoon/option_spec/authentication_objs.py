@@ -1,12 +1,12 @@
-from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
-
-from delfick_project.norms import sb, dictobj
-
-from urllib.parse import urlparse
-import subprocess
 import logging
-import time
 import os
+import subprocess
+import time
+from urllib.parse import urlparse
+
+from delfick_project.norms import dictobj, sb
+
+from harpoon.amazon import assume_role, decrypt_kms, get_s3_slip
 
 log = logging.getLogger("harpoon.option_spec.authentication_objs")
 
@@ -38,8 +38,10 @@ class Authentication(dictobj):
                     out = out.decode()
 
                 if "-e, --email" in out:
-                    cmd = "docker login -u {0} -p {1} -e emailnotneeded@goawaydocker.com {2}".format(
-                        username, password, registry
+                    cmd = (
+                        "docker login -u {0} -p {1} -e emailnotneeded@goawaydocker.com {2}".format(
+                            username, password, registry
+                        )
                     )
                 else:
                     cmd = "docker login -u {0} -p {1} {2}".format(username, password, registry)

@@ -5,21 +5,21 @@ These objects are responsible for understanding different conditions around the
 use of these options.
 """
 
-from harpoon.errors import BadImage, HarpoonError
-from harpoon.ship.context import ContextBuilder
-from harpoon.amazon import assumed_role
-from harpoon.ship.runner import Runner
-from harpoon.errors import BadOption
-from harpoon import helpers as hp
-
-from docker.errors import APIError as DockerAPIError
-from delfick_project.norms import sb, dictobj
-from contextlib import contextmanager
 import logging
-import shlex
-import uuid
-import time
 import os
+import shlex
+import time
+import uuid
+from contextlib import contextmanager
+
+from delfick_project.norms import dictobj, sb
+from docker.errors import APIError as DockerAPIError
+
+from harpoon import helpers as hp
+from harpoon.amazon import assumed_role
+from harpoon.errors import BadImage, BadOption, HarpoonError
+from harpoon.ship.context import ContextBuilder
+from harpoon.ship.runner import Runner
 
 log = logging.getLogger("harpoon.option_spec.image_objs")
 

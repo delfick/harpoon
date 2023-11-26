@@ -1,9 +1,10 @@
+import uuid
+from contextlib import contextmanager
+
+import docker.errors
+
 from harpoon.executor import docker_context
 from harpoon.ship.builder import Builder
-
-from contextlib import contextmanager
-import docker.errors
-import uuid
 
 info = {}
 

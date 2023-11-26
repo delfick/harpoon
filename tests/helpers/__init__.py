@@ -1,13 +1,14 @@
 """
     Create a base class that includes all the mixins in the mixins folder
 """
-from harpoon.option_spec.command_objs import Command
-
-from delfick_project.norms import Meta
+import os
 from unittest import mock
+
 import pkg_resources
 import pytest
-import os
+from delfick_project.norms import Meta
+
+from harpoon.option_spec.command_objs import Command
 
 this_dir = os.path.dirname(__file__)
 mixin_dir = os.path.join(this_dir, "mixins")

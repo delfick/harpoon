@@ -10,21 +10,23 @@ Finally, the Runner is also responsible for starting and cleaning up interventio
 containers.
 """
 
-from harpoon.errors import BadOption, BadImage, BadResult, UserQuit, AlreadyBoundPorts
-from harpoon.option_spec.harpoon_specs import HarpoonSpec
-from harpoon import helpers as hp
-from harpoon.helpers import until
-
-from docker.errors import APIError as DockerAPIError, NotFound
-from delfick_project.norms import sb, Meta
-from contextlib import contextmanager
-from harpoon import dockerpty
-import docker.errors
 import logging
-import socket
-import uuid
-import time
 import os
+import socket
+import time
+import uuid
+from contextlib import contextmanager
+
+import docker.errors
+from delfick_project.norms import Meta, sb
+from docker.errors import APIError as DockerAPIError
+from docker.errors import NotFound
+
+from harpoon import dockerpty
+from harpoon import helpers as hp
+from harpoon.errors import AlreadyBoundPorts, BadImage, BadOption, BadResult, UserQuit
+from harpoon.helpers import until
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 
 log = logging.getLogger("harpoon.ship.runner")
 

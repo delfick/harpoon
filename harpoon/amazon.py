@@ -1,16 +1,17 @@
+import base64
+import logging
+import os
+from contextlib import contextmanager
+from urllib.parse import urlparse
+
+from delfick_project.norms import sb
+
 from harpoon.errors import BadAmazon, FoundNoBoto
 from harpoon.version import VERSION
 
-from contextlib import contextmanager
-from delfick_project.norms import sb
-from urllib.parse import urlparse
-import logging
-import base64
-import os
-
 try:
-    from botocore.exceptions import ClientError, NoCredentialsError
     import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
 except ImportError:
     boto3 = None
 

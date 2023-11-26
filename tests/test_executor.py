@@ -1,14 +1,15 @@
 # coding: spec
 
-from harpoon.executor import App
-
-from contextlib import contextmanager
-from tests.helpers import HarpoonCase
-from delfick_project.norms import sb
-from unittest import mock
-from io import StringIO
-import sys
 import os
+import sys
+from contextlib import contextmanager
+from io import StringIO
+from unittest import mock
+
+from delfick_project.norms import sb
+
+from harpoon.executor import App
+from tests.helpers import HarpoonCase
 
 describe HarpoonCase, "App":
     describe "Cli parsing":
