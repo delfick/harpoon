@@ -1,5 +1,5 @@
 from harpoon.errors import BadAmazon, FoundNoBoto
-from harpoon import VERSION
+from harpoon.version import VERSION
 
 from contextlib import contextmanager
 from delfick_project.norms import sb

@@ -95,14 +95,6 @@ https://harpoon.readthedocs.io/en/latest/docs/changelog.html
 Tests
 -----
 
-Install testing deps and run the helpful script::
+Run::
 
-    $ pip install -e .
-    $ pip install -e ".[tests]"
-    $ ./test.sh
-    $ ./docker_tests.sh
-
-Or use tox::
-
-    $ pip install tox
-    $ tox
+  > ./test.sh

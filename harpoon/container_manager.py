@@ -170,7 +170,7 @@ class Manager:
         self.info = {}
 
     def version(self, request):
-        from harpoon import VERSION
+        from harpoon.version import VERSION
 
         request.send_response(200)
         request.end_headers()

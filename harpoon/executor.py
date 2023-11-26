@@ -5,7 +5,7 @@ the argument parsing and for starting up Harpoon.
 
 from harpoon.errors import BadDockerConnection
 from harpoon.collector import Collector
-from harpoon import VERSION
+from harpoon.version import VERSION
 
 from delfick_project.app import App, OptionalFileType
 from docker.errors import APIError, DockerException

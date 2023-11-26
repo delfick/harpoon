@@ -1,3 +1,8 @@
+import pathlib
+import sys
+
+sys.path.append(str(pathlib.Path(__file__).parent))
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_rtd_theme",
@@ -16,7 +21,7 @@ source_suffix = ".rst"
 
 pygments_style = "pastie"
 
-copyright = "2019, delfick"
+copyright = "Stephen Moore"
 project = "harpoon"
 
 version = "0.1"

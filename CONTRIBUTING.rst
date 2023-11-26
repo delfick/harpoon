@@ -8,22 +8,17 @@ request in the issue tracker.
 
 Setting up for development can be as simple as::
 
-  $ pip install virtualenvtools
-  $ mkvirtualenv harpoon
-  $ pip install -e .
-  $ pip install -e ".[tests]"
+  $ source run.sh activate
 
-.. note:: ``pip install -e .`` is equivalent to putting a symlink to the code in
-  the PYTHONPATH.
+Then running the tests::
 
-Then running the tests is::
+  > ./test.sh
 
-  $ ./test.sh
+  OR
 
-.. note:: ``from nose.tools import set_trace; set_trace()`` is your friend and
-  will throw you into an interactive debugger.
+  > tox
 
-You can also run the tests against multiple versions of python by doing::
+And formatting/lint::
 
-  $ pip install tox
-  $ tox
+  > ./format
+  > ./lint
