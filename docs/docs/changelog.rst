@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.18.0 - 26 November 2023
+   * Updated dev tooling
+   * Changed to hatchling
+   * Now python 3.8+
+   * Changed ``ruamel.yaml`` to ``ruyaml`` fork
+
 0.17.0 - 26 July 2023
    * Updated python docker dependency to latest
 
