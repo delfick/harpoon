@@ -8,11 +8,10 @@ modules.
 import logging
 import os
 
-import ruamel.yaml
+import ruyaml as yaml
 from delfick_project.addons import Addon, AddonGetter, Register, Result
 from delfick_project.norms import Meta, dictobj, sb
 from delfick_project.option_merge import Collector, Converter, MergedOptions
-from ruamel.yaml import YAML
 
 from harpoon.actions import available_actions
 from harpoon.errors import BadConfiguration, BadYaml
@@ -168,15 +167,16 @@ class Collector(Collector):
 
     def read_file(self, location):
         """Read in a yaml file and return as a python object"""
-        try:
-            return YAML(typ="safe").load(open(location))
-        except (ruamel.yaml.parser.ParserError, ruamel.yaml.scanner.ScannerError) as error:
-            raise self.BadFileErrorKls(
-                "Failed to read yaml",
-                location=location,
-                error_type=error.__class__.__name__,
-                error="{0}{1}".format(error.problem, error.problem_mark),
-            )
+        with open(location) as fle:
+            try:
+                return yaml.YAML(typ="safe").load(fle)
+            except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
+                raise self.BadFileErrorKls(
+                    "Failed to read yaml",
+                    location=location,
+                    error_type=error.__class__.__name__,
+                    error="{0}{1}".format(error.problem, error.problem_mark),
+                )
 
     def add_configuration(self, configuration, collect_another_source, done, result, src):
         """
