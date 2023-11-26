@@ -1,6 +1,5 @@
 # coding: spec
 
-from unittest import mock
 
 import pytest
 from delfick_project.norms import Meta, dictobj, sb
@@ -77,8 +76,8 @@ describe HarpoonCase, "Env spec":
 
         made = specs.env_spec().normalise(meta, M.env_name)
         assert made.env_name == M.env_name
-        assert made.set_val == None
-        assert made.default_val == None
+        assert made.set_val is None
+        assert made.default_val is None
 
     it "takes in env as a list with 1 item", M, meta:
         assert ":" not in M.env_name
@@ -86,8 +85,8 @@ describe HarpoonCase, "Env spec":
 
         made = specs.env_spec().normalise(meta, [M.env_name])
         assert made.env_name == M.env_name
-        assert made.set_val == None
-        assert made.default_val == None
+        assert made.set_val is None
+        assert made.default_val is None
 
     it "takes in env as a list with 2 items", M, meta:
         assert ":" not in M.env_name
@@ -95,32 +94,32 @@ describe HarpoonCase, "Env spec":
 
         made = specs.env_spec().normalise(meta, [M.env_name, M.fallback_val])
         assert made.env_name == M.env_name
-        assert made.set_val == None
+        assert made.set_val is None
         assert made.default_val == M.fallback_val
 
     it "takes in env with blank default if suffixed with a colon", M, meta:
         made = specs.env_spec().normalise(meta, M.env_name + ":")
         assert made.env_name == M.env_name
-        assert made.set_val == None
+        assert made.set_val is None
         assert made.default_val == ""
 
     it "takes in env with blank set if suffixed with an equals sign", M, meta:
         made = specs.env_spec().normalise(meta, M.env_name + "=")
         assert made.env_name == M.env_name
         assert made.set_val == ""
-        assert made.default_val == None
+        assert made.default_val is None
 
     it "takes in default value if seperated by a colon", M, meta:
         made = specs.env_spec().normalise(meta, M.env_name + ":" + M.fallback_val)
         assert made.env_name == M.env_name
-        assert made.set_val == None
+        assert made.set_val is None
         assert made.default_val == M.fallback_val
 
     it "takes in set value if seperated by an equals sign", M, meta:
         made = specs.env_spec().normalise(meta, M.env_name + "=" + M.fallback_val)
         assert made.env_name == M.env_name
         assert made.set_val == M.fallback_val
-        assert made.default_val == None
+        assert made.default_val is None
 
 describe HarpoonCase, "Link spec":
 

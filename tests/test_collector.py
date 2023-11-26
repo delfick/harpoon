@@ -11,7 +11,7 @@ from delfick_project.norms import dictobj, sb
 from delfick_project.option_merge import MergedOptions
 
 from harpoon.collector import Collector
-from harpoon.option_spec import command_objs, image_objs
+from harpoon.option_spec import command_objs
 from harpoon.option_spec.harpoon_specs import Harpoon, HarpoonSpec
 from tests.helpers import HarpoonCase
 
@@ -157,7 +157,7 @@ describe HarpoonCase, "Collector":
                         location=filename,
                         error_type="ScannerError",
                     ):
-                        readed = collector.read_file(filename)
+                        collector.read_file(filename)
 
             it "complains about parser errors":
                 config = dedent(
@@ -176,7 +176,7 @@ describe HarpoonCase, "Collector":
                         location=filename,
                         error_type="ParserError",
                     ):
-                        readed = collector.read_file(filename)
+                        collector.read_file(filename)
 
         describe "Adding configuration":
             it "merges from extra_files":
@@ -403,4 +403,4 @@ describe HarpoonCase, "Collector":
                 assert configuration["images"]["blah"].commands.orig_commands == [
                     [command_objs.Command(("FROM", "30-2"))]
                 ]
-                assert configuration["images"]["blah"].context.enabled == False
+                assert configuration["images"]["blah"].context.enabled is False

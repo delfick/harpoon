@@ -1,5 +1,4 @@
 # coding: spec
-
 import json
 import os
 import shlex
@@ -11,9 +10,11 @@ from textwrap import dedent
 import pytest
 import requests
 from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta
 from docker.errors import ImageNotFound, NotFound
 
 from harpoon.executor import docker_context as docker_context_maker
+from harpoon.option_spec.harpoon_specs import HarpoonSpec
 from tests.helpers import HarpoonCase
 
 pytestmark = pytest.mark.integration

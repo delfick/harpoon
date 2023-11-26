@@ -6,13 +6,11 @@ import signal
 import tempfile
 import threading
 import time
-import uuid
 from threading import Event
 from unittest import mock
 
 import pytest
 import requests
-from delfick_project.norms import sb
 
 from harpoon.container_manager import Manager
 from tests.helpers import HarpoonCase
@@ -231,7 +229,6 @@ describe HarpoonCase, "locking containers":
 
         build_and_run.side_effect = builder
 
-        start = time.time()
         event1, event2 = self.ask_for_images(uri, called, ["redis", "redis"])
 
         try:
@@ -270,7 +267,6 @@ describe HarpoonCase, "locking containers":
 
         build_and_run.side_effect = builder
 
-        start = time.time()
         (event1,) = self.ask_for_images(uri, called, ["redis"])
         (event2,) = self.ask_for_images(uri, called, ["postgres"])
 

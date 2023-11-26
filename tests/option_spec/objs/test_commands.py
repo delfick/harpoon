@@ -1,12 +1,10 @@
 # coding: spec
 
-import os
 from unittest import mock
 
 import pytest
 from delfick_project.norms import Meta
 
-from harpoon.errors import HarpoonError
 from harpoon.option_spec import command_objs as co
 from harpoon.option_spec import command_specs as cs
 from harpoon.option_spec.harpoon_specs import HarpoonSpec

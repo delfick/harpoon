@@ -1,13 +1,10 @@
 # coding: spec
 
-import datetime
-import os
 import tarfile
 from unittest import mock
 
 from delfick_project.norms import Meta
 
-from harpoon.errors import HarpoonError
 from harpoon.option_spec import command_objs
 from harpoon.option_spec import image_objs as objs
 from harpoon.option_spec.harpoon_specs import HarpoonSpec

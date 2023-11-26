@@ -124,7 +124,6 @@ describe HarpoonCase, "until":
     it "sleeps the step each time":
         done = []
         step = mock.Mock(name="step")
-        action = mock.Mock(name="action")
 
         with self.mock_log_and_time() as (fake_log, fake_time):
             fake_time.time.return_value = 20
@@ -278,7 +277,6 @@ describe HarpoonCase, "Memoized_property":
         class Things(object):
             @memoized_property
             def yeap(self):
-                processed.append(1)
                 return value
 
         instance = Things()

@@ -171,8 +171,8 @@ describe HarpoonCase, "App":
                 setup_logging_theme,
                 args_dict,
             ):
-                assert args_dict["bash"] == None
-                assert args_dict["command"] == None
+                assert args_dict["bash"] is None
+                assert args_dict["command"] is None
                 assert "docker_context_maker" not in args_dict
                 assert "docker_context" not in args_dict
                 assert "extra" not in args_dict["harpoon"]
@@ -182,6 +182,6 @@ describe HarpoonCase, "App":
 
             assert called == [1, 2]
 
-            assert args_dict["ran"] == True
+            assert args_dict["ran"] is True
             assert args_dict["harpoon"]["docker_context_maker"] is docker_context_maker
             assert args_dict["harpoon"]["docker_context"] is docker_context

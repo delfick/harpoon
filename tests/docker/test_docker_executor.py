@@ -3,9 +3,7 @@
 import json
 import logging
 import os
-import sys
 import uuid
-from io import StringIO
 
 import pytest
 
@@ -40,7 +38,7 @@ describe HarpoonCase, "Executing harpoon":
                             main(["make", "blah"])
                             logging.getLogger("").handlers = list(old_handlers)
                             main(["stuff", "--silent", "--silent-build"])
-                        except SystemExit as error:
+                        except SystemExit:
                             assert False
 
                     assert open(fake_stdout.name).readlines()[-1].strip() == content
