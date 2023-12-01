@@ -24,7 +24,17 @@ class Submodule_exampleAssertionsMixin:
             subprocess.run(["git", "clone", two_bundle, two_dir], **kwargs)
             subprocess.run(["git", "clone", one_bundle, one_dir], **kwargs)
             subprocess.run(
-                ["git", "submodule", "add", two_dir, "vendor/two"], cwd=one_dir, **kwargs
+                [
+                    "git",
+                    "-c",
+                    "protocol.file.allow=always",
+                    "submodule",
+                    "add",
+                    two_dir,
+                    "vendor/two",
+                ],
+                cwd=one_dir,
+                **kwargs
             )
 
             yield one_dir
