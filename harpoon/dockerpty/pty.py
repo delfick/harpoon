@@ -146,7 +146,7 @@ class PseudoTerminal(object):
                 self._hijack_tty(pumps)
         finally:
             if flags:
-                for (pump, flag) in zip(pumps, flags):
+                for pump, flag in zip(pumps, flags):
                     io.set_blocking(pump, flag)
 
     def israw(self):

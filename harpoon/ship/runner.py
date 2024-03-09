@@ -389,7 +389,7 @@ class Runner(object):
             read_only=conf.read_only_rootfs,
             log_config=conf.log_config,
             security_opt=conf.security_opt,
-            **conf.other_options.host_config
+            **conf.other_options.host_config,
         )
 
         container_id = conf.harpoon.docker_api.create_container(
@@ -407,7 +407,7 @@ class Runner(object):
             domainname=conf.network.domainname,
             network_disabled=conf.network.disabled,
             host_config=host_config,
-            **conf.other_options.create
+            **conf.other_options.create,
         )
 
         if isinstance(container_id, dict):

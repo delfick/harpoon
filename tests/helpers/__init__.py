@@ -1,6 +1,7 @@
 """
     Create a base class that includes all the mixins in the mixins folder
 """
+
 import os
 from unittest import mock
 

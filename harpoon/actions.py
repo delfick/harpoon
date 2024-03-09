@@ -5,6 +5,7 @@ Each task is specified with the ``a_task`` decorator and indicates whether it's
 necessary to provide the task with the object containing all the images and/or
 one specific image object.
 """
+
 import errno
 import itertools
 import logging

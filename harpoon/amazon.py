@@ -45,7 +45,7 @@ def catch_boto_400(message, **info):
                 message,
                 error_message=error_message,
                 error_code=error.response["ResponseMetadata"]["HTTPStatusCode"],
-                **info
+                **info,
             )
         else:
             raise

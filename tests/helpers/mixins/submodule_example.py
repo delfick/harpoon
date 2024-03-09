@@ -34,7 +34,7 @@ class Submodule_exampleAssertionsMixin:
                     "vendor/two",
                 ],
                 cwd=one_dir,
-                **kwargs
+                **kwargs,
             )
 
             yield one_dir

@@ -81,7 +81,7 @@ class App(App):
             "--harpoon-config",
             help="The config file specifying what harpoon should care about",
             type=OptionalFileType("r"),
-            **defaults["--harpoon-config"]
+            **defaults["--harpoon-config"],
         )
 
         parser.add_argument(
@@ -99,14 +99,14 @@ class App(App):
             "--artifact",
             help="Extra information",
             dest="harpoon_artifact",
-            **defaults["--artifact"]
+            **defaults["--artifact"],
         )
 
         parser.add_argument(
             "--image",
             help="Specify a particular image",
             dest="harpoon_chosen_image",
-            **defaults["--image"]
+            **defaults["--image"],
         )
 
         parser.add_argument("--assume-role", help="Role to assume before running the container")
