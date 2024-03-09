@@ -44,6 +44,11 @@ include = [
     "/harpoon",
 ]
 
+[tool.hatch.build.targets.wheel]
+include = [
+    "/harpoon",
+]
+
 [tool.black]
 line-length = 100
 include = '\.py$'
