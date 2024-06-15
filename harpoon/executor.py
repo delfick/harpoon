@@ -24,9 +24,7 @@ def docker_context():
     """Make a docker context"""
     try:
         client = docker.from_env(
-            version="auto",
-            timeout=int(os.environ.get("DOCKER_CLIENT_TIMEOUT", 180)),
-            assert_hostname=False,
+            version="auto", timeout=int(os.environ.get("DOCKER_CLIENT_TIMEOUT", 180))
         )
 
         info = client.info()

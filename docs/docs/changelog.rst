@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.19.0 - 15 June 2024
+   * Updated python docker dependency
+
 0.18.0 - 26 November 2023
    * Updated dev tooling
    * Changed to hatchling
